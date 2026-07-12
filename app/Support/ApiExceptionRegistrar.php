@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Exceptions\Api\InsufficientWalletBalanceException;
 use App\Exceptions\Api\InvalidClerkTokenException;
 use App\Exceptions\Api\InvalidClerkWebhookException;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -37,6 +38,15 @@ class ApiExceptionRegistrar
             fn (InvalidClerkWebhookException $e) => ApiResponse::error(
                 $e->getMessage(),
                 status: 400
+            )
+        );
+
+        self::registerHandler(
+            $exceptions,
+            InsufficientWalletBalanceException::class,
+            fn (InsufficientWalletBalanceException $e) => ApiResponse::error(
+                $e->getMessage(),
+                status: 422
             )
         );
 

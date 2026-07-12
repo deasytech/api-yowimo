@@ -3,6 +3,8 @@
 namespace App\Support;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Pagination\CursorPaginator;
 
 class ApiResponse
 {
@@ -13,6 +15,25 @@ class ApiResponse
             'message' => $message,
             'data' => $data ?? [],
         ], $status);
+    }
+
+    /**
+     * Return a cursor-paginated collection using the standard success envelope,
+     * with pagination cursors surfaced under `meta`.
+     */
+    public static function paginated(AnonymousResourceCollection $resource, CursorPaginator $paginator, string $message = 'Success'): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'data' => $resource,
+            'meta' => [
+                'per_page' => $paginator->perPage(),
+                'has_more_pages' => $paginator->hasMorePages(),
+                'next_cursor' => $paginator->nextCursor()?->encode(),
+                'prev_cursor' => $paginator->previousCursor()?->encode(),
+            ],
+        ], 200);
     }
 
     /**

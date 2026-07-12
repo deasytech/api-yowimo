@@ -6,6 +6,8 @@ use App\Enums\UserStatus;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -42,5 +44,29 @@ class User extends Authenticatable
             'last_seen_at' => 'datetime',
             'status' => UserStatus::class,
         ];
+    }
+
+    /**
+     * @return HasMany<Party, $this>
+     */
+    public function parties(): HasMany
+    {
+        return $this->hasMany(Party::class, 'host_id');
+    }
+
+    /**
+     * @return HasMany<PartyLike, $this>
+     */
+    public function partyLikes(): HasMany
+    {
+        return $this->hasMany(PartyLike::class);
+    }
+
+    /**
+     * @return HasOne<Wallet, $this>
+     */
+    public function wallet(): HasOne
+    {
+        return $this->hasOne(Wallet::class);
     }
 }

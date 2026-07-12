@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\UserStatus;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -15,10 +16,21 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        User::factory()->create([
-            'name' => 'Super Admin',
-            'email' => 'superadmin@yowimo.com',
-            'password' => bcrypt(env('SUPER_ADMIN_PASSWORD', '!12345678Ab')),
+        User::query()->updateOrCreate(
+            ['clerk_user_id' => 'user_super_admin'],
+            [
+                'username' => 'superadmin',
+                'display_name' => 'Super Admin',
+                'email' => 'superadmin@yowimo.com',
+                'status' => UserStatus::Active,
+            ]
+        );
+
+        $this->call([
+            GameTypeSeeder::class,
+            PackSeeder::class,
+            TokenBundleSeeder::class,
+            PartySeeder::class,
         ]);
     }
 }
