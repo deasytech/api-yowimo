@@ -13,12 +13,22 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('clerk_id')->unique();
-            $table->string('username')->nullable()->unique();
-            $table->string('name')->nullable();
+            $table->string('clerk_user_id')->unique();
             $table->string('email')->nullable()->unique();
+            $table->string('username')->nullable()->unique();
+            $table->string('first_name')->nullable();
+            $table->string('last_name')->nullable();
+            $table->string('display_name')->nullable();
             $table->string('avatar_url')->nullable();
+            $table->text('bio')->nullable();
+            $table->date('date_of_birth')->nullable();
+            $table->string('country_code', 2)->nullable();
+            $table->json('interests')->nullable();
+            $table->json('privacy_settings')->nullable();
+            $table->string('status')->default('active');
+            $table->timestamp('last_seen_at')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
 
         Schema::create('sessions', function (Blueprint $table) {

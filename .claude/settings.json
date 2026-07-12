@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(vendor/bin/pint --dirty --format agent)",
+      "Bash(mkdir -p /private/tmp/claude-501/-Users-deasytech-Codes-laravel-api-yowimo/7968bdf2-9a48-4e8d-8325-f70f19de73b2/scratchpad *)",
+      "Bash(curl -s -i -X POST http://api-yowimo.test/api/v1/webhooks/clerk -H 'Content-Type: application/json' -H 'svix-id: msg_smoketest123' -H 'svix-timestamp: 1783855538' -H 'svix-signature: v1,e5tnaAoRit8ux/0VHlR22ZcmoVCwO7MIjJ3UdFpJRqE=' --data-binary @/private/tmp/claude-501/-Users-deasytech-Codes-laravel-api-yowimo/7968bdf2-9a48-4e8d-8325-f70f19de73b2/scratchpad/smoke_payload.json)",
+      "Bash(curl -s -o /dev/null -w '%{http_code}\\\\n' -X POST http://api-yowimo.test/api/v1/webhooks/clerk -H 'Content-Type: application/json' -H 'svix-id: msg_smoketest123' -H 'svix-timestamp: 1783855538' -H 'svix-signature: v1,e5tnaAoRit8ux/0VHlR22ZcmoVCwO7MIjJ3UdFpJRqE=' --data-binary @/private/tmp/claude-501/-Users-deasytech-Codes-laravel-api-yowimo/7968bdf2-9a48-4e8d-8325-f70f19de73b2/scratchpad/smoke_payload.json)",
+      "Bash(curl -s -X POST http://api-yowimo.test/api/v1/webhooks/clerk -H 'Content-Type: application/json' -H 'svix-id: msg_smoketest_bad' -H 'svix-timestamp: 1783855538' -H 'svix-signature: v1,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=' --data-binary @/private/tmp/claude-501/-Users-deasytech-Codes-laravel-api-yowimo/7968bdf2-9a48-4e8d-8325-f70f19de73b2/scratchpad/smoke_payload.json)",
+      "Bash(curl -s -i \"http://api-yowimo.test/api/v1/users/me\")",
+      "Bash(curl -s -i -X OPTIONS http://api-yowimo.test/api/v1/users/me -H 'Origin: https://app.yomiwo.com' -H 'Access-Control-Request-Method: GET')",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" \"http://api-yowimo.test/horizon/api/stats\")",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "WebFetch(domain:clerk.com)",
+      "Bash(git fetch *)"
+    ],
+    "additionalDirectories": [
+      "/private/tmp"
+    ]
+  }
+}
