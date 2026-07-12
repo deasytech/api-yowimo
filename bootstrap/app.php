@@ -1,6 +1,7 @@
 <?php
 
 use App\Exceptions\Api\InvalidClerkTokenException;
+use App\Exceptions\Api\InvalidClerkWebhookException;
 use App\Support\ApiResponse;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
@@ -8,6 +9,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -30,6 +32,18 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (InvalidClerkTokenException $e, Request $request) {
             if ($request->is('api/*')) {
                 return ApiResponse::error($e->getMessage(), status: 401);
+            }
+        });
+
+        $exceptions->render(function (InvalidClerkWebhookException $e, Request $request) {
+            if ($request->is('api/*')) {
+                return ApiResponse::error($e->getMessage(), status: 400);
+            }
+        });
+
+        $exceptions->render(function (ThrottleRequestsException $e, Request $request) {
+            if ($request->is('api/*')) {
+                return ApiResponse::error('Too many requests.', status: 429);
             }
         });
 

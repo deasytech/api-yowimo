@@ -45,3 +45,9 @@ it('rejects a token from an untrusted issuer', function () {
 
     app(ClerkJwtVerifier::class)->verify($token);
 })->throws(InvalidClerkTokenException::class);
+
+it('rejects a token that is not yet valid', function () {
+    $token = $this->clerkToken(['nbf' => time() + 3600]);
+
+    app(ClerkJwtVerifier::class)->verify($token);
+})->throws(InvalidClerkTokenException::class);

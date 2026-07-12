@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\UserStatus;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
@@ -19,11 +20,21 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'clerk_id' => 'user_'.Str::random(24),
+            'clerk_user_id' => 'user_'.Str::random(24),
             'username' => fake()->unique()->userName(),
-            'name' => fake()->name(),
+            'first_name' => fake()->firstName(),
+            'last_name' => fake()->lastName(),
+            'display_name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'avatar_url' => null,
+            'status' => UserStatus::Active,
         ];
+    }
+
+    public function deactivated(): static
+    {
+        return $this->state(fn () => [
+            'status' => UserStatus::Deactivated,
+        ]);
     }
 }
