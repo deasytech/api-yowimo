@@ -10,6 +10,8 @@ use Illuminate\Support\Arr;
 
 class ClerkWebhookHandler
 {
+    public function __construct(private readonly ClerkUserSynchronizer $synchronizer) {}
+
     /**
      * Handle a verified Clerk webhook payload, idempotently.
      *
@@ -25,7 +27,7 @@ class ClerkWebhookHandler
         $data = Arr::get($payload, 'data', []);
 
         match ($type) {
-            'user.created', 'user.updated' => $this->upsertUser($data),
+            'user.created', 'user.updated' => $this->synchronizer->sync($data),
             'user.deleted' => $this->deactivateUser($data),
             default => null,
         };
@@ -47,29 +49,6 @@ class ClerkWebhookHandler
     /**
      * @param  array<string, mixed>  $data
      */
-    protected function upsertUser(array $data): void
-    {
-        $clerkUserId = Arr::get($data, 'id');
-
-        if (! $clerkUserId) {
-            return;
-        }
-
-        User::query()->updateOrCreate(
-            ['clerk_user_id' => $clerkUserId],
-            array_filter([
-                'email' => $this->primaryEmail($data),
-                'username' => Arr::get($data, 'username'),
-                'first_name' => Arr::get($data, 'first_name'),
-                'last_name' => Arr::get($data, 'last_name'),
-                'avatar_url' => Arr::get($data, 'image_url'),
-            ], fn ($value) => $value !== null),
-        );
-    }
-
-    /**
-     * @param  array<string, mixed>  $data
-     */
     protected function deactivateUser(array $data): void
     {
         $clerkUserId = Arr::get($data, 'id');
@@ -84,22 +63,5 @@ class ClerkWebhookHandler
             'status' => UserStatus::Deactivated,
             'deleted_at' => $user->deleted_at ?? now(),
         ])->save();
-    }
-
-    /**
-     * @param  array<string, mixed>  $data
-     */
-    protected function primaryEmail(array $data): ?string
-    {
-        $primaryId = Arr::get($data, 'primary_email_address_id');
-        $addresses = Arr::get($data, 'email_addresses', []);
-
-        foreach ($addresses as $address) {
-            if (Arr::get($address, 'id') === $primaryId) {
-                return Arr::get($address, 'email_address');
-            }
-        }
-
-        return Arr::get($addresses, '0.email_address');
     }
 }

@@ -40,6 +40,7 @@ return [
         'jwks_url' => env('CLERK_JWKS_URL'),
         'jwks_cache_ttl' => env('CLERK_JWKS_CACHE_TTL', 3600),
         'webhook_secret' => env('CLERK_WEBHOOK_SECRET'),
+        'secret_key' => env('CLERK_SECRET_KEY'),
     ],
 
 ];
