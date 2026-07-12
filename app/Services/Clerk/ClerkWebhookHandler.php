@@ -40,10 +40,25 @@ class ClerkWebhookHandler
                 'payload' => $payload,
                 'processed_at' => now(),
             ]);
-        } catch (QueryException) {
+        } catch (QueryException $e) {
+            if (! $this->isDuplicateEventId($e)) {
+                throw $e;
+            }
+
             // Another delivery of the same event won the race on the unique
             // event_id constraint; the effect above has already happened once.
         }
+    }
+
+    /**
+     * Determine whether the query exception is the expected unique
+     * event_id constraint violation, as opposed to any other database
+     * failure (connection, schema, data, etc).
+     */
+    protected function isDuplicateEventId(QueryException $e): bool
+    {
+        return in_array($e->getCode(), ['23000', '23505'], true)
+            && str_contains($e->getMessage(), 'event_id');
     }
 
     /**

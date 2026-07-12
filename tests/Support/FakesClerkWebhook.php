@@ -7,10 +7,12 @@ use Svix\Webhook;
 
 trait FakesClerkWebhook
 {
-    protected string $clerkWebhookSecret = 'whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw';
+    protected string $clerkWebhookSecret;
 
     protected function fakeClerkWebhookSecret(): void
     {
+        $this->clerkWebhookSecret = env('CLERK_WEBHOOK_SECRET');
+
         config(['services.clerk.webhook_secret' => $this->clerkWebhookSecret]);
     }
 

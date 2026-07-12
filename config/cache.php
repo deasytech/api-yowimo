@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Str;
 
+const CACHE_DATA_PATH = 'framework/cache/data';
+
 return [
 
     /*
@@ -49,14 +51,14 @@ return [
 
         'file' => [
             'driver' => 'file',
-            'path' => storage_path('framework/cache/data'),
-            'lock_path' => storage_path('framework/cache/data'),
+            'path' => storage_path(CACHE_DATA_PATH),
+            'lock_path' => storage_path(CACHE_DATA_PATH),
         ],
 
         'storage' => [
             'driver' => 'storage',
             'disk' => env('CACHE_STORAGE_DISK'),
-            'path' => env('CACHE_STORAGE_PATH', 'framework/cache/data'),
+            'path' => env('CACHE_STORAGE_PATH', CACHE_DATA_PATH),
         ],
 
         'memcached' => [
@@ -118,7 +120,7 @@ return [
     |
     */
 
-    'prefix' => env('CACHE_PREFIX', Str::slug((string) env('APP_NAME', 'laravel')).'-cache-'),
+    'prefix' => env('CACHE_PREFIX', Str::slug((string) env('APP_NAME', 'laravel')) . '-cache-'),
 
     /*
     |--------------------------------------------------------------------------

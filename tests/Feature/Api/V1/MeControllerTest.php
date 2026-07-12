@@ -3,6 +3,8 @@
 use App\Models\User;
 use Tests\Support\FakesClerk;
 
+const API_V1_ME_ENDPOINT = '/api/v1/users/me';
+
 uses(FakesClerk::class);
 
 beforeEach(function () {
@@ -10,7 +12,7 @@ beforeEach(function () {
 });
 
 it('rejects requests with no bearer token', function () {
-    $this->getJson('/api/v1/users/me')
+    $this->getJson(API_V1_ME_ENDPOINT)
         ->assertStatus(401)
         ->assertJson([
             'success' => false,
@@ -20,7 +22,7 @@ it('rejects requests with no bearer token', function () {
 
 it('rejects requests with an invalid bearer token', function () {
     $this->withHeader('Authorization', 'Bearer not-a-real-token')
-        ->getJson('/api/v1/users/me')
+        ->getJson(API_V1_ME_ENDPOINT)
         ->assertStatus(401)
         ->assertJson(['success' => false]);
 });
@@ -35,7 +37,7 @@ it('just-in-time provisions a new internal user from a verified clerk token', fu
     expect(User::query()->count())->toBe(0);
 
     $response = $this->withHeader('Authorization', "Bearer {$token}")
-        ->getJson('/api/v1/users/me')
+        ->getJson(API_V1_ME_ENDPOINT)
         ->assertStatus(200)
         ->assertJson([
             'success' => true,
@@ -54,8 +56,8 @@ it('just-in-time provisions a new internal user from a verified clerk token', fu
 it('resolves the same internal user on subsequent requests for the same clerk id', function () {
     $token = $this->clerkToken(['sub' => 'user_same']);
 
-    $this->withHeader('Authorization', "Bearer {$token}")->getJson('/api/v1/users/me')->assertOk();
-    $this->withHeader('Authorization', "Bearer {$token}")->getJson('/api/v1/users/me')->assertOk();
+    $this->withHeader('Authorization', "Bearer {$token}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
+    $this->withHeader('Authorization', "Bearer {$token}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
 
     expect(User::query()->count())->toBe(1);
 });
@@ -66,7 +68,7 @@ it('rejects a valid token belonging to a deactivated user', function () {
     User::factory()->deactivated()->create(['clerk_user_id' => 'user_gone']);
 
     $this->withHeader('Authorization', "Bearer {$token}")
-        ->getJson('/api/v1/users/me')
+        ->getJson(API_V1_ME_ENDPOINT)
         ->assertStatus(401);
 });
 
@@ -74,7 +76,7 @@ it('updates the authenticated users profile', function () {
     $token = $this->clerkToken(['sub' => 'user_update']);
 
     $this->withHeader('Authorization', "Bearer {$token}")
-        ->patchJson('/api/v1/users/me', [
+        ->patchJson(API_V1_ME_ENDPOINT, [
             'username' => 'partyhost99',
             'bio' => 'Here for the games.',
             'country_code' => 'GH',
@@ -93,7 +95,7 @@ it('rejects profile updates that fail validation with the standard error envelop
     $token = $this->clerkToken(['sub' => 'user_invalid']);
 
     $this->withHeader('Authorization', "Bearer {$token}")
-        ->patchJson('/api/v1/users/me', ['username' => 'a'])
+        ->patchJson(API_V1_ME_ENDPOINT, ['username' => 'a'])
         ->assertStatus(422)
         ->assertJson([
             'success' => false,
@@ -107,7 +109,7 @@ it('does not allow taking a username already used by another user', function () 
     $token = $this->clerkToken(['sub' => 'user_conflict']);
 
     $this->withHeader('Authorization', "Bearer {$token}")
-        ->patchJson('/api/v1/users/me', ['username' => 'taken'])
+        ->patchJson(API_V1_ME_ENDPOINT, ['username' => 'taken'])
         ->assertStatus(422)
         ->assertJsonValidationErrors('username');
 });
