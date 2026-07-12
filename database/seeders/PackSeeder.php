@@ -17,7 +17,90 @@ class PackSeeder extends Seeder
      */
     public function run(): void
     {
-        $packs = [
+
+        foreach ($this->packs() as $index => $data) {
+            $gameType = GameType::query()->where('slug', $data['game_type_slug'])->first();
+
+            /** @var Pack $pack */
+            $pack = Pack::query()->updateOrCreate(
+                ['slug' => Str::slug($data['name'])],
+                [
+                    'game_type_id' => $gameType?->id,
+                    'name' => $data['name'],
+                    'emoji' => $data['emoji'],
+                    'tag' => $data['tag'],
+                    'category' => $data['category'],
+                    'description' => $data['description'],
+                    'price' => $data['price'],
+                    'truths_count' => $data['truths'],
+                    'dares_count' => $data['dares'],
+                    'cards_count' => $data['truths'] + $data['dares'],
+                    'cover_image_url' => null,
+                    'gradient' => ['#D84CFF', '#FF8A2A'],
+                    'is_featured' => $data['is_featured'],
+                    'is_active' => true,
+                    'sort_order' => $index,
+                ]
+            );
+
+            $pack->cards()->delete();
+
+            foreach ($data['preview'] as $position => [$kind, $text]) {
+                PackCard::query()->create([
+                    'pack_id' => $pack->id,
+                    'kind' => $kind === 'truth' ? PackCardKind::Truth : PackCardKind::Dare,
+                    'text' => $text,
+                    'position' => $position,
+                    'is_preview' => true,
+                ]);
+            }
+
+            $previewTruths = count(array_filter($data['preview'], fn(array $card) => $card[0] === 'truth'));
+            $previewDares = count(array_filter($data['preview'], fn(array $card) => $card[0] === 'dare'));
+
+            $remainingTruths = max($data['truths'] - $previewTruths, 0);
+            $remainingDares = max($data['dares'] - $previewDares, 0);
+            $previewCount = count($data['preview']);
+
+            PackCard::factory()
+                ->count($remainingTruths)
+                ->sequence(fn($sequence) => ['position' => $previewCount + $sequence->index])
+                ->state(['pack_id' => $pack->id, 'kind' => PackCardKind::Truth, 'is_preview' => false])
+                ->create();
+
+            PackCard::factory()
+                ->count($remainingDares)
+                ->sequence(fn($sequence) => ['position' => $previewCount + $remainingTruths + $sequence->index])
+                ->state(['pack_id' => $pack->id, 'kind' => PackCardKind::Dare, 'is_preview' => false])
+                ->create();
+        }
+
+        // A handful of extra, fully randomized packs to round out the marketplace.
+        $gameTypeIds = GameType::query()->pluck('id');
+
+        $marketplacePacks = Pack::factory()
+            ->count(6)
+            ->state(fn() => ['game_type_id' => $gameTypeIds->random()])
+            ->has(PackCard::factory()->count(10), 'cards')
+            ->create();
+
+        // The 10 attached cards' truth/dare split is randomized per-card, so
+        // sync the pack's own count metadata to what was actually persisted.
+        $marketplacePacks->each(function (Pack $pack) {
+            $truths = $pack->cards()->where('kind', PackCardKind::Truth)->count();
+            $dares = $pack->cards()->where('kind', PackCardKind::Dare)->count();
+
+            $pack->update([
+                'truths_count' => $truths,
+                'dares_count' => $dares,
+                'cards_count' => $truths + $dares,
+            ]);
+        });
+    }
+
+    private function packs(): array
+    {
+        return [
             [
                 'game_type_slug' => 'truth-dare',
                 'name' => 'Midnight Spice',
@@ -127,84 +210,5 @@ class PackSeeder extends Seeder
                 ],
             ],
         ];
-
-        foreach ($packs as $index => $data) {
-            $gameType = GameType::query()->where('slug', $data['game_type_slug'])->first();
-
-            /** @var Pack $pack */
-            $pack = Pack::query()->updateOrCreate(
-                ['slug' => Str::slug($data['name'])],
-                [
-                    'game_type_id' => $gameType?->id,
-                    'name' => $data['name'],
-                    'emoji' => $data['emoji'],
-                    'tag' => $data['tag'],
-                    'category' => $data['category'],
-                    'description' => $data['description'],
-                    'price' => $data['price'],
-                    'truths_count' => $data['truths'],
-                    'dares_count' => $data['dares'],
-                    'cards_count' => $data['truths'] + $data['dares'],
-                    'cover_image_url' => null,
-                    'gradient' => ['#D84CFF', '#FF8A2A'],
-                    'is_featured' => $data['is_featured'],
-                    'is_active' => true,
-                    'sort_order' => $index,
-                ]
-            );
-
-            $pack->cards()->delete();
-
-            foreach ($data['preview'] as $position => [$kind, $text]) {
-                PackCard::query()->create([
-                    'pack_id' => $pack->id,
-                    'kind' => $kind === 'truth' ? PackCardKind::Truth : PackCardKind::Dare,
-                    'text' => $text,
-                    'position' => $position,
-                    'is_preview' => true,
-                ]);
-            }
-
-            $previewTruths = count(array_filter($data['preview'], fn (array $card) => $card[0] === 'truth'));
-            $previewDares = count(array_filter($data['preview'], fn (array $card) => $card[0] === 'dare'));
-
-            $remainingTruths = max($data['truths'] - $previewTruths, 0);
-            $remainingDares = max($data['dares'] - $previewDares, 0);
-            $previewCount = count($data['preview']);
-
-            PackCard::factory()
-                ->count($remainingTruths)
-                ->sequence(fn ($sequence) => ['position' => $previewCount + $sequence->index])
-                ->state(['pack_id' => $pack->id, 'kind' => PackCardKind::Truth, 'is_preview' => false])
-                ->create();
-
-            PackCard::factory()
-                ->count($remainingDares)
-                ->sequence(fn ($sequence) => ['position' => $previewCount + $remainingTruths + $sequence->index])
-                ->state(['pack_id' => $pack->id, 'kind' => PackCardKind::Dare, 'is_preview' => false])
-                ->create();
-        }
-
-        // A handful of extra, fully randomized packs to round out the marketplace.
-        $gameTypeIds = GameType::query()->pluck('id');
-
-        $marketplacePacks = Pack::factory()
-            ->count(6)
-            ->state(fn () => ['game_type_id' => $gameTypeIds->random()])
-            ->has(PackCard::factory()->count(10), 'cards')
-            ->create();
-
-        // The 10 attached cards' truth/dare split is randomized per-card, so
-        // sync the pack's own count metadata to what was actually persisted.
-        $marketplacePacks->each(function (Pack $pack) {
-            $truths = $pack->cards()->where('kind', PackCardKind::Truth)->count();
-            $dares = $pack->cards()->where('kind', PackCardKind::Dare)->count();
-
-            $pack->update([
-                'truths_count' => $truths,
-                'dares_count' => $dares,
-                'cards_count' => $truths + $dares,
-            ]);
-        });
     }
 }

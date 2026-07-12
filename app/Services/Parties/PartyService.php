@@ -62,19 +62,30 @@ class PartyService
     {
         return DB::transaction(function () use ($host, $data) {
             try {
-                $party = $this->insertParty($host, $data, $this->roomCodes->generate());
+                $party = $this->attemptInsert($host, $data, $this->roomCodes->generate());
             } catch (QueryException $exception) {
                 if (! $this->isRoomCodeUniqueViolation($exception)) {
                     throw $exception;
                 }
 
                 // Lost a race to another concurrent create() for the same
-                // room code; regenerate and retry once.
-                $party = $this->insertParty($host, $data, $this->roomCodes->generate());
+                // room code; regenerate and retry once. Each attempt runs in
+                // its own nested transaction/savepoint so the failed first
+                // insert is rolled back cleanly instead of aborting the
+                // outer transaction before the retry runs.
+                $party = $this->attemptInsert($host, $data, $this->roomCodes->generate());
             }
 
             return $party->load(['host', 'gameType', 'pack']);
         });
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function attemptInsert(User $host, array $data, string $roomCode): Party
+    {
+        return DB::transaction(fn () => $this->insertParty($host, $data, $roomCode));
     }
 
     /**
