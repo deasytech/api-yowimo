@@ -15,7 +15,7 @@ return new class extends Migration
         // never updated or deleted (enforced in the WalletTransaction model).
         Schema::create('wallet_transactions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('wallet_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('wallet_id')->constrained()->restrictOnDelete();
             $table->string('type');
             $table->integer('amount');
             $table->integer('balance_after');

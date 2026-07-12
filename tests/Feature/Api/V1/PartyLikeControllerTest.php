@@ -74,3 +74,47 @@ it('does not go below zero when unliking without a prior like', function () {
 
     expect($party->fresh()->likes_count)->toBe(0);
 });
+
+it('forbids liking a private party the user cannot view', function () {
+    $hostToken = $this->clerkToken(['sub' => 'user_like_private_host']);
+    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson('/api/v1/users/me')->assertOk();
+    $host = User::where('clerk_user_id', 'user_like_private_host')->firstOrFail();
+
+    $party = Party::factory()->create([
+        'host_id' => $host->id,
+        'visibility' => PartyVisibility::Private,
+        'likes_count' => 0,
+    ]);
+
+    $viewerToken = $this->clerkToken(['sub' => 'user_like_private_viewer']);
+
+    // The `clerk` guard caches its resolved user for the lifetime of the app
+    // instance; force it to re-resolve so the viewer's token is actually used.
+    $this->app->make('auth')->forgetGuards();
+
+    $this->withHeader('Authorization', "Bearer {$viewerToken}")
+        ->postJson(likeEndpoint($party))
+        ->assertStatus(403);
+
+    expect($party->fresh()->likes_count)->toBe(0);
+});
+
+it('forbids unliking a private party the user cannot view', function () {
+    $hostToken = $this->clerkToken(['sub' => 'user_unlike_private_host']);
+    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson('/api/v1/users/me')->assertOk();
+    $host = User::where('clerk_user_id', 'user_unlike_private_host')->firstOrFail();
+
+    $party = Party::factory()->create([
+        'host_id' => $host->id,
+        'visibility' => PartyVisibility::Private,
+        'likes_count' => 0,
+    ]);
+
+    $viewerToken = $this->clerkToken(['sub' => 'user_unlike_private_viewer']);
+
+    $this->app->make('auth')->forgetGuards();
+
+    $this->withHeader('Authorization', "Bearer {$viewerToken}")
+        ->deleteJson(likeEndpoint($party))
+        ->assertStatus(403);
+});

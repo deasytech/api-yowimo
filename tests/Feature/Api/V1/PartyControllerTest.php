@@ -210,6 +210,32 @@ it('forbids non-hosts from viewing a private party', function () {
         ->assertStatus(403);
 });
 
+it('forbids non-hosts from viewing a draft party even when it is marked public', function () {
+    $hostToken = $this->clerkToken(['sub' => 'user_draft_public_host']);
+    $host = provisionUserFromToken($this, $hostToken, 'user_draft_public_host');
+    $viewerToken = $this->clerkToken(['sub' => 'user_draft_public_viewer']);
+
+    $party = Party::factory()->create([
+        'host_id' => $host->id,
+        'visibility' => PartyVisibility::Public,
+        'status' => PartyStatus::Draft,
+    ]);
+
+    // The `clerk` guard caches its resolved user for the lifetime of the app
+    // instance; force it to re-resolve so the viewer's token is actually used.
+    $this->app->make('auth')->forgetGuards();
+
+    $this->withHeader('Authorization', "Bearer {$viewerToken}")
+        ->getJson(API_V1_PARTIES_ENDPOINT."/{$party->id}")
+        ->assertStatus(403);
+
+    $this->app->make('auth')->forgetGuards();
+
+    $this->withHeader('Authorization', "Bearer {$hostToken}")
+        ->getJson(API_V1_PARTIES_ENDPOINT."/{$party->id}")
+        ->assertStatus(200);
+});
+
 it('returns 404 for a party that does not exist', function () {
     $token = $this->clerkToken();
 

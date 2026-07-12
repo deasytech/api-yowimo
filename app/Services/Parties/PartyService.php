@@ -6,8 +6,10 @@ use App\Enums\PartyStatus;
 use App\Enums\PartyVisibility;
 use App\Models\Party;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class PartyService
 {
@@ -59,26 +61,54 @@ class PartyService
     public function create(User $host, array $data): Party
     {
         return DB::transaction(function () use ($host, $data) {
-            /** @var Party $party */
-            $party = Party::create([
-                'host_id' => $host->id,
-                'game_type_id' => $data['game_type_id'] ?? null,
-                'pack_id' => $data['pack_id'] ?? null,
-                'room_code' => $this->roomCodes->generate(),
-                'title' => $data['title'],
-                'description' => $data['description'] ?? null,
-                'mode' => $data['mode'],
-                'visibility' => $data['visibility'],
-                'status' => $this->resolveStatus($data),
-                'max_players' => $data['max_players'] ?? 8,
-                'players_count' => 1,
-                'starts_at' => $data['starts_at'] ?? null,
-                'location' => $data['location'] ?? null,
-                'tags' => $data['tags'] ?? [],
-            ]);
+            try {
+                $party = $this->insertParty($host, $data, $this->roomCodes->generate());
+            } catch (QueryException $exception) {
+                if (! $this->isRoomCodeUniqueViolation($exception)) {
+                    throw $exception;
+                }
+
+                // Lost a race to another concurrent create() for the same
+                // room code; regenerate and retry once.
+                $party = $this->insertParty($host, $data, $this->roomCodes->generate());
+            }
 
             return $party->load(['host', 'gameType', 'pack']);
         });
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function insertParty(User $host, array $data, string $roomCode): Party
+    {
+        return Party::create([
+            'host_id' => $host->id,
+            'game_type_id' => $data['game_type_id'] ?? null,
+            'pack_id' => $data['pack_id'] ?? null,
+            'room_code' => $roomCode,
+            'title' => $data['title'],
+            'description' => $data['description'] ?? null,
+            'mode' => $data['mode'],
+            'visibility' => $data['visibility'],
+            'status' => $this->resolveStatus($data),
+            'max_players' => $data['max_players'] ?? 8,
+            'players_count' => 1,
+            'starts_at' => $data['starts_at'] ?? null,
+            'location' => $data['location'] ?? null,
+            'tags' => $data['tags'] ?? [],
+        ]);
+    }
+
+    private function isRoomCodeUniqueViolation(QueryException $exception): bool
+    {
+        $message = strtolower($exception->getMessage());
+        $sqlState = (string) $exception->getCode();
+
+        $isRoomCodeConstraint = Str::contains($message, ['room_code', 'parties_room_code_unique']);
+        $isUniqueViolation = Str::contains($message, ['unique', 'duplicate']) || in_array($sqlState, ['23000', '23505'], true);
+
+        return $isRoomCodeConstraint && $isUniqueViolation;
     }
 
     /**

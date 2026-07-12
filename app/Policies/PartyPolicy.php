@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\PartyStatus;
 use App\Enums\PartyVisibility;
 use App\Models\Party;
 use App\Models\User;
@@ -26,6 +27,10 @@ class PartyPolicy
             return true;
         }
 
+        if ($party->status === PartyStatus::Draft) {
+            return false;
+        }
+
         return $party->visibility === PartyVisibility::Public;
     }
 
@@ -38,11 +43,11 @@ class PartyPolicy
     }
 
     /**
-     * Determine whether the user can like the party.
+     * Determine whether the user can like the party. Only parties the user can view are likeable.
      */
     public function like(User $user, Party $party): bool
     {
-        return true;
+        return $this->view($user, $party);
     }
 
     /**
@@ -50,6 +55,6 @@ class PartyPolicy
      */
     public function unlike(User $user, Party $party): bool
     {
-        return true;
+        return $this->view($user, $party);
     }
 }

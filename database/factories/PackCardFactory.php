@@ -25,8 +25,8 @@ class PackCardFactory extends Factory
             'pack_id' => Pack::factory(),
             'kind' => $kind,
             'text' => $kind === PackCardKind::Truth
-                ? $this->faker->sentence(10).'?'
-                : $this->faker->sentence(8).'.',
+                ? rtrim($this->faker->sentence(10), '.!?').'?'
+                : rtrim($this->faker->sentence(8), '.!?').'.',
             'position' => 0,
             'is_preview' => false,
         ];

@@ -34,9 +34,15 @@ class WalletTransactionFactory extends Factory
 
     public function debit(int $amount): static
     {
-        return $this->state(fn () => [
-            'type' => WalletTransactionType::Purchase,
-            'amount' => -abs($amount),
-        ]);
+        return $this->state(function () use ($amount) {
+            $amount = abs($amount);
+            $priorBalance = $this->faker->numberBetween($amount, $amount + 1000);
+
+            return [
+                'type' => WalletTransactionType::Purchase,
+                'amount' => -$amount,
+                'balance_after' => $priorBalance - $amount,
+            ];
+        });
     }
 }

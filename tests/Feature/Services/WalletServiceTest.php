@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use App\Services\Wallet\WalletService;
+use Illuminate\Database\QueryException;
 
 function walletService(): WalletService
 {
@@ -108,4 +109,14 @@ it('prevents wallet transactions from being deleted', function () {
     $transaction = WalletTransaction::factory()->create();
 
     expect(fn () => $transaction->delete())->toThrow(LogicException::class);
+});
+
+it('rejects deleting a wallet that still has ledger entries at the database level', function () {
+    $user = User::factory()->create();
+    walletService()->credit($user, 100, WalletTransactionType::TopUp);
+
+    $wallet = walletService()->walletFor($user);
+
+    expect(fn () => $wallet->delete())->toThrow(QueryException::class);
+    expect(Wallet::query()->whereKey($wallet->id)->exists())->toBeTrue();
 });
