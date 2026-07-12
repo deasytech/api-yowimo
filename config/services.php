@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'clerk' => [
+        'issuer' => env('CLERK_ISSUER'),
+        'jwks_url' => env('CLERK_JWKS_URL'),
+        'jwks_cache_ttl' => env('CLERK_JWKS_CACHE_TTL', 3600),
+    ],
+
 ];
