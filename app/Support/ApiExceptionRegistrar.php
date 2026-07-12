@@ -11,6 +11,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Throwable;
 
@@ -96,6 +97,15 @@ class ApiExceptionRegistrar
 
         self::registerHandler(
             $exceptions,
+            HttpException::class,
+            fn (HttpException $e) => ApiResponse::error(
+                $e->getMessage(),
+                status: $e->getStatusCode()
+            )
+        );
+
+        self::registerHandler(
+            $exceptions,
             Throwable::class,
             function () {
                 if (app()->hasDebugModeEnabled()) {
@@ -118,7 +128,7 @@ class ApiExceptionRegistrar
         string $exceptionClass,
         callable $handler
     ): void {
-        $exceptions->render(function ($exception, Request $request) use (
+        $exceptions->render(function (Throwable $exception, Request $request) use (
             $exceptionClass,
             $handler
         ) {

@@ -4,6 +4,8 @@ use App\Models\User;
 use App\Services\Clerk\ClerkUserProvisioner;
 use Illuminate\Database\QueryException;
 
+const NEW_USER = 'insert into "users" ...';
+
 it('recovers from a concurrent unique clerk user id race and continues sync flow', function () {
     $existingUser = User::factory()->create([
         'clerk_user_id' => 'user_race',
@@ -26,7 +28,7 @@ it('recovers from a concurrent unique clerk user id race and continues sync flow
 
                 throw new QueryException(
                     'sqlite',
-                    'insert into "users" ...',
+                    NEW_USER,
                     [],
                     new RuntimeException('SQLSTATE[23000]: Integrity constraint violation: 19 UNIQUE constraint failed: users.clerk_user_id', 23000)
                 );
@@ -62,7 +64,7 @@ it('rethrows query exceptions that are unrelated to unique clerk_user_id violati
         {
             throw new QueryException(
                 'sqlite',
-                'insert into "users" ...',
+                NEW_USER,
                 [],
                 new RuntimeException('SQLSTATE[40001]: Serialization failure: deadlock detected', 40001)
             );
@@ -82,7 +84,7 @@ it('rethrows a unique clerk_user_id violation when no user can be recovered', fu
         {
             throw new QueryException(
                 'sqlite',
-                'insert into "users" ...',
+                NEW_USER,
                 [],
                 new RuntimeException('SQLSTATE[23000]: Integrity constraint violation: 19 UNIQUE constraint failed: users.clerk_user_id', 23000)
             );
