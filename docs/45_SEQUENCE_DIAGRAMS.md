@@ -348,21 +348,35 @@ participant Marketplace
 
 participant Wallet
 
+participant DB
+
 participant Inventory
 
 participant Queue
 
 User->>API: Purchase Pack
 
-API->>Wallet: Verify Balance
+API->>Wallet: Debit (idempotency_key)
 
-Wallet-->>Marketplace: Approved
+Wallet->>DB: Check Existing Transaction
+
+DB-->>Wallet: Not Found
+
+Wallet->>DB: Lock Wallet Row
+
+Wallet->>DB: Debit + Ledger Entry
+
+DB-->>Wallet: Committed
+
+Wallet-->>Marketplace: Debit Confirmed
 
 Marketplace->>Inventory: Grant Item
 
 Marketplace->>Queue: CreatorRevenueJob
 
 Marketplace->>Queue: AnalyticsJob
+
+Marketplace-->>API: Purchase Complete
 
 API-->>User: Purchased
 ```
@@ -388,11 +402,19 @@ Scheduler->>RevenueService: Monthly Run
 
 RevenueService->>DB: Calculate Revenue
 
-RevenueService->>Payment: Transfer
+RevenueService->>DB: Persist Payout Attempt (idempotency_key)
 
-Payment-->>Creator: Payout
+RevenueService->>Payment: Transfer (idempotency_key)
+
+Payment-->>RevenueService: Transfer Accepted
+
+RevenueService->>Payment: Reconcile Transfer Status (idempotency_key)
+
+Payment-->>RevenueService: Transfer Confirmed
 
 RevenueService->>DB: Mark Paid
+
+RevenueService-->>Creator: Payout
 ```
 
 ---

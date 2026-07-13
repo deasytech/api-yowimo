@@ -482,6 +482,12 @@ Retry
 
 Offline
 
+Retry only with
+
+Idempotency Key
+
+for financial mutations.
+
 ---
 
 # Offline Support
@@ -493,6 +499,22 @@ Retry automatically.
 Synchronize
 
 After reconnect.
+
+Exclude from blind offline queueing
+
+Wallet
+
+Purchases
+
+Payments
+
+Financial mutations require
+
+Idempotency Key
+
+Server Reconciliation
+
+before retry or replay.
 
 ---
 

@@ -517,11 +517,19 @@ Verify Provider
 
 ↓
 
+Verify Webhook Signatures
+
+↓
+
+Deduplicate by Provider event_id
+
+↓
+
 Replay Webhooks
 
 ↓
 
-Validate Ledger
+Reconcile Ledger
 
 ↓
 
