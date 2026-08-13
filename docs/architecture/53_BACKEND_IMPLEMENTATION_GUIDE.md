@@ -10,11 +10,11 @@
 
 **Framework**
 
-Laravel 12
+Laravel 13
 
-PHP 8.4+
+PHP 8.3+
 
-PostgreSQL
+MySQL
 
 Redis
 

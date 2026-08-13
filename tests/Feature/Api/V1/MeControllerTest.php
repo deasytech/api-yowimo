@@ -47,7 +47,8 @@ it('just-in-time provisions a new internal user from a verified clerk token', fu
     $response->assertJsonPath('data.email', 'player@yowimo.app');
     $response->assertJsonPath('data.display_name', 'Player One');
     $response->assertJsonPath('data.status', 'active');
-    $response->assertJsonPath('data.wallet.enabled', false);
+    $response->assertJsonPath('data.wallet.balance', 0);
+    $response->assertJsonPath('data.wallet.currency', 'tokens');
 
     expect(User::query()->count())->toBe(1);
     expect(User::query()->first()->clerk_user_id)->toBe('user_abc123');
