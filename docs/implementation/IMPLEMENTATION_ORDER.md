@@ -100,10 +100,10 @@ Each sprint assumes ~1 engineer-week of focused work; adjust pacing to actual te
 
 ### Sprint 1 — Foundation hardening & wallet exposure
 *No new domain logic; closes existing debt, unblocks commerce.*
-- Wire real `Wallet`/`WalletService` data into `UserResource`; remove the stale stub.
-- Add `GET /wallet` and `GET /wallet/transactions` (thin controller over existing service) + a `WalletPolicy`.
-- Schedule `clerk:sync-users` as an hourly self-heal job.
-- Add a GitHub Actions workflow: Pint check + Pest suite on every PR.
+- [x] Wire real `Wallet`/`WalletService` data into `UserResource`; remove the stale stub.
+- [x] Add `GET /wallet` and `GET /wallet/transactions` (thin controller over existing service) + a `WalletPolicy`.
+- [ ] Schedule `clerk:sync-users` as an hourly self-heal job.
+- [ ] Add a GitHub Actions workflow: Pint check + Pest suite on every PR.
 - **Risk:** near zero — no changes to `WalletService` internals, no schema changes.
 
 ### Sprint 2 — Token purchase (wallet top-up)

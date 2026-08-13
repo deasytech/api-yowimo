@@ -31,11 +31,11 @@ class UserResource extends JsonResource
             'last_seen_at' => $this->last_seen_at,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
-            // Wallet phase isn't implemented yet; this is a stable placeholder shape.
+            // A wallet is only created lazily on first use (see WalletService::walletFor());
+            // a user without one yet has no balance to report.
             'wallet' => [
-                'enabled' => false,
-                'balance' => 0,
-                'currency' => 'points',
+                'balance' => $this->wallet?->balance ?? 0,
+                'currency' => $this->wallet?->currency ?? 'tokens',
             ],
         ];
     }

@@ -14,6 +14,7 @@ Built, exposed, tested — no further work planned:
 - **Authentication (Clerk)** — JWT verification, JIT provisioning, webhook sync, backfill command.
 - **Game/Pack/PackCard Catalog** (read) — full filtering/search/pagination.
 - **Party Likes** — idempotent like/unlike.
+- **Wallet (read API)** — `GET /wallet`, `GET /wallet/transactions` over the existing `WalletService` ledger; `UserResource` stub replaced with real balance/currency.
 
 ## In progress modules
 
@@ -21,7 +22,6 @@ Real code exists; work remains to finish the module:
 
 | Module | Done | Remaining |
 |---|---|---|
-| **Wallet** | Ledger engine (`WalletService`) — transactional, idempotent, race-safe. | API layer only (`GET /wallet`, `/wallet/transactions`) + fixing the stale `UserResource` stub. Next task, not blocked. |
 | **Party (create/discover)** | Create, discover, show, room codes. | Membership/lifecycle (join/leave/start/end). |
 | **User Profile** | View/edit own profile. | Public profile view, avatar upload, account deletion. |
 | **Token Bundles** | Catalog list. | `show` endpoint, purchase/checkout. |
@@ -34,7 +34,6 @@ Zero code, and an upstream dependency must land first:
 
 | Module | Blocked on |
 |---|---|
-| **Marketplace (purchase/inventory)** | Wallet API |
 | **Game Engine (rounds/turns/timers)** | Party Membership/Lifecycle + Domain Events backbone |
 | **Realtime (Reverb)** | Domain Events backbone + Game Engine |
 | **Notifications** | Domain Events backbone + active queue |
@@ -50,6 +49,7 @@ Zero code, nothing blocking — ready to schedule:
 - Party Membership/Lifecycle
 - Friends / Social Graph
 - Admin Panel
+- Marketplace (purchase/inventory) — Wallet API dependency now satisfied
 
 **Deferred** (zero code, intentionally not scheduled pending a business trigger — see `IMPLEMENTATION_ORDER.md` §G): Chat/Messaging, Voice/Video (LiveKit), Moderation/Trust & Safety, Creator Economy, Corporate/Multi-Tenant/Enterprise, Internationalization.
 

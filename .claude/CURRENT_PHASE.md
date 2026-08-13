@@ -7,15 +7,15 @@
 
 ## Current Sprint
 
-**Sprint 1 — Foundation Hardening & Wallet Exposure** (`docs/implementation/IMPLEMENTATION_ORDER.md`), **not yet started.**
+**Sprint 1 — Foundation Hardening & Wallet Exposure** (`docs/implementation/IMPLEMENTATION_ORDER.md`), **in progress.**
 
-None of Sprint 1's deliverables exist in code yet:
-- `UserResource` still ships the hardcoded `wallet.enabled: false` stub instead of real wallet data.
-- No `WalletController` / `GET /wallet` / `GET /wallet/transactions` routes exist.
-- `clerk:sync-users` is not scheduled anywhere.
-- No CI workflow enforces Pint/Pest on PRs.
+Wallet exposure is done; two Sprint 1 items remain:
+- ✅ `UserResource` now reports real `wallet.balance`/`wallet.currency` (stub removed).
+- ✅ `WalletController` / `GET /wallet` / `GET /wallet/transactions` routes ship, guarded by `WalletPolicy`, backed unmodified by `WalletService`.
+- ⬜ `clerk:sync-users` is not scheduled anywhere.
+- ⬜ No CI workflow enforces Pint/Pest on PRs.
 
-Everything shipped so far predates the sprint roadmap — it's the Phase-0/Phase-1 foundation (Clerk auth, catalog, party create/discover/like, the wallet ledger engine) that the roadmap was written to build on top of, not the result of executing Sprint 1.
+Everything else shipped so far predates the sprint roadmap — it's the Phase-0/Phase-1 foundation (Clerk auth, catalog, party create/discover/like, the wallet ledger engine) that the roadmap was written to build on top of.
 
 ---
 
@@ -28,6 +28,7 @@ Built, exposed via API, and tested:
 | **Authentication (Clerk)** | JWT verification, JWKS caching, JIT user provisioning, webhook sync, backfill command. Fully tested, no known gaps. |
 | **Game/Pack Catalog** | `GameType`, `Pack`, `PackCard` — full read API, filtering, search, cursor pagination, featured packs, preview cards. |
 | **Party Likes** | Like/unlike with idempotent, floor-guarded counters. |
+| **Wallet (read API)** | `GET /wallet`, `GET /wallet/transactions` (cursor-paginated) over the existing `WalletService` ledger, `WalletPolicy`-guarded. No purchase/top-up (write) endpoint yet. |
 
 ---
 
@@ -37,7 +38,7 @@ Real code exists but the module is narrower than its documented scope, or is unr
 
 | Module | What's done | What's missing |
 |---|---|---|
-| **Wallet** | `WalletService` — transactional, idempotent, race-safe, append-only ledger. The most mature code in the repo. | **No API surface at all.** No controller, no route. `UserResource` actively misreports it as disabled. |
+| **Wallet** | `WalletService` (unmodified) + a read-only `GET /wallet` / `GET /wallet/transactions` API, `WalletPolicy`, `UserResource` now reports real balance/currency. | No purchase/top-up (write) endpoint yet — Sprint 2. |
 | **Party (create/discover)** | Create, list/discover, show, room-code generation, visibility rules. | No join/leave, no start/end, no membership table — a party can never actually be played. |
 | **User Profile** | View/edit own profile. | No public profile view, no avatar upload, no account deletion. |
 | **Token Bundles** | List (catalog) only. | No `show`, no purchase/checkout endpoint, nothing wired to the wallet. |
@@ -55,10 +56,10 @@ Game Engine (rounds/turns/timers/scoring), Marketplace (purchase flow/inventory/
 
 ## Current Priority
 
-Close out **Sprint 1** — the lowest-risk, highest-leverage work available:
+Finish out the remainder of **Sprint 1**:
 
-1. Wire real `Wallet`/`WalletService` data into `UserResource`; remove the stale stub.
-2. Add `GET /wallet` and `GET /wallet/transactions` (thin controller over the existing, already-correct service) + a `WalletPolicy`.
+1. ~~Wire real `Wallet`/`WalletService` data into `UserResource`; remove the stale stub.~~ Done.
+2. ~~Add `GET /wallet` and `GET /wallet/transactions` (thin controller over the existing, already-correct service) + a `WalletPolicy`.~~ Done.
 3. Schedule `clerk:sync-users` as an hourly self-heal job.
 4. Add a GitHub Actions workflow running Pint + Pest on every PR.
 

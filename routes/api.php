@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\PackController;
 use App\Http\Controllers\Api\V1\PartyController;
 use App\Http\Controllers\Api\V1\PartyLikeController;
 use App\Http\Controllers\Api\V1\TokenBundleController;
+use App\Http\Controllers\Api\V1\WalletController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -21,6 +22,9 @@ Route::prefix('v1')->group(function () {
         Route::get('/packs', [PackController::class, 'index']);
 
         Route::get('/token-bundles', [TokenBundleController::class, 'index']);
+
+        Route::get('/wallet', [WalletController::class, 'show']);
+        Route::get('/wallet/transactions', [WalletController::class, 'transactions']);
 
         Route::get('/parties', [PartyController::class, 'index']);
         Route::post('/parties', [PartyController::class, 'store']);

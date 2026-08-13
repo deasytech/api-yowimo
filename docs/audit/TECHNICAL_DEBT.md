@@ -6,15 +6,9 @@ Concrete, evidence-based debt items found in the actual codebase (not doc-vs-cod
 
 ---
 
-## 1. `WalletService` is fully built but completely unreachable
+## 1. `WalletService` is fully built but completely unreachable — RESOLVED (Sprint 1)
 
-`app/Services/Wallet/WalletService.php` implements a correct, race-safe, idempotent, append-only ledger (row locking, transaction wrapping, unique-violation-based idempotency, drift-recovery `recalculate()`). No controller or route calls it. Worse, `app/Http/Resources/Api/V1/UserResource.php` (lines ~34–39) hardcodes:
-
-```php
-'wallet' => ['enabled' => false, 'balance' => 0, 'currency' => 'points']
-```
-
-with a comment stating the wallet phase "isn't implemented yet." That comment is now false — it predates the wallet work landing and was never updated. Any client reading `UserResource` today is told wallets don't exist, while the backend can already correctly manage one. This is the highest-value, lowest-risk item to close: the hard part (the ledger) is done and tested; only a read endpoint and a resource-field fix are missing.
+**Status:** Resolved. `GET /api/v1/wallet` and `GET /api/v1/wallet/transactions` (`WalletController`, `WalletPolicy`, `WalletResource`, `WalletTransactionResource`) now expose `WalletService` read-only, and `UserResource` reports real `balance`/`currency` instead of the old hardcoded `enabled: false` stub. `WalletService` and the wallet models/migrations were not modified. No top-up/purchase (write) path exists yet — that remains Sprint 2 scope, tracked separately (see item 2 below).
 
 ## 2. Token bundles have no purchase path
 

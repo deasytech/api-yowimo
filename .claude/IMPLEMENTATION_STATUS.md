@@ -16,8 +16,8 @@
 | Token Bundles (catalog) | 🟡 Partial | 40% (list only, no purchase) | No — extend only | High (Sprint 2) | Wallet API |
 | Sponsorship | 🟡 Partial | 10% (schema columns only) | No | Deferred | Party |
 | Horizon / Queue | 🟡 Partial | 20% (installed, inert; gate is `local`-only) | Yes — small (gate + first job) | High (Sprint 5) | — |
-| Wallet Ledger Engine | 🔵 Built, unexposed | 100% internal / 0% exposed | Yes — small (`UserResource` stub) | **Critical (Sprint 1)** | Auth |
-| Wallet API (routes/controller) | ⬜ Missing | 0% | N/A — net new | **Critical (Sprint 1)** | Wallet Ledger Engine |
+| Wallet Ledger Engine | ✅ Complete | 100% internal / exposed via read API | No | Maintain | Auth |
+| Wallet API (routes/controller) | 🟡 Partial | 100% read (`GET /wallet`, `/wallet/transactions`) / 0% write | No | High (Sprint 2, purchase path) | Wallet Ledger Engine |
 | CI/CD Pipeline | ⬜ Missing | 0% | N/A — net new (infra) | **Critical (Sprint 1)** | — |
 | Marketplace (purchase/inventory) | ⬜ Missing | 0% | N/A — net new | High (Sprint 2–3) | Wallet API, Token Bundles, Pack Catalog |
 | Party Membership/Lifecycle | ⬜ Missing | 0% | N/A — net new | High (Sprint 4) | Party Create/Discover |

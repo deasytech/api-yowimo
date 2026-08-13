@@ -26,8 +26,8 @@ Status of every module named in `docs/architecture/` against what actually exist
 | **Party Likes** | ✅ Built | Full like/unlike with idempotent counters, tested. |
 | **Game Catalog (GameType, Pack, PackCard)** | ✅ Built | Full read API, filtering, search, cursor pagination, featured packs, preview cards. No write API (content is seed-managed). |
 | **Game Engine (rounds/turns/timers/votes/challenges)** | ⬜ Not started | No tables, no models, no services. This is the platform's core gameplay loop per `08_GAME_ENGINE.md` (marked CRITICAL there) and is entirely absent. |
-| **Wallet (ledger engine)** | 🔵 Built, unexposed | `WalletService` is the most mature code in the repo — transactional, row-locked, idempotent credit/debit/recalculate, append-only ledger enforced at model + DB level. Zero HTTP routes reach it. |
-| **Wallet API (balance/history/topup)** | ⬜ Not started | No `/wallet` route of any kind. `UserResource` ships a hardcoded `wallet.enabled: false` stub instead of calling the real service. |
+| **Wallet (ledger engine)** | ✅ Built | `WalletService` is the most mature code in the repo — transactional, row-locked, idempotent credit/debit/recalculate, append-only ledger enforced at model + DB level. Now reachable via the read API below. |
+| **Wallet API (balance/history/topup)** | 🟡 Partial | `GET /wallet` and `GET /wallet/transactions` (cursor-paginated, `WalletPolicy`-guarded) ship real balance/currency/ledger data. `UserResource` no longer stubs `wallet.enabled: false`. No top-up/purchase (write) endpoint yet — see Sprint 2. |
 | **Token Bundles (catalog)** | 🟡 Partial | `GET /token-bundles` list only. No `show`, no purchase/checkout endpoint. |
 | **Marketplace (purchase flow, inventory, ownership)** | ⬜ Not started | No purchase/inventory tables, no `MarketplaceService`. Token bundles and packs are just listings with nothing wiring them to the wallet. |
 | **Realtime (Reverb / channels / presence)** | ⬜ Not started | No `config/broadcasting.php`, no Reverb package, `BROADCAST_CONNECTION=log`. No channel classes anywhere. |
