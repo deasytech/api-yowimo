@@ -7,11 +7,13 @@
 
 ## Current Sprint
 
-**Sprint 1 — Foundation Hardening & Wallet Exposure** (`docs/implementation/IMPLEMENTATION_ORDER.md`), **in progress.**
+**Sprint 2 — Token Purchase (Wallet Top-up)** (`docs/implementation/IMPLEMENTATION_ORDER.md`), **done.** Two housekeeping items from Sprint 1 remain open (see below) but nothing blocks starting Sprint 3.
 
-Wallet exposure is done; two Sprint 1 items remain:
-- ✅ `UserResource` now reports real `wallet.balance`/`wallet.currency` (stub removed).
-- ✅ `WalletController` / `GET /wallet` / `GET /wallet/transactions` routes ship, guarded by `WalletPolicy`, backed unmodified by `WalletService`.
+- ✅ `PurchaseService` + `PaymentProvider` interface + `ManualPaymentProvider` driver (`app/Services/Purchase/`).
+- ✅ `POST /token-bundles/{id}/purchase` — validates the bundle is active (404 otherwise), requires a server-enforced `Idempotency-Key` header, credits via `WalletService::credit()` unmodified.
+- ✅ Retrying the same `Idempotency-Key` does not double-credit (tested).
+
+Outstanding from Sprint 1 (not blocking, can land anytime):
 - ⬜ `clerk:sync-users` is not scheduled anywhere.
 - ⬜ No CI workflow enforces Pint/Pest on PRs.
 
@@ -28,7 +30,8 @@ Built, exposed via API, and tested:
 | **Authentication (Clerk)** | JWT verification, JWKS caching, JIT user provisioning, webhook sync, backfill command. Fully tested, no known gaps. |
 | **Game/Pack Catalog** | `GameType`, `Pack`, `PackCard` — full read API, filtering, search, cursor pagination, featured packs, preview cards. |
 | **Party Likes** | Like/unlike with idempotent, floor-guarded counters. |
-| **Wallet (read API)** | `GET /wallet`, `GET /wallet/transactions` (cursor-paginated) over the existing `WalletService` ledger, `WalletPolicy`-guarded. No purchase/top-up (write) endpoint yet. |
+| **Wallet (read API)** | `GET /wallet`, `GET /wallet/transactions` (cursor-paginated) over the existing `WalletService` ledger, `WalletPolicy`-guarded. |
+| **Token Bundle purchase (top-up)** | `POST /token-bundles/{id}/purchase` — `PurchaseService` + manual/test `PaymentProvider` driver, credits via `WalletService::credit()`, `Idempotency-Key` enforced. No real payment gateway yet. |
 
 ---
 
@@ -38,10 +41,10 @@ Real code exists but the module is narrower than its documented scope, or is unr
 
 | Module | What's done | What's missing |
 |---|---|---|
-| **Wallet** | `WalletService` (unmodified) + a read-only `GET /wallet` / `GET /wallet/transactions` API, `WalletPolicy`, `UserResource` now reports real balance/currency. | No purchase/top-up (write) endpoint yet — Sprint 2. |
+| **Wallet** | `WalletService` (unmodified) + a read-only `GET /wallet` / `GET /wallet/transactions` API, `WalletPolicy`, `UserResource` now reports real balance/currency. | No direct wallet write endpoint (top-up happens only via token bundle purchase below). |
 | **Party (create/discover)** | Create, list/discover, show, room-code generation, visibility rules. | No join/leave, no start/end, no membership table — a party can never actually be played. |
 | **User Profile** | View/edit own profile. | No public profile view, no avatar upload, no account deletion. |
-| **Token Bundles** | List (catalog) only. | No `show`, no purchase/checkout endpoint, nothing wired to the wallet. |
+| **Token Bundles** | List (catalog) + `POST /token-bundles/{id}/purchase` (credits wallet, idempotent). | No `show` endpoint. Purchase uses a manual/test `PaymentProvider`, not a real payment gateway. |
 | **Sponsorship** | `parties.is_sponsored` / `sponsor_name` columns exist. | No sponsor entity, no sponsor-facing flow of any kind — schema hint only. |
 
 ---
@@ -56,14 +59,17 @@ Game Engine (rounds/turns/timers/scoring), Marketplace (purchase flow/inventory/
 
 ## Current Priority
 
-Finish out the remainder of **Sprint 1**:
+Start **Sprint 3 — Pack purchase & inventory** (`docs/implementation/IMPLEMENTATION_ORDER.md`):
 
-1. ~~Wire real `Wallet`/`WalletService` data into `UserResource`; remove the stale stub.~~ Done.
-2. ~~Add `GET /wallet` and `GET /wallet/transactions` (thin controller over the existing, already-correct service) + a `WalletPolicy`.~~ Done.
-3. Schedule `clerk:sync-users` as an hourly self-heal job.
-4. Add a GitHub Actions workflow running Pint + Pest on every PR.
+1. `user_pack_purchases` (or equivalent) table + model; `POST /packs/{id}/purchase` debits via the existing `WalletService::debit()`, grants ownership.
+2. Gate full (non-preview) `PackCard` content behind ownership in `PackPolicy`/`PackResource`.
+3. Test the `InsufficientWalletBalanceException` failure path explicitly (first real-flow exercise of `debit()`), not just the happy path.
 
-None of this touches `WalletService` internals or any existing schema — it's pure exposure and process hardening, chosen specifically to unblock the commerce work (Sprints 2–3) without introducing new structural risk.
+Lower-priority, not blocking, carried over from Sprint 1:
+- Schedule `clerk:sync-users` as an hourly self-heal job.
+- Add a GitHub Actions workflow running Pint + Pest on every PR.
+
+Sprint 3 is the first task in this roadmap that requires a new migration/table — confirm the table design with the user before writing it, per `.claude/ARCHITECTURE_RULES.md`'s precedence note on introducing new schema.
 
 ---
 

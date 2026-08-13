@@ -5,6 +5,8 @@ namespace App\Providers;
 use App\Models\User;
 use App\Services\Clerk\ClerkJwtVerifier;
 use App\Services\Clerk\ClerkUserProvisioner;
+use App\Services\Purchase\ManualPaymentProvider;
+use App\Services\Purchase\PaymentProvider;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -18,7 +20,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(PaymentProvider::class, ManualPaymentProvider::class);
     }
 
     /**

@@ -13,13 +13,13 @@
 | Party Likes | ✅ Complete | 100% | No | Maintain | Party (create) |
 | Party Create/Discover/Show | 🟡 Partial | 50% (no lifecycle) | No — extend only | High (Sprint 4) | Auth, Game Catalog |
 | User Profile | 🟡 Partial | 40% (view/edit only) | No — extend only | Low | Auth |
-| Token Bundles (catalog) | 🟡 Partial | 40% (list only, no purchase) | No — extend only | High (Sprint 2) | Wallet API |
+| Token Bundles (catalog + purchase) | 🟡 Partial | 80% (list + purchase; no `show`, no real payment gateway) | No — extend only | Low | Wallet API |
 | Sponsorship | 🟡 Partial | 10% (schema columns only) | No | Deferred | Party |
 | Horizon / Queue | 🟡 Partial | 20% (installed, inert; gate is `local`-only) | Yes — small (gate + first job) | High (Sprint 5) | — |
 | Wallet Ledger Engine | ✅ Complete | 100% internal / exposed via read API | No | Maintain | Auth |
-| Wallet API (routes/controller) | 🟡 Partial | 100% read (`GET /wallet`, `/wallet/transactions`) / 0% write | No | High (Sprint 2, purchase path) | Wallet Ledger Engine |
-| CI/CD Pipeline | ⬜ Missing | 0% | N/A — net new (infra) | **Critical (Sprint 1)** | — |
-| Marketplace (purchase/inventory) | ⬜ Missing | 0% | N/A — net new | High (Sprint 2–3) | Wallet API, Token Bundles, Pack Catalog |
+| Wallet API (routes/controller) | ✅ Complete | 100% read + token-bundle top-up write path | No | Maintain | Wallet Ledger Engine |
+| CI/CD Pipeline | ⬜ Missing | 0% | N/A — net new (infra) | High (carried over from Sprint 1) | — |
+| Marketplace (purchase/inventory) | 🟡 Partial | Token bundle purchase (top-up) done; pack purchase/inventory/ownership missing | N/A — net new | **High (Sprint 3)** | Wallet API (done), Token Bundles (done), Pack Catalog |
 | Party Membership/Lifecycle | ⬜ Missing | 0% | N/A — net new | High (Sprint 4) | Party Create/Discover |
 | Domain Events & Listeners | ⬜ Missing | 0% | N/A — net new | High (Sprint 5, enabling infra) | Existing services (Wallet, Party) to retrofit dispatch calls into |
 | Game Engine (rounds/turns/timers/scoring) | ⬜ Missing | 0% | N/A — net new | High (Sprint 6–7) | Party Lifecycle, Pack Catalog, Domain Events |

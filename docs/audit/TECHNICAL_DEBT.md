@@ -10,9 +10,9 @@ Concrete, evidence-based debt items found in the actual codebase (not doc-vs-cod
 
 **Status:** Resolved. `GET /api/v1/wallet` and `GET /api/v1/wallet/transactions` (`WalletController`, `WalletPolicy`, `WalletResource`, `WalletTransactionResource`) now expose `WalletService` read-only, and `UserResource` reports real `balance`/`currency` instead of the old hardcoded `enabled: false` stub. `WalletService` and the wallet models/migrations were not modified. No top-up/purchase (write) path exists yet — that remains Sprint 2 scope, tracked separately (see item 2 below).
 
-## 2. Token bundles have no purchase path
+## 2. Token bundles have no purchase path — RESOLVED (Sprint 2)
 
-`TokenBundleController` only lists bundles. There is no endpoint that debits/credits a wallet for a purchase, so the `token_bundles` catalog and the `WalletService` are two finished pieces with no connective code between them. Any future purchase endpoint needs to decide: idempotency-key sourcing (client-generated vs. payment-provider-generated), what `WalletTransactionType` to use (`TopUp` exists), and how a real payment provider webhook would eventually replace/augment a direct debit call.
+**Status:** Resolved for top-up. `POST /api/v1/token-bundles/{id}/purchase` (`TokenBundlePurchaseController`, `PurchaseService`) credits `WalletService::credit()` with `WalletTransactionType::TopUp`, keyed by a client-supplied, server-enforced `Idempotency-Key` header. Payment collection itself is stubbed via a `PaymentProvider` interface + `ManualPaymentProvider` driver that always approves — swapping in a real gateway (Stripe/Paystack) is future work, tracked as its own later sprint, not blocking this one. Pack purchase/inventory/ownership (Sprint 3) is still open.
 
 ## 3. Party lifecycle stops at creation
 

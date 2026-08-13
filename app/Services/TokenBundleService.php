@@ -21,4 +21,9 @@ class TokenBundleService
                 cursor: $filters['cursor'] ?? null,
             );
     }
+
+    public function find(int $id): TokenBundle
+    {
+        return TokenBundle::query()->where('is_active', true)->findOrFail($id);
+    }
 }
