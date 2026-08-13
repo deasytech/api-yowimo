@@ -107,9 +107,9 @@ Each sprint assumes ~1 engineer-week of focused work; adjust pacing to actual te
 - **Risk:** near zero — no changes to `WalletService` internals, no schema changes.
 
 ### Sprint 2 — Token purchase (wallet top-up)
-- `PurchaseService` (new) + a payment-provider interface with a single "manual/test" driver for now (real Stripe/Paystack integration is a later, separate sprint once a provider is chosen — don't block this sprint on that decision).
-- `POST /token-bundles/{id}/purchase`: validates bundle is active, calls `WalletService::credit()` with an idempotency key derived from the purchase attempt.
-- Tests mirror the existing `WalletServiceTest` idempotency patterns.
+- [x] `PurchaseService` (new, `app/Services/Purchase/`) + a `PaymentProvider` interface with a single `ManualPaymentProvider` "manual/test" driver for now (real Stripe/Paystack integration is a later, separate sprint once a provider is chosen).
+- [x] `POST /token-bundles/{id}/purchase`: validates bundle is active (404 if inactive/unknown), requires a server-enforced `Idempotency-Key` header, calls `WalletService::credit()`.
+- [x] Tests mirror the existing `WalletServiceTest` idempotency patterns (retry-with-same-key does not double-credit).
 - **Risk:** low — reuses `WalletService`'s existing idempotent-credit path; only new code is the controller/service wiring and the purchase record itself.
 
 ### Sprint 3 — Pack purchase & inventory

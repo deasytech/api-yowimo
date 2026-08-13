@@ -15,6 +15,7 @@ Built, exposed, tested — no further work planned:
 - **Game/Pack/PackCard Catalog** (read) — full filtering/search/pagination.
 - **Party Likes** — idempotent like/unlike.
 - **Wallet (read API)** — `GET /wallet`, `GET /wallet/transactions` over the existing `WalletService` ledger; `UserResource` stub replaced with real balance/currency.
+- **Token Bundle purchase (top-up)** — `POST /token-bundles/{id}/purchase` credits the wallet via `PurchaseService` + a manual/test `PaymentProvider` driver, idempotency-key enforced.
 
 ## In progress modules
 
@@ -24,7 +25,7 @@ Real code exists; work remains to finish the module:
 |---|---|---|
 | **Party (create/discover)** | Create, discover, show, room codes. | Membership/lifecycle (join/leave/start/end). |
 | **User Profile** | View/edit own profile. | Public profile view, avatar upload, account deletion. |
-| **Token Bundles** | Catalog list. | `show` endpoint, purchase/checkout. |
+| **Token Bundles** | Catalog list + purchase (top-up). | `show` endpoint; a real payment provider (currently manual/test only). |
 | **Horizon / Queue** | Installed, configured. | Gate needs to extend past `local`; no job has ever been dispatched yet. |
 | **Sponsorship** | `is_sponsored`/`sponsor_name` columns exist on `parties`. | Everything else — no sponsor entity or flow. |
 
@@ -49,7 +50,7 @@ Zero code, nothing blocking — ready to schedule:
 - Party Membership/Lifecycle
 - Friends / Social Graph
 - Admin Panel
-- Marketplace (purchase/inventory) — Wallet API dependency now satisfied
+- Marketplace pack purchase/inventory (Sprint 3) — Wallet API + token bundle purchase (Sprint 2) both now satisfied
 
 **Deferred** (zero code, intentionally not scheduled pending a business trigger — see `IMPLEMENTATION_ORDER.md` §G): Chat/Messaging, Voice/Video (LiveKit), Moderation/Trust & Safety, Creator Economy, Corporate/Multi-Tenant/Enterprise, Internationalization.
 

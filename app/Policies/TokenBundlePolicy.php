@@ -22,4 +22,12 @@ class TokenBundlePolicy
     {
         return $tokenBundle->is_active;
     }
+
+    /**
+     * Determine whether the user can purchase the token bundle.
+     */
+    public function purchase(User $user, TokenBundle $tokenBundle): bool
+    {
+        return $tokenBundle->is_active;
+    }
 }
