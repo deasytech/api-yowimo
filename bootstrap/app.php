@@ -3,6 +3,8 @@
 use App\Exceptions\Api\InsufficientWalletBalanceException;
 use App\Exceptions\Api\InvalidClerkTokenException;
 use App\Exceptions\Api\InvalidClerkWebhookException;
+use App\Exceptions\Api\PackAlreadyOwnedException;
+use App\Exceptions\Api\PaymentDeclinedException;
 use App\Support\ApiExceptionRegistrar;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -26,13 +28,16 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // These represent expected, already-handled client-error conditions
         // (invalid/expired tokens, bad webhook signatures, insufficient
-        // balance) with proper HTTP responses registered below — not server
-        // failures worth reporting, the same way Laravel excludes
-        // AuthenticationException/ValidationException/etc. by default.
+        // balance, payment/ownership conflicts) with proper HTTP responses
+        // registered below — not server failures worth reporting, the same
+        // way Laravel excludes AuthenticationException/ValidationException/
+        // etc. by default.
         $exceptions->dontReport([
             InvalidClerkTokenException::class,
             InvalidClerkWebhookException::class,
             InsufficientWalletBalanceException::class,
+            PackAlreadyOwnedException::class,
+            PaymentDeclinedException::class,
         ]);
 
         ApiExceptionRegistrar::register($exceptions);

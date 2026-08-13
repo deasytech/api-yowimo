@@ -74,4 +74,12 @@ class Pack extends Model
     {
         return $this->hasMany(Party::class);
     }
+
+    /**
+     * @return HasMany<PackPurchase, $this>
+     */
+    public function purchases(): HasMany
+    {
+        return $this->hasMany(PackPurchase::class);
+    }
 }

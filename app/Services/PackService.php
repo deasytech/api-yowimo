@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Pack;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\CursorPaginator;
 
@@ -38,12 +39,26 @@ class PackService
             );
     }
 
-    public function find(int $id): Pack
+    /**
+     * Find an active pack. When a viewer is given, the response also carries
+     * an `owned_by_me` flag, and the full (non-preview) card set is loaded
+     * for a viewer who owns the pack instead of the preview-only subset.
+     */
+    public function find(int $id, ?User $viewer = null): Pack
     {
-        return Pack::query()
-            ->with(['gameType', 'cards' => fn ($query) => $query->where('is_preview', true)->orderBy('position')])
+        $pack = Pack::query()
+            ->with('gameType')
+            ->when($viewer, fn ($query) => $query->withExists([
+                'purchases as owned_by_me' => fn ($query) => $query->where('user_id', $viewer->id),
+            ]))
             ->where('is_active', true)
             ->findOrFail($id);
+
+        $pack->load(['cards' => fn ($query) => $pack->owned_by_me
+            ? $query->orderBy('position')
+            : $query->where('is_preview', true)->orderBy('position')]);
+
+        return $pack;
     }
 
     /**
