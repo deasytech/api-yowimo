@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\ClerkWebhookController;
 use App\Http\Controllers\Api\V1\GameTypeController;
 use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\PackController;
+use App\Http\Controllers\Api\V1\PackPurchaseController;
 use App\Http\Controllers\Api\V1\PartyController;
 use App\Http\Controllers\Api\V1\PartyLikeController;
 use App\Http\Controllers\Api\V1\TokenBundleController;
@@ -21,6 +22,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/packs/featured', [PackController::class, 'featured']);
         Route::get('/packs/{id}', [PackController::class, 'show'])->whereNumber('id');
         Route::get('/packs', [PackController::class, 'index']);
+        Route::post('/packs/{id}/purchase', [PackPurchaseController::class, 'store'])->whereNumber('id');
 
         Route::get('/token-bundles', [TokenBundleController::class, 'index']);
         Route::post('/token-bundles/{id}/purchase', [TokenBundlePurchaseController::class, 'store'])->whereNumber('id');

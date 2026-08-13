@@ -113,9 +113,10 @@ Each sprint assumes ~1 engineer-week of focused work; adjust pacing to actual te
 - **Risk:** low — reuses `WalletService`'s existing idempotent-credit path; only new code is the controller/service wiring and the purchase record itself.
 
 ### Sprint 3 — Pack purchase & inventory
-- `user_pack_purchases` (or equivalent) table; `POST /packs/{id}/purchase` debits via `WalletService::debit()`, grants ownership.
-- Gate full (non-preview) `PackCard` content behind ownership in `PackPolicy`/`PackResource`.
-- **Risk:** low-medium — first time `debit()` (with its `InsufficientWalletBalanceException` path) is exercised from a real user-facing flow; test the failure path explicitly, not just the happy path.
+- [x] `pack_purchases` table (`pack_id`, `user_id`, `wallet_transaction_id`, unique per pack/user) + model; `POST /packs/{id}/purchase` debits via `WalletService::debit()`, grants ownership. Race-guarded via a wallet-row lock in `PackPurchaseService` so a concurrent double-purchase can't double-charge.
+- [x] Full (non-preview) `PackCard` content gated behind ownership — `PackService::find()` loads the full card set only for an owning viewer; `PackResource` exposes `owned_by_me`.
+- [x] `debit()`'s `InsufficientWalletBalanceException` path exercised and tested from the real purchase flow, not just the happy path.
+- **Risk:** low-medium — first time `debit()` is exercised from a real user-facing flow; the failure path is tested explicitly.
 
 ### Sprint 4 — Party membership & lifecycle
 - `party_members` table + model; `POST /parties/{id}/join`, `DELETE /parties/{id}/leave`, host-only `POST /parties/{id}/start` and `POST /parties/{id}/end`.

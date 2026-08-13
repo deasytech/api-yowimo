@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Exceptions\Api\InsufficientWalletBalanceException;
 use App\Exceptions\Api\InvalidClerkTokenException;
 use App\Exceptions\Api\InvalidClerkWebhookException;
+use App\Exceptions\Api\PackAlreadyOwnedException;
 use App\Exceptions\Api\PaymentDeclinedException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
@@ -48,6 +49,15 @@ class ApiExceptionRegistrar
             fn (InsufficientWalletBalanceException $e) => ApiResponse::error(
                 $e->getMessage(),
                 status: 422
+            )
+        );
+
+        self::registerHandler(
+            $exceptions,
+            PackAlreadyOwnedException::class,
+            fn (PackAlreadyOwnedException $e) => ApiResponse::error(
+                $e->getMessage(),
+                status: 409
             )
         );
 

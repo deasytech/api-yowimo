@@ -19,8 +19,8 @@
 | Wallet Ledger Engine | ✅ Complete | 100% internal / exposed via read API | No | Maintain | Auth |
 | Wallet API (routes/controller) | ✅ Complete | 100% read + token-bundle top-up write path | No | Maintain | Wallet Ledger Engine |
 | CI/CD Pipeline | ⬜ Missing | 0% | N/A — net new (infra) | High (carried over from Sprint 1) | — |
-| Marketplace (purchase/inventory) | 🟡 Partial | Token bundle purchase (top-up) done; pack purchase/inventory/ownership missing | N/A — net new | **High (Sprint 3)** | Wallet API (done), Token Bundles (done), Pack Catalog |
-| Party Membership/Lifecycle | ⬜ Missing | 0% | N/A — net new | High (Sprint 4) | Party Create/Discover |
+| Marketplace (purchase/inventory) | ✅ Complete | Token bundle purchase (top-up) + pack purchase/inventory/ownership both done | No | Maintain | Wallet API, Token Bundles, Pack Catalog |
+| Party Membership/Lifecycle | ⬜ Missing | 0% | N/A — net new | **High (Sprint 4)** | Party Create/Discover |
 | Domain Events & Listeners | ⬜ Missing | 0% | N/A — net new | High (Sprint 5, enabling infra) | Existing services (Wallet, Party) to retrofit dispatch calls into |
 | Game Engine (rounds/turns/timers/scoring) | ⬜ Missing | 0% | N/A — net new | High (Sprint 6–7) | Party Lifecycle, Pack Catalog, Domain Events |
 | Realtime (Reverb) | ⬜ Missing | 0% | N/A — net new | Medium (Sprint 8) | Domain Events, Game Engine |

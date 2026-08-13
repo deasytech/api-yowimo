@@ -7,11 +7,15 @@
 
 ## Current Sprint
 
-**Sprint 2 — Token Purchase (Wallet Top-up)** (`docs/implementation/IMPLEMENTATION_ORDER.md`), **done.** Two housekeeping items from Sprint 1 remain open (see below) but nothing blocks starting Sprint 3.
+**Sprint 3 — Pack Purchase & Inventory** (`docs/implementation/IMPLEMENTATION_ORDER.md`), **done.** Two housekeeping items from Sprint 1 remain open (see below) but nothing blocks starting Sprint 4.
 
-- ✅ `PurchaseService` + `PaymentProvider` interface + `ManualPaymentProvider` driver (`app/Services/Purchase/`).
-- ✅ `POST /token-bundles/{id}/purchase` — validates the bundle is active (404 otherwise), requires a server-enforced `Idempotency-Key` header, credits via `WalletService::credit()` unmodified.
-- ✅ Retrying the same `Idempotency-Key` does not double-credit (tested).
+- ✅ `pack_purchases` table (`pack_id`, `user_id`, `wallet_transaction_id`, unique per pack/user) + `PackPurchaseService`, debiting via `WalletService::debit()` unmodified.
+- ✅ `POST /packs/{id}/purchase` — validates the pack is active (404 otherwise), requires a server-enforced `Idempotency-Key` header, rejects a repeat purchase of an already-owned pack (409) without a second debit.
+- ✅ Race-guarded: a wallet-row lock in `PackPurchaseService` serializes concurrent purchase attempts for the same user so they can't double-charge.
+- ✅ `InsufficientWalletBalanceException` path tested end-to-end from the real purchase flow (clean 422, no ownership record created).
+- ✅ Full (non-preview) `PackCard` content gated behind ownership — `PackService::find()` loads the full set only for an owner; `PackResource` exposes `owned_by_me`.
+
+Sprint 2 (done previously): `PurchaseService` + `PaymentProvider`/`ManualPaymentProvider`, `POST /token-bundles/{id}/purchase` crediting the wallet, idempotency-key enforced.
 
 Outstanding from Sprint 1 (not blocking, can land anytime):
 - ⬜ `clerk:sync-users` is not scheduled anywhere.
@@ -32,6 +36,7 @@ Built, exposed via API, and tested:
 | **Party Likes** | Like/unlike with idempotent, floor-guarded counters. |
 | **Wallet (read API)** | `GET /wallet`, `GET /wallet/transactions` (cursor-paginated) over the existing `WalletService` ledger, `WalletPolicy`-guarded. |
 | **Token Bundle purchase (top-up)** | `POST /token-bundles/{id}/purchase` — `PurchaseService` + manual/test `PaymentProvider` driver, credits via `WalletService::credit()`, `Idempotency-Key` enforced. No real payment gateway yet. |
+| **Pack purchase & inventory** | `POST /packs/{id}/purchase` — `PackPurchaseService`, debits via `WalletService::debit()`, race-guarded, `Idempotency-Key` enforced, gates full `PackCard` content behind ownership. |
 
 ---
 
@@ -45,6 +50,7 @@ Real code exists but the module is narrower than its documented scope, or is unr
 | **Party (create/discover)** | Create, list/discover, show, room-code generation, visibility rules. | No join/leave, no start/end, no membership table — a party can never actually be played. |
 | **User Profile** | View/edit own profile. | No public profile view, no avatar upload, no account deletion. |
 | **Token Bundles** | List (catalog) + `POST /token-bundles/{id}/purchase` (credits wallet, idempotent). | No `show` endpoint. Purchase uses a manual/test `PaymentProvider`, not a real payment gateway. |
+| **Packs (catalog + purchase)** | List/discover/show, `POST /packs/{id}/purchase` (debits wallet, grants ownership, full content unlocked). | Nothing planned — scope complete for the current roadmap. |
 | **Sponsorship** | `parties.is_sponsored` / `sponsor_name` columns exist. | No sponsor entity, no sponsor-facing flow of any kind — schema hint only. |
 
 ---
@@ -53,29 +59,30 @@ Real code exists but the module is narrower than its documented scope, or is unr
 
 No migration, model, route, or config exists for any of these:
 
-Game Engine (rounds/turns/timers/scoring), Marketplace (purchase flow/inventory/ownership), Party lifecycle/membership, Domain events & listeners, Realtime (Reverb), Notifications, Chat/Messaging, Friends/social graph, AI Host, Voice/Video (LiveKit), Admin Panel, Moderation/Trust & Safety, Analytics/Observability infrastructure, Creator Economy, Corporate/Multi-Tenant/Enterprise, Internationalization, CI/CD pipeline.
+Game Engine (rounds/turns/timers/scoring), Party lifecycle/membership, Domain events & listeners, Realtime (Reverb), Notifications, Chat/Messaging, Friends/social graph, AI Host, Voice/Video (LiveKit), Admin Panel, Moderation/Trust & Safety, Analytics/Observability infrastructure, Creator Economy, Corporate/Multi-Tenant/Enterprise, Internationalization, CI/CD pipeline.
+
+(Marketplace purchase flow/inventory/ownership moved to Partially Complete above — token bundle and pack purchase both now exist; only a real payment gateway is missing.)
 
 ---
 
 ## Current Priority
 
-Start **Sprint 3 — Pack purchase & inventory** (`docs/implementation/IMPLEMENTATION_ORDER.md`):
+Start **Sprint 4 — Party membership & lifecycle** (`docs/implementation/IMPLEMENTATION_ORDER.md`):
 
-1. `user_pack_purchases` (or equivalent) table + model; `POST /packs/{id}/purchase` debits via the existing `WalletService::debit()`, grants ownership.
-2. Gate full (non-preview) `PackCard` content behind ownership in `PackPolicy`/`PackResource`.
-3. Test the `InsufficientWalletBalanceException` failure path explicitly (first real-flow exercise of `debit()`), not just the happy path.
+1. `party_members` table + model; `POST /parties/{id}/join`, `DELETE /parties/{id}/leave`, host-only `POST /parties/{id}/start` and `POST /parties/{id}/end`.
+2. Wire `parties.players_count` to real membership counts (closes the dangling-column debt item in `docs/audit/TECHNICAL_DEBT.md` #3).
+
+This is another new-migration task (`party_members`) — confirm the table design with the user before writing it, same as Sprint 3's `pack_purchases` table, per `.claude/ARCHITECTURE_RULES.md`'s precedence note on introducing new schema.
 
 Lower-priority, not blocking, carried over from Sprint 1:
 - Schedule `clerk:sync-users` as an hourly self-heal job.
 - Add a GitHub Actions workflow running Pint + Pest on every PR.
 
-Sprint 3 is the first task in this roadmap that requires a new migration/table — confirm the table design with the user before writing it, per `.claude/ARCHITECTURE_RULES.md`'s precedence note on introducing new schema.
-
 ---
 
 ## Next Recommended Sprint
 
-**Sprint 2 — Token Purchase (wallet top-up)**, once Sprint 1 lands: a `PurchaseService` with a pluggable payment-provider interface (manual/test driver for now), `POST /token-bundles/{id}/purchase` calling the existing `WalletService::credit()` idempotently. This is the first module that connects the now-exposed wallet to a real user-facing money-in flow, and it's sequenced immediately after Sprint 1 because it reuses that sprint's exposure work directly.
+**Sprint 5 — Domain events & listeners backbone**, once Sprint 4 lands: introduce `app/Events` and `app/Listeners`, retrofitting existing services (Wallet, Party, Purchases) to dispatch events after their transactions commit. This is the highest-leverage infrastructure investment per `docs/implementation/IMPLEMENTATION_ORDER.md`, since Realtime, Notifications, Analytics, and the Game Engine's reward payouts all depend on it.
 
 ---
 
@@ -87,6 +94,6 @@ A single number is misleading given the scope gap between the documented vision 
 |---|---|---|
 | **Pre-roadmap foundation** (Clerk auth, catalog, party create/like, wallet engine) | **~100%** of its own scope | This slice is finished, tested, and stable — no further work planned against it except the Sprint 1 exposure fix. |
 | **`docs/implementation/IMPLEMENTATION_ORDER.md`** (14-sprint actionable plan to a complete, playable core product) | **0 of 14 sprints executed (0%)** | Sprint 1 has not started; see above. |
-| **Full documented platform vision** (`docs/architecture/`, ~26 modules incl. Marketplace, Realtime, AI, Admin, Enterprise, Creator Economy) | **~15%** | 3 of ~26 modules fully built+exposed, 1 fully built but unexposed, 4 partial, ~18 with zero code. Weighted toward "exists and works," not toward doc page count. |
+| **Full documented platform vision** (`docs/architecture/`, ~26 modules incl. Marketplace, Realtime, AI, Admin, Enterprise, Creator Economy) | **~19%** | 5 of ~26 modules fully built+exposed (Auth, Game Catalog, Party Likes, Wallet, Marketplace-purchase), 4 partial, ~17 with zero code. Weighted toward "exists and works," not toward doc page count. |
 
 For context: `docs/architecture/60_PLATFORM_ROADMAP.md` claims "Phase 1: Foundation" is `Status: Completed` including Friends, Marketplace, Notifications, Realtime, and Voice — that claim does not hold against the code (see `docs/audit/ARCHITECTURE_GAP_ANALYSIS.md`). The 15% figure above is the code-verified number; treat any completion claim inside `docs/architecture/` as aspirational framing, not status.

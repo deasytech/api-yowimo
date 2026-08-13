@@ -9,6 +9,7 @@ use App\Models\Pack;
 use App\Services\PackService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class PackController extends Controller
 {
@@ -40,9 +41,9 @@ class PackController extends Controller
         );
     }
 
-    public function show(int $id): JsonResponse
+    public function show(int $id, Request $request): JsonResponse
     {
-        $pack = $this->packs->find($id);
+        $pack = $this->packs->find($id, $request->user());
 
         $this->authorize('view', $pack);
 
