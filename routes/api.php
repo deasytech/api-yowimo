@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\PackController;
 use App\Http\Controllers\Api\V1\PackPurchaseController;
 use App\Http\Controllers\Api\V1\PartyController;
 use App\Http\Controllers\Api\V1\PartyLikeController;
+use App\Http\Controllers\Api\V1\PartyMembershipController;
 use App\Http\Controllers\Api\V1\TokenBundleController;
 use App\Http\Controllers\Api\V1\TokenBundlePurchaseController;
 use App\Http\Controllers\Api\V1\WalletController;
@@ -35,6 +36,10 @@ Route::prefix('v1')->group(function () {
         Route::get('/parties/{id}', [PartyController::class, 'show'])->whereNumber('id');
         Route::post('/parties/{party}/like', [PartyLikeController::class, 'store']);
         Route::delete('/parties/{party}/like', [PartyLikeController::class, 'destroy']);
+        Route::post('/parties/{party}/join', [PartyMembershipController::class, 'join']);
+        Route::delete('/parties/{party}/leave', [PartyMembershipController::class, 'leave']);
+        Route::post('/parties/{party}/start', [PartyMembershipController::class, 'start']);
+        Route::post('/parties/{party}/end', [PartyMembershipController::class, 'end']);
     });
 
     Route::post('/webhooks/clerk', ClerkWebhookController::class)->middleware('throttle:webhooks');

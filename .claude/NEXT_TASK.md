@@ -1,64 +1,63 @@
 # Current Task
 
-Party membership & lifecycle: let users join/leave a party, and let the host start/end it.
+Domain events & listeners backbone: introduce `app/Events`/`app/Listeners`, retrofit existing services to dispatch events after their transactions commit, and prove the Horizon queue actually processes a job end-to-end.
 
 # Why This Task
 
-Per `docs/implementation/IMPLEMENTATION_ORDER.md` Sprint 4, this is the next item now that Sprint 3 (pack purchase & inventory) has landed. It closes the biggest gap called out in `docs/audit/TECHNICAL_DEBT.md` #3: a party can be created and discovered but never actually played, and `parties.players_count` is a dangling column nothing increments. It's also the last prerequisite before the Game Engine (Sprint 6–7) can start, since rounds/turns need a real set of party members to act on.
+Per `docs/implementation/IMPLEMENTATION_ORDER.md` Sprint 5, this is the next item now that Sprint 4 (party membership & lifecycle) has landed. It's flagged in the plan's dependency graph (`IMPLEMENTATION_ORDER.md` §D) as "the single structural insight" of the whole roadmap: Realtime (Sprint 8), Notifications (Sprint 9), Analytics (Sprint 12), and the Game Engine's reward payouts (Sprint 7) all sit behind this piece of infrastructure, so building it now — once, early — is cheaper than bolting a bespoke trigger into each of those features later.
 
 # Objectives
 
-- [ ] Add a `party_members` table + model recording who's in a party (columns TBD — likely `party_id`, `user_id`, a role/host flag or rely on `parties.host_id` for that, `joined_at`/`timestamps`, unique per party/user). **Confirm the table name and columns with the user before writing the migration**, per `.claude/ARCHITECTURE_RULES.md`'s precedence note and this project's "never add migrations unless requested" rule — same as Sprint 3's `pack_purchases` table.
-- [ ] `POST /api/v1/parties/{id}/join` — adds the authenticated user as a member (respecting `visibility`/`status` rules already enforced by `PartyPolicy::view`; a party that's full (`max_players`) or not joinable in its current `status` should be rejected cleanly, not silently).
-- [ ] `DELETE /api/v1/parties/{id}/leave` — removes the authenticated user as a member. Decide what happens if the host leaves (transfer host? block leaving? end the party?) — confirm with the user, don't invent this rule.
-- [ ] `POST /api/v1/parties/{id}/start` — host-only, transitions `status` (check `App\Enums\PartyStatus` for the exact transition, e.g. Draft/Scheduled → Live).
-- [ ] `POST /api/v1/parties/{id}/end` — host-only, transitions `status` to ended/completed.
-- [ ] Wire `parties.players_count` to real membership counts (increment/decrement on join/leave, matching the existing `likes_count` pattern in `PartyLikeService`).
-- [ ] Add a `PartyPolicy` ability (or reuse/extend existing ones) for join/leave/start/end — host-only checks for start/end must go through the Policy, not an inline `if` in the controller, per `.claude/ARCHITECTURE_RULES.md` §4.
-- [ ] Do not modify `WalletService`, `PurchaseService`, `PackPurchaseService`, or any wallet/pack purchase code — unrelated to this task.
-- [ ] Do not modify `PartyLikeService`/`PartyLikeController` — likes are a separate, already-complete feature.
+- [ ] Introduce `app/Events` and `app/Listeners` directories following standard Laravel event/listener conventions.
+- [ ] Fire events for what already exists, dispatched **after** each owning transaction commits (fire-after-commit, not mid-transaction):
+  - `PartyCreated` — from `PartyService::create()`.
+  - `PartyMemberJoined` — from `PartyMembershipService::join()`.
+  - `PartyStarted` — from `PartyMembershipService::start()`.
+  - `WalletCredited` — from `WalletService::credit()`.
+  - `WalletDebited` — from `WalletService::debit()`.
+  - `PurchaseCompleted` — from `PurchaseService`/`PackPurchaseService` on successful purchase.
+- [ ] Put one real listener on the Horizon queue (`ShouldQueue`) — e.g. an analytics-event-recording listener that just logs/persists that an event fired — to prove the queue path works end-to-end (Horizon is installed and configured per `.claude/IMPLEMENTATION_STATUS.md` but no job has ever been dispatched through it yet).
+- [ ] Do not change the outward behavior of any retrofitted service — these are additive `event()` calls, not logic changes. Existing tests for `WalletService`, `PartyService`, `PartyMembershipService`, `PurchaseService`, and `PackPurchaseService` must pass unmodified.
+- [ ] Do not touch `WalletService`'s ledger arithmetic, locking, or idempotency logic — only add a dispatch call at the point the transaction commits.
 
 # Dependencies
 
 Must already exist before starting (all confirmed present):
 
-- `app/Services/Parties/PartyService.php`, `app/Models/Party.php`, `App\Enums\PartyStatus`, `App\Enums\PartyVisibility` — existing create/discover/show code to extend, not replace.
-- `app/Policies/PartyPolicy.php` — existing `view`/`create`/`like`/`unlike` abilities to extend.
-- `app/Services/Parties/PartyLikeService.php` — closest existing precedent for a join-table service with a floor/ceiling-guarded counter (mirrors the `likes_count` increment/decrement pattern, extend to `max_players`-ceiling-guarded for joins).
+- `app/Services/Wallet/WalletService.php`, `app/Services/Purchase/PurchaseService.php`, `app/Services/Purchase/PackPurchaseService.php`, `app/Services/Parties/PartyService.php`, `app/Services/Parties/PartyMembershipService.php` — the services to retrofit.
+- Horizon/queue config — installed, configured, but currently idle (see `docs/audit/MODULE_STATUS.md`).
 
 # Files Likely to Change
 
 New:
-- A migration for `party_members` (name/columns to confirm — see Objectives).
-- `app/Models/PartyMember.php` + factory.
-- `app/Services/Parties/PartyMembershipService.php` (join/leave/start/end logic — mirrors `PartyLikeService`'s shape).
-- `app/Http/Controllers/Api/V1/PartyMembershipController.php` (or split further — decide based on how `PartyLikeController` handles like/unlike as one controller).
-- `tests/Feature/Api/V1/PartyMembershipControllerTest.php`.
+
+- `app/Events/PartyCreated.php`, `PartyMemberJoined.php`, `PartyStarted.php`, `WalletCredited.php`, `WalletDebited.php`, `PurchaseCompleted.php`.
+- `app/Listeners/*` — at minimum one queued listener proving the Horizon path works.
+- `tests/Feature/Events/*` or equivalent — assert each event fires with the right payload, using `Event::fake()`.
 
 Edited:
-- `routes/api.php` — add the four new routes.
-- `app/Policies/PartyPolicy.php` — add join/leave/start/end abilities.
-- `app/Http/Resources/Api/V1/PartyResource.php` — likely needs a `joined_by_me`/membership-count-related field, mirroring `liked_by_me`.
+
+- `app/Services/Wallet/WalletService.php`, `app/Services/Purchase/PurchaseService.php`, `app/Services/Purchase/PackPurchaseService.php`, `app/Services/Parties/PartyService.php`, `app/Services/Parties/PartyMembershipService.php` — add a dispatch call each, after the owning `DB::transaction()` commits.
 
 Explicitly not expected to change:
-- `app/Services/Wallet/WalletService.php`, `app/Services/Purchase/*`
-- `app/Services/Parties/PartyLikeService.php`, `app/Http/Controllers/Api/V1/PartyLikeController.php`
-- Any existing migration
+
+- Any existing migration.
+- The ledger/locking/idempotency internals of `WalletService`.
+- Any existing controller, route, policy, or resource.
 
 # Definition of Done
 
-- An authenticated user can join a joinable, public (or otherwise visible-to-them) party and appears in its membership; `players_count` increments.
-- A full party (`players_count >= max_players`) rejects further joins cleanly.
-- A member can leave; `players_count` decrements, never below zero.
-- Only the host can start/end their own party; a non-host attempt is rejected (403) via a Policy, not an inline check.
+- All six events fire from the correct service method, after (not during) the owning transaction, verified with `Event::fake()`.
+- At least one listener is queued (`ShouldQueue`): a `Queue::fake()` test asserts it's pushed onto the queue, **and** a separate integration test runs it against the real queue connection (queue worker or `php artisan queue:work --once`, not `Queue::fake()`) and asserts its actual effect — `Queue::fake()` alone only proves dispatch, not that Horizon can execute the job.
 - `vendor/bin/pint --dirty --format agent` is clean.
-- Full test suite passes (`php artisan test --compact`), including all existing Party/PartyLike tests unchanged.
+- Full test suite passes (`php artisan test --compact`), including all existing Wallet/Party/Purchase tests unchanged.
 
-# Also outstanding from Sprint 1 (lower priority, can be done alongside or after)
+# Testing Requirements
 
-- Schedule `clerk:sync-users` as an hourly self-heal job.
-- Add a GitHub Actions workflow running Pint + Pest on every PR.
+- New tests asserting each event dispatches with the expected payload from its owning service call.
+- A `Queue::fake()` test proving the first queued listener is pushed onto the queue, plus a separate integration test that runs it through the real queue connection and asserts its effect (not faked) — this is the test that actually proves the Horizon path works, per the Objectives goal above.
+- Full regression: `php artisan test --compact` must remain green.
 
 # If Ambiguous
 
-Confirm the new table's name/columns, the host-leaves-the-party behavior, and the controller split with the user before writing code — don't guess, per `CLAUDE.md`.
+The exact listener(s) beyond the one proving the queue path, and the precise event payload shape (full model vs. IDs only), aren't specified in `docs/implementation/IMPLEMENTATION_ORDER.md` — confirm with the user before inventing either, per `CLAUDE.md`.

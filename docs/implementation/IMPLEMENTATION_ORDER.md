@@ -119,9 +119,9 @@ Each sprint assumes ~1 engineer-week of focused work; adjust pacing to actual te
 - **Risk:** low-medium — first time `debit()` is exercised from a real user-facing flow; the failure path is tested explicitly.
 
 ### Sprint 4 — Party membership & lifecycle
-- `party_members` table + model; `POST /parties/{id}/join`, `DELETE /parties/{id}/leave`, host-only `POST /parties/{id}/start` and `POST /parties/{id}/end`.
-- Wire `parties.players_count` to real membership counts (closes the dangling-column debt item).
-- Extend `PartyPolicy` for member-only visibility where relevant.
+- [x] `party_members` table + model; `POST /parties/{id}/join`, `DELETE /parties/{id}/leave`, host-only `POST /parties/{id}/start` and `POST /parties/{id}/end`.
+- [x] Wire `parties.players_count` to real membership counts (closes the dangling-column debt item).
+- [x] Extend `PartyPolicy` with `join`/`leave`/`start`/`end` abilities.
 - **Risk:** medium — first new core table since Phase 1; keep the state machine (`draft → scheduled → live → ended`) minimal and test every transition, including invalid ones (e.g., joining a full or ended party).
 
 ### Sprint 5 — Domain events & queue activation
