@@ -47,6 +47,7 @@ it('joins a joinable party and increments players_count', function () {
         'max_players' => 8,
         'players_count' => 1,
     ]);
+    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $party->host_id]);
 
     $this->withHeader('Authorization', "Bearer {$token}")
         ->postJson(joinEndpoint($party))
@@ -57,6 +58,7 @@ it('joins a joinable party and increments players_count', function () {
     $user = User::where('clerk_user_id', 'user_joiner_one')->firstOrFail();
     expect(PartyMember::where('party_id', $party->id)->where('user_id', $user->id)->exists())->toBeTrue();
     expect($party->fresh()->players_count)->toBe(2);
+    expect(PartyMember::where('party_id', $party->id)->count())->toBe($party->fresh()->players_count);
 });
 
 it('does not double count a join from the same user', function () {
@@ -67,12 +69,14 @@ it('does not double count a join from the same user', function () {
         'max_players' => 8,
         'players_count' => 1,
     ]);
+    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $party->host_id]);
 
     $this->withHeader('Authorization', "Bearer {$token}")->postJson(joinEndpoint($party))->assertStatus(200);
     $this->withHeader('Authorization', "Bearer {$token}")->postJson(joinEndpoint($party))->assertStatus(200);
 
     expect($party->fresh()->players_count)->toBe(2);
-    expect(PartyMember::where('party_id', $party->id)->count())->toBe(1);
+    expect(PartyMember::where('party_id', $party->id)->count())->toBe(2);
+    expect(PartyMember::where('party_id', $party->id)->count())->toBe($party->fresh()->players_count);
 });
 
 it('rejects joining a full party', function () {
@@ -83,12 +87,15 @@ it('rejects joining a full party', function () {
         'max_players' => 2,
         'players_count' => 2,
     ]);
+    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $party->host_id]);
+    PartyMember::factory()->create(['party_id' => $party->id]);
 
     $this->withHeader('Authorization', "Bearer {$token}")
         ->postJson(joinEndpoint($party))
         ->assertStatus(409);
 
     expect($party->fresh()->players_count)->toBe(2);
+    expect(PartyMember::where('party_id', $party->id)->count())->toBe($party->fresh()->players_count);
 });
 
 it('rejects joining a party that is not in a joinable status', function (PartyStatus $status) {
@@ -101,10 +108,13 @@ it('rejects joining a party that is not in a joinable status', function (PartySt
         'max_players' => 8,
         'players_count' => 1,
     ]);
+    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $host->id]);
 
     $this->withHeader('Authorization', "Bearer {$token}")
         ->postJson(joinEndpoint($party))
         ->assertStatus($status === PartyStatus::Draft ? 403 : 422);
+
+    expect(PartyMember::where('party_id', $party->id)->count())->toBe($party->fresh()->players_count);
 })->with([PartyStatus::Ended, PartyStatus::Cancelled, PartyStatus::Draft]);
 
 it('forbids joining a private party the user cannot view', function () {
@@ -115,12 +125,15 @@ it('forbids joining a private party the user cannot view', function () {
         'status' => PartyStatus::Live,
         'players_count' => 1,
     ]);
+    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $host->id]);
 
     $token = $this->clerkToken(['sub' => 'user_join_private_viewer']);
 
     $this->withHeader('Authorization', "Bearer {$token}")
         ->postJson(joinEndpoint($party))
         ->assertStatus(403);
+
+    expect(PartyMember::where('party_id', $party->id)->count())->toBe($party->fresh()->players_count);
 });
 
 it('leaves a party and decrements players_count', function () {
@@ -131,6 +144,7 @@ it('leaves a party and decrements players_count', function () {
         'max_players' => 8,
         'players_count' => 1,
     ]);
+    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $party->host_id]);
 
     $this->withHeader('Authorization', "Bearer {$token}")->postJson(joinEndpoint($party))->assertStatus(200);
 
@@ -143,6 +157,7 @@ it('leaves a party and decrements players_count', function () {
     $user = User::where('clerk_user_id', 'user_leaver')->firstOrFail();
     expect(PartyMember::where('party_id', $party->id)->where('user_id', $user->id)->exists())->toBeFalse();
     expect($party->fresh()->players_count)->toBe(1);
+    expect(PartyMember::where('party_id', $party->id)->count())->toBe($party->fresh()->players_count);
 });
 
 it('does not go below zero when leaving without having joined', function () {
@@ -172,12 +187,14 @@ it('blocks the host from leaving their own party', function () {
         'status' => PartyStatus::Live,
         'players_count' => 1,
     ]);
+    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $host->id]);
 
     $this->withHeader('Authorization', "Bearer {$hostToken}")
         ->deleteJson(leaveEndpoint($party))
         ->assertStatus(409);
 
     expect($party->fresh()->players_count)->toBe(1);
+    expect(PartyMember::where('party_id', $party->id)->count())->toBe($party->fresh()->players_count);
 });
 
 it('lets the host start their draft party', function () {
