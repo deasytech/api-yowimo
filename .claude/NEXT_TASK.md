@@ -48,14 +48,14 @@ Explicitly not expected to change:
 # Definition of Done
 
 - All six events fire from the correct service method, after (not during) the owning transaction, verified with `Event::fake()`.
-- At least one listener is queued (`ShouldQueue`) and actually runs a job through Horizon in a test (`Queue::fake()` + assert pushed, or an integration test against the queue connection).
+- At least one listener is queued (`ShouldQueue`): a `Queue::fake()` test asserts it's pushed onto the queue, **and** a separate integration test runs it against the real queue connection (queue worker or `php artisan queue:work --once`, not `Queue::fake()`) and asserts its actual effect — `Queue::fake()` alone only proves dispatch, not that Horizon can execute the job.
 - `vendor/bin/pint --dirty --format agent` is clean.
 - Full test suite passes (`php artisan test --compact`), including all existing Wallet/Party/Purchase tests unchanged.
 
 # Testing Requirements
 
 - New tests asserting each event dispatches with the expected payload from its owning service call.
-- A test proving the first queued listener is pushed onto the queue and processes without error.
+- A `Queue::fake()` test proving the first queued listener is pushed onto the queue, plus a separate integration test that runs it through the real queue connection and asserts its effect (not faked) — this is the test that actually proves the Horizon path works, per the Objectives goal above.
 - Full regression: `php artisan test --compact` must remain green.
 
 # If Ambiguous
