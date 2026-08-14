@@ -1,8 +1,8 @@
 # Module Status — Yowimo Backend
 
-**Audit date:** 2026-07-13
+**Audit date:** 2026-08-14
 
-Status of every module named in `docs/architecture/` against what actually exists in code, as of `dev`@`bd4d056`. Modules are grouped the way the architecture docs group them (see `02_SYSTEM_ARCHITECTURE.md`, `22_BACKEND_SERVICE_CATALOG.md`, `60_PLATFORM_ROADMAP.md`).
+Status of every module named in `docs/architecture/` against what actually exists in code, as of `dev`@`1f81022`. Modules are grouped the way the architecture docs group them (see `02_SYSTEM_ARCHITECTURE.md`, `22_BACKEND_SERVICE_CATALOG.md`, `60_PLATFORM_ROADMAP.md`).
 
 **Status key**
 
