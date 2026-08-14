@@ -41,7 +41,6 @@ Built, exposed via API, and tested:
 | **Wallet (read API)** | `GET /wallet`, `GET /wallet/transactions` (cursor-paginated) over the existing `WalletService` ledger, `WalletPolicy`-guarded. |
 | **Token Bundle purchase (top-up)** | `POST /token-bundles/{id}/purchase` — `PurchaseService` + manual/test `PaymentProvider` driver, credits via `WalletService::credit()`, `Idempotency-Key` enforced. No real payment gateway yet. |
 | **Pack purchase & inventory** | `POST /packs/{id}/purchase` — `PackPurchaseService`, debits via `WalletService::debit()`, race-guarded, `Idempotency-Key` enforced, gates full `PackCard` content behind ownership. |
-| **Party membership & lifecycle** | `party_members` table + `PartyMembershipService`; join/leave/start/end all live, `players_count` wired to real membership counts, host-only start/end enforced via `PartyPolicy`. |
 
 ---
 
