@@ -5,6 +5,7 @@ namespace App\Services\Parties;
 use App\Enums\PartyStatus;
 use App\Enums\PartyVisibility;
 use App\Models\Party;
+use App\Models\PartyMember;
 use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Pagination\CursorPaginator;
@@ -93,7 +94,7 @@ class PartyService
      */
     private function insertParty(User $host, array $data, string $roomCode): Party
     {
-        return Party::create([
+        $party = Party::create([
             'host_id' => $host->id,
             'game_type_id' => $data['game_type_id'] ?? null,
             'pack_id' => $data['pack_id'] ?? null,
@@ -109,6 +110,14 @@ class PartyService
             'location' => $data['location'] ?? null,
             'tags' => $data['tags'] ?? [],
         ]);
+
+        PartyMember::create([
+            'party_id' => $party->id,
+            'user_id' => $host->id,
+            'joined_at' => now(),
+        ]);
+
+        return $party;
     }
 
     private function isRoomCodeUniqueViolation(QueryException $exception): bool

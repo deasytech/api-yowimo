@@ -33,6 +33,7 @@ class PartyResource extends JsonResource
             'players_count' => $this->players_count,
             'likes_count' => $this->likes_count,
             'liked_by_me' => $this->isLikedBy($viewer),
+            'joined_by_me' => $this->isMemberOf($viewer),
             'is_sponsored' => $this->is_sponsored,
             'sponsor_name' => $this->sponsor_name,
             'tags' => $this->tags ?? [],

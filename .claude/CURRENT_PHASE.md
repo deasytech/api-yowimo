@@ -7,13 +7,17 @@
 
 ## Current Sprint
 
-**Sprint 3 — Pack Purchase & Inventory** (`docs/implementation/IMPLEMENTATION_ORDER.md`), **done.** Two housekeeping items from Sprint 1 remain open (see below) but nothing blocks starting Sprint 4.
+**Sprint 4 — Party Membership & Lifecycle** (`docs/implementation/IMPLEMENTATION_ORDER.md`), **done.** Two housekeeping items from Sprint 1 remain open (see below) but nothing blocks starting Sprint 5.
 
-- ✅ `pack_purchases` table (`pack_id`, `user_id`, `wallet_transaction_id`, unique per pack/user) + `PackPurchaseService`, debiting via `WalletService::debit()` unmodified.
-- ✅ `POST /packs/{id}/purchase` — validates the pack is active (404 otherwise), requires a server-enforced `Idempotency-Key` header, rejects a repeat purchase of an already-owned pack (409) without a second debit.
-- ✅ Race-guarded: a wallet-row lock in `PackPurchaseService` serializes concurrent purchase attempts for the same user so they can't double-charge.
-- ✅ `InsufficientWalletBalanceException` path tested end-to-end from the real purchase flow (clean 422, no ownership record created).
-- ✅ Full (non-preview) `PackCard` content gated behind ownership — `PackService::find()` loads the full set only for an owner; `PackResource` exposes `owned_by_me`.
+- ✅ `party_members` table (`party_id`, `user_id`, `joined_at`, unique per party/user) + `PartyMember` model.
+- ✅ `POST /parties/{id}/join` — idempotent (re-joining is a no-op), rejects a full party (409) or a party not in `Scheduled`/`Live` status (422) cleanly.
+- ✅ `DELETE /parties/{id}/leave` — idempotent (leaving without membership is a no-op); the host is blocked from leaving their own party (409) and must call `/end` instead.
+- ✅ Host-only `POST /parties/{id}/start` (`Draft`/`Scheduled` → `Live`) and `POST /parties/{id}/end` (`Live` → `Ended`), invalid transitions rejected (422); host-only check enforced via `PartyPolicy`, not an inline controller check.
+- ✅ `parties.players_count` wired to real membership counts (increment/decrement on join/leave, floor-guarded at zero) — closes `TECHNICAL_DEBT.md` #3.
+- ✅ Host is auto-enrolled as a `party_members` row at party creation time (`PartyService::create`), consistent with `players_count` defaulting to 1.
+- ✅ `PartyResource` exposes `joined_by_me`, mirroring the existing `liked_by_me` field.
+
+Sprint 3 (done previously): `pack_purchases` table + `PackPurchaseService`, `POST /packs/{id}/purchase` debiting the wallet, race-guarded, ownership-gated `PackCard` content.
 
 Sprint 2 (done previously): `PurchaseService` + `PaymentProvider`/`ManualPaymentProvider`, `POST /token-bundles/{id}/purchase` crediting the wallet, idempotency-key enforced.
 
@@ -33,10 +37,11 @@ Built, exposed via API, and tested:
 |---|---|
 | **Authentication (Clerk)** | JWT verification, JWKS caching, JIT user provisioning, webhook sync, backfill command. Fully tested, no known gaps. |
 | **Game/Pack Catalog** | `GameType`, `Pack`, `PackCard` — full read API, filtering, search, cursor pagination, featured packs, preview cards. |
-| **Party Likes** | Like/unlike with idempotent, floor-guarded counters. |
+| **Party (create/discover/like/membership/lifecycle)** | Create, discover, show, room codes, like/unlike, join/leave, host-only start/end — the full party can now actually be played end to end. |
 | **Wallet (read API)** | `GET /wallet`, `GET /wallet/transactions` (cursor-paginated) over the existing `WalletService` ledger, `WalletPolicy`-guarded. |
 | **Token Bundle purchase (top-up)** | `POST /token-bundles/{id}/purchase` — `PurchaseService` + manual/test `PaymentProvider` driver, credits via `WalletService::credit()`, `Idempotency-Key` enforced. No real payment gateway yet. |
 | **Pack purchase & inventory** | `POST /packs/{id}/purchase` — `PackPurchaseService`, debits via `WalletService::debit()`, race-guarded, `Idempotency-Key` enforced, gates full `PackCard` content behind ownership. |
+| **Party membership & lifecycle** | `party_members` table + `PartyMembershipService`; join/leave/start/end all live, `players_count` wired to real membership counts, host-only start/end enforced via `PartyPolicy`. |
 
 ---
 
@@ -47,7 +52,6 @@ Real code exists but the module is narrower than its documented scope, or is unr
 | Module | What's done | What's missing |
 |---|---|---|
 | **Wallet** | `WalletService` (unmodified) + a read-only `GET /wallet` / `GET /wallet/transactions` API, `WalletPolicy`, `UserResource` now reports real balance/currency. | No direct wallet write endpoint (top-up happens only via token bundle purchase below). |
-| **Party (create/discover)** | Create, list/discover, show, room-code generation, visibility rules. | No join/leave, no start/end, no membership table — a party can never actually be played. |
 | **User Profile** | View/edit own profile. | No public profile view, no avatar upload, no account deletion. |
 | **Token Bundles** | List (catalog) + `POST /token-bundles/{id}/purchase` (credits wallet, idempotent). | No `show` endpoint. Purchase uses a manual/test `PaymentProvider`, not a real payment gateway. |
 | **Packs (catalog + purchase)** | List/discover/show, `POST /packs/{id}/purchase` (debits wallet, grants ownership, full content unlocked). | Nothing planned — scope complete for the current roadmap. |
@@ -59,7 +63,7 @@ Real code exists but the module is narrower than its documented scope, or is unr
 
 No migration, model, route, or config exists for any of these:
 
-Game Engine (rounds/turns/timers/scoring), Party lifecycle/membership, Domain events & listeners, Realtime (Reverb), Notifications, Chat/Messaging, Friends/social graph, AI Host, Voice/Video (LiveKit), Admin Panel, Moderation/Trust & Safety, Analytics/Observability infrastructure, Creator Economy, Corporate/Multi-Tenant/Enterprise, Internationalization, CI/CD pipeline.
+Game Engine (rounds/turns/timers/scoring), Domain events & listeners, Realtime (Reverb), Notifications, Chat/Messaging, Friends/social graph, AI Host, Voice/Video (LiveKit), Admin Panel, Moderation/Trust & Safety, Analytics/Observability infrastructure, Creator Economy, Corporate/Multi-Tenant/Enterprise, Internationalization, CI/CD pipeline.
 
 (Marketplace purchase flow/inventory/ownership moved to Partially Complete above — token bundle and pack purchase both now exist; only a real payment gateway is missing.)
 
@@ -67,12 +71,12 @@ Game Engine (rounds/turns/timers/scoring), Party lifecycle/membership, Domain ev
 
 ## Current Priority
 
-Start **Sprint 4 — Party membership & lifecycle** (`docs/implementation/IMPLEMENTATION_ORDER.md`):
+Start **Sprint 5 — Domain events & listeners backbone** (`docs/implementation/IMPLEMENTATION_ORDER.md`):
 
-1. `party_members` table + model; `POST /parties/{id}/join`, `DELETE /parties/{id}/leave`, host-only `POST /parties/{id}/start` and `POST /parties/{id}/end`.
-2. Wire `parties.players_count` to real membership counts (closes the dangling-column debt item in `docs/audit/TECHNICAL_DEBT.md` #3).
+1. Introduce `app/Events` and `app/Listeners`. Fire events for what already exists: `PartyCreated`, `PartyMemberJoined`, `PartyStarted`, `WalletCredited`, `WalletDebited`, `PurchaseCompleted` — refactoring existing services to dispatch, not changing their outward behavior.
+2. Put the first real job on the Horizon queue (e.g., an analytics-event-recording listener) to prove the queue path actually works end-to-end, not just in config.
 
-This is another new-migration task (`party_members`) — confirm the table design with the user before writing it, same as Sprint 3's `pack_purchases` table, per `.claude/ARCHITECTURE_RULES.md`'s precedence note on introducing new schema.
+This touches multiple existing, tested services (Wallet, Purchase, Party, PartyMembership) to add `event()` calls — confirm the event list and dispatch points with the user before starting, per `.claude/ARCHITECTURE_RULES.md`'s precedence note, since it's the first change since Phase 1 that cuts across every core service at once.
 
 Lower-priority, not blocking, carried over from Sprint 1:
 - Schedule `clerk:sync-users` as an hourly self-heal job.
@@ -82,7 +86,7 @@ Lower-priority, not blocking, carried over from Sprint 1:
 
 ## Next Recommended Sprint
 
-**Sprint 5 — Domain events & listeners backbone**, once Sprint 4 lands: introduce `app/Events` and `app/Listeners`, retrofitting existing services (Wallet, Party, Purchases) to dispatch events after their transactions commit. This is the highest-leverage infrastructure investment per `docs/implementation/IMPLEMENTATION_ORDER.md`, since Realtime, Notifications, Analytics, and the Game Engine's reward payouts all depend on it.
+**Sprint 6 — Game Engine: rounds & turns (data + state machine)**, once Sprint 5 lands: `game_sessions`, `rounds`, `turns` tables + `GameSessionService`; host-only `POST /parties/{id}/game/start` (requires `Live` party status from Sprint 4) deals cards from the party's `Pack` and advances turns via explicit `POST /game/{id}/next-turn` (poll-driven, no timers yet). Scope to `PackCardKind` (Truth/Dare) only.
 
 ---
 

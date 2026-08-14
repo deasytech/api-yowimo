@@ -57,4 +57,36 @@ class PartyPolicy
     {
         return $this->view($user, $party);
     }
+
+    /**
+     * Determine whether the user can join the party. Only parties the user can view are joinable.
+     */
+    public function join(User $user, Party $party): bool
+    {
+        return $this->view($user, $party);
+    }
+
+    /**
+     * Determine whether the user can leave the party.
+     */
+    public function leave(User $user, Party $party): bool
+    {
+        return $this->view($user, $party);
+    }
+
+    /**
+     * Determine whether the user can start the party. Host-only.
+     */
+    public function start(User $user, Party $party): bool
+    {
+        return $party->host_id === $user->id;
+    }
+
+    /**
+     * Determine whether the user can end the party. Host-only.
+     */
+    public function end(User $user, Party $party): bool
+    {
+        return $party->host_id === $user->id;
+    }
 }

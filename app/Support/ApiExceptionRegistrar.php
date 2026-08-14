@@ -5,7 +5,11 @@ namespace App\Support;
 use App\Exceptions\Api\InsufficientWalletBalanceException;
 use App\Exceptions\Api\InvalidClerkTokenException;
 use App\Exceptions\Api\InvalidClerkWebhookException;
+use App\Exceptions\Api\InvalidPartyTransitionException;
 use App\Exceptions\Api\PackAlreadyOwnedException;
+use App\Exceptions\Api\PartyFullException;
+use App\Exceptions\Api\PartyHostCannotLeaveException;
+use App\Exceptions\Api\PartyNotJoinableException;
 use App\Exceptions\Api\PaymentDeclinedException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
@@ -67,6 +71,42 @@ class ApiExceptionRegistrar
             fn (PaymentDeclinedException $e) => ApiResponse::error(
                 $e->getMessage(),
                 status: 402
+            )
+        );
+
+        self::registerHandler(
+            $exceptions,
+            PartyFullException::class,
+            fn (PartyFullException $e) => ApiResponse::error(
+                $e->getMessage(),
+                status: 409
+            )
+        );
+
+        self::registerHandler(
+            $exceptions,
+            PartyNotJoinableException::class,
+            fn (PartyNotJoinableException $e) => ApiResponse::error(
+                $e->getMessage(),
+                status: 422
+            )
+        );
+
+        self::registerHandler(
+            $exceptions,
+            PartyHostCannotLeaveException::class,
+            fn (PartyHostCannotLeaveException $e) => ApiResponse::error(
+                $e->getMessage(),
+                status: 409
+            )
+        );
+
+        self::registerHandler(
+            $exceptions,
+            InvalidPartyTransitionException::class,
+            fn (InvalidPartyTransitionException $e) => ApiResponse::error(
+                $e->getMessage(),
+                status: 422
             )
         );
 

@@ -17,6 +17,7 @@ Built, exposed, tested — no further work planned:
 - **Wallet (read API)** — `GET /wallet`, `GET /wallet/transactions` over the existing `WalletService` ledger; `UserResource` stub replaced with real balance/currency.
 - **Token Bundle purchase (top-up)** — `POST /token-bundles/{id}/purchase` credits the wallet via `PurchaseService` + a manual/test `PaymentProvider` driver, idempotency-key enforced.
 - **Pack purchase & inventory** — `POST /packs/{id}/purchase` debits the wallet via `PackPurchaseService` (race-guarded), records ownership in `pack_purchases`, and gates full (non-preview) `PackCard` content behind ownership.
+- **Party membership & lifecycle** — `party_members` table + `PartyMembershipService`; `POST/DELETE /parties/{id}/join,leave`, host-only `POST /parties/{id}/start,end`; `players_count` wired to real membership counts.
 
 ## In progress modules
 
@@ -24,7 +25,6 @@ Real code exists; work remains to finish the module:
 
 | Module | Done | Remaining |
 |---|---|---|
-| **Party (create/discover)** | Create, discover, show, room codes. | Membership/lifecycle (join/leave/start/end). |
 | **User Profile** | View/edit own profile. | Public profile view, avatar upload, account deletion. |
 | **Token Bundles** | Catalog list + purchase (top-up). | `show` endpoint; a real payment provider (currently manual/test only). |
 | **Packs** | Catalog + purchase + ownership-gated full content. | Nothing planned — scope complete for now. |
@@ -37,7 +37,7 @@ Zero code, and an upstream dependency must land first:
 
 | Module | Blocked on |
 |---|---|
-| **Game Engine (rounds/turns/timers)** | Party Membership/Lifecycle + Domain Events backbone |
+| **Game Engine (rounds/turns/timers)** | Domain Events backbone |
 | **Realtime (Reverb)** | Domain Events backbone + Game Engine |
 | **Notifications** | Domain Events backbone + active queue |
 | **AI Host** | Domain Events backbone + Realtime |
@@ -49,7 +49,6 @@ Zero code, nothing blocking — ready to schedule:
 
 - CI/CD Pipeline
 - Domain Events & Listeners backbone
-- Party Membership/Lifecycle
 - Friends / Social Graph
 - Admin Panel
 

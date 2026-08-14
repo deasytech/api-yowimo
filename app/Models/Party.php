@@ -91,6 +91,14 @@ class Party extends Model
         return $this->hasMany(PartyLike::class);
     }
 
+    /**
+     * @return HasMany<PartyMember, $this>
+     */
+    public function members(): HasMany
+    {
+        return $this->hasMany(PartyMember::class);
+    }
+
     public function isLikedBy(?User $user): bool
     {
         if (! $user) {
@@ -104,5 +112,20 @@ class Party extends Model
         return $this->relationLoaded('likes')
             ? $this->likes->contains('user_id', $user->id)
             : $this->likes()->where('user_id', $user->id)->exists();
+    }
+
+    public function isMemberOf(?User $user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        if (array_key_exists('viewer_is_member', $this->attributes)) {
+            return (bool) $this->attributes['viewer_is_member'];
+        }
+
+        return $this->relationLoaded('members')
+            ? $this->members->contains('user_id', $user->id)
+            : $this->members()->where('user_id', $user->id)->exists();
     }
 }

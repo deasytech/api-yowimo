@@ -22,7 +22,7 @@ Status of every module named in `docs/architecture/` against what actually exist
 | **User Profiles** | 🟡 Partial | `GET/PATCH /users/me` only — view + edit own profile. No public profile view, no avatar upload, no account deletion. |
 | **Friends / Social Graph** | ⬜ Not started | No `friends` table, model, controller, or route. Extensively specified in docs 02–07, 22, 39, 41, 43–47. |
 | **Party (create/discover)** | 🟡 Partial | `index`/`store`/`show` only. Room-code generation, visibility rules, draft/scheduled/live status derivation all real. |
-| **Party lifecycle (join/leave/start/end/players)** | ⬜ Not started | No `party_members` table, no join/leave/kick/start/end endpoints. A party can be created and viewed but never played. |
+| **Party lifecycle (join/leave/start/end/players)** | ✅ Built | `party_members` table + `PartyMembershipService`; `POST/DELETE /parties/{id}/join,leave`, host-only `POST /parties/{id}/start,end`. `players_count` wired to real membership counts. Host auto-joins on party creation and cannot leave (must end instead). |
 | **Party Likes** | ✅ Built | Full like/unlike with idempotent counters, tested. |
 | **Game Catalog (GameType, Pack, PackCard)** | ✅ Built | Full read API, filtering, search, cursor pagination, featured packs, preview cards. No write API (content is seed-managed). |
 | **Game Engine (rounds/turns/timers/votes/challenges)** | ⬜ Not started | No tables, no models, no services. This is the platform's core gameplay loop per `08_GAME_ENGINE.md` (marked CRITICAL there) and is entirely absent. |
