@@ -27,6 +27,7 @@ class PartyService
             ->with(['host', 'gameType', 'pack'])
             ->when($viewer, fn ($query) => $query->withExists([
                 'likes as viewer_has_liked' => fn ($query) => $query->where('user_id', $viewer->id),
+                'members as viewer_is_member' => fn ($query) => $query->where('user_id', $viewer->id),
             ]))
             ->where('visibility', PartyVisibility::Public)
             ->whereIn('status', PartyStatus::publiclyVisible())
@@ -52,6 +53,7 @@ class PartyService
             ->with(['host', 'gameType', 'pack'])
             ->when($viewer, fn ($query) => $query->withExists([
                 'likes as viewer_has_liked' => fn ($query) => $query->where('user_id', $viewer->id),
+                'members as viewer_is_member' => fn ($query) => $query->where('user_id', $viewer->id),
             ]))
             ->findOrFail($id);
     }
