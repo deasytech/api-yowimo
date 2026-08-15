@@ -7,8 +7,10 @@ use App\Events\PurchaseCompleted;
 use App\Exceptions\Api\PaymentDeclinedException;
 use App\Models\TokenBundle;
 use App\Models\User;
+use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use App\Services\Wallet\WalletService;
+use Illuminate\Support\Facades\DB;
 
 class PurchaseService
 {
@@ -25,23 +27,34 @@ class PurchaseService
      */
     public function purchase(User $user, TokenBundle $bundle, string $idempotencyKey): WalletTransaction
     {
-        if (! $this->paymentProvider->charge($user, $bundle)) {
-            throw new PaymentDeclinedException;
-        }
+        return DB::transaction(function () use ($user, $bundle, $idempotencyKey) {
+            // Lock the wallet row first so a concurrent retry with the same
+            // idempotency key blocks here until this one commits, then re-checks
+            // below instead of racing the payment provider into a double charge.
+            Wallet::query()->whereKey($this->wallets->walletFor($user)->id)->lockForUpdate()->firstOrFail();
 
-        $transaction = $this->wallets->credit(
-            $user,
-            $bundle->tokens,
-            WalletTransactionType::TopUp,
-            reference: $bundle,
-            description: "Purchased token bundle: {$bundle->name}",
-            idempotencyKey: $idempotencyKey,
-        );
+            $existing = WalletTransaction::query()->where('idempotency_key', $idempotencyKey)->first();
 
-        if ($transaction->wasRecentlyCreated) {
+            if ($existing) {
+                return $existing;
+            }
+
+            if (! $this->paymentProvider->charge($user, $bundle)) {
+                throw new PaymentDeclinedException;
+            }
+
+            $transaction = $this->wallets->credit(
+                $user,
+                $bundle->tokens,
+                WalletTransactionType::TopUp,
+                reference: $bundle,
+                description: "Purchased token bundle: {$bundle->name}",
+                idempotencyKey: $idempotencyKey,
+            );
+
             PurchaseCompleted::dispatch($user->id, $bundle->getMorphClass(), $bundle->id, $transaction->id);
-        }
 
-        return $transaction;
+            return $transaction;
+        });
     }
 }
