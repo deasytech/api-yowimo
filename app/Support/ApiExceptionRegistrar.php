@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Exceptions\Api\IdempotencyKeyConflictException;
 use App\Exceptions\Api\InsufficientWalletBalanceException;
 use App\Exceptions\Api\InvalidClerkTokenException;
 use App\Exceptions\Api\InvalidClerkWebhookException;
@@ -60,6 +61,15 @@ class ApiExceptionRegistrar
             $exceptions,
             PackAlreadyOwnedException::class,
             fn (PackAlreadyOwnedException $e) => ApiResponse::error(
+                $e->getMessage(),
+                status: 409
+            )
+        );
+
+        self::registerHandler(
+            $exceptions,
+            IdempotencyKeyConflictException::class,
+            fn (IdempotencyKeyConflictException $e) => ApiResponse::error(
                 $e->getMessage(),
                 status: 409
             )

@@ -4,6 +4,7 @@ namespace App\Services\Purchase;
 
 use App\Enums\WalletTransactionType;
 use App\Events\PurchaseCompleted;
+use App\Exceptions\Api\IdempotencyKeyConflictException;
 use App\Exceptions\Api\PaymentDeclinedException;
 use App\Models\TokenBundle;
 use App\Models\User;
@@ -31,11 +32,21 @@ class PurchaseService
             // Lock the wallet row first so a concurrent retry with the same
             // idempotency key blocks here until this one commits, then re-checks
             // below instead of racing the payment provider into a double charge.
-            Wallet::query()->whereKey($this->wallets->walletFor($user)->id)->lockForUpdate()->firstOrFail();
+            $wallet = Wallet::query()->whereKey($this->wallets->walletFor($user)->id)->lockForUpdate()->firstOrFail();
 
-            $existing = WalletTransaction::query()->where('idempotency_key', $idempotencyKey)->first();
+            // Scoped to this wallet: two different users' requests must never
+            // collide on the same idempotency key.
+            $existing = WalletTransaction::query()
+                ->where('wallet_id', $wallet->id)
+                ->where('idempotency_key', $idempotencyKey)
+                ->first();
 
             if ($existing) {
+                if ($existing->reference_type !== $bundle->getMorphClass()
+                    || (string) $existing->reference_id !== (string) $bundle->getKey()) {
+                    throw new IdempotencyKeyConflictException;
+                }
+
                 return $existing;
             }
 

@@ -5,6 +5,7 @@ namespace App\Services\Wallet;
 use App\Enums\WalletTransactionType;
 use App\Events\WalletCredited;
 use App\Events\WalletDebited;
+use App\Exceptions\Api\IdempotencyKeyConflictException;
 use App\Exceptions\Api\InsufficientWalletBalanceException;
 use App\Models\User;
 use App\Models\Wallet;
@@ -139,8 +140,20 @@ class WalletService
                 }
 
                 // Concurrent retry of the same operation (e.g. a webhook); return
-                // the entry that won the race instead of applying it twice.
-                return WalletTransaction::query()->where('idempotency_key', $idempotencyKey)->firstOrFail();
+                // the entry that won the race instead of applying it twice. Scoped
+                // to this wallet — the unique constraint is per-wallet, so this
+                // can only be this user's own prior entry.
+                $existing = WalletTransaction::query()
+                    ->where('wallet_id', $wallet->id)
+                    ->where('idempotency_key', $idempotencyKey)
+                    ->firstOrFail();
+
+                if ($existing->reference_type !== $reference?->getMorphClass()
+                    || (string) $existing->reference_id !== (string) $reference?->getKey()) {
+                    throw new IdempotencyKeyConflictException;
+                }
+
+                return $existing;
             }
 
             $wallet->update(['balance' => $newBalance]);

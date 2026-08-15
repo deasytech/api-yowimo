@@ -1,7 +1,9 @@
 <?php
 
 use App\Enums\WalletTransactionType;
+use App\Exceptions\Api\IdempotencyKeyConflictException;
 use App\Exceptions\Api\InsufficientWalletBalanceException;
+use App\Models\TokenBundle;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
@@ -79,6 +81,34 @@ it('is idempotent when the same idempotency key is credited twice', function () 
     expect($first->id)->toBe($second->id);
     expect(walletService()->balance($user))->toBe(100);
     expect(WalletTransaction::query()->where('idempotency_key', 'evt_123')->count())->toBe(1);
+});
+
+it('does not leak another user\'s wallet transaction when idempotency keys collide across users', function () {
+    $userA = User::factory()->create();
+    $userB = User::factory()->create();
+
+    $transactionA = walletService()->credit($userA, 100, WalletTransactionType::TopUp, idempotencyKey: 'shared_key');
+    $transactionB = walletService()->credit($userB, 250, WalletTransactionType::TopUp, idempotencyKey: 'shared_key');
+
+    expect($transactionB->id)->not->toBe($transactionA->id);
+    expect($transactionB->wallet_id)->not->toBe($transactionA->wallet_id);
+    expect(walletService()->balance($userA))->toBe(100);
+    expect(walletService()->balance($userB))->toBe(250);
+    expect(WalletTransaction::query()->where('idempotency_key', 'shared_key')->count())->toBe(2);
+});
+
+it('rejects reusing an idempotency key for a different reference', function () {
+    $user = User::factory()->create();
+    $bundleA = TokenBundle::factory()->create();
+    $bundleB = TokenBundle::factory()->create();
+
+    walletService()->credit($user, 100, WalletTransactionType::TopUp, reference: $bundleA, idempotencyKey: 'reused_key');
+
+    expect(fn () => walletService()->credit($user, 100, WalletTransactionType::TopUp, reference: $bundleB, idempotencyKey: 'reused_key'))
+        ->toThrow(IdempotencyKeyConflictException::class);
+
+    expect(walletService()->balance($user))->toBe(100);
+    expect(WalletTransaction::query()->where('idempotency_key', 'reused_key')->count())->toBe(1);
 });
 
 it('rebuilds the cached balance from the ledger, proving the column is a derived cache', function () {
