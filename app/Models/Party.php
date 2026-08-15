@@ -99,6 +99,14 @@ class Party extends Model
         return $this->hasMany(PartyMember::class);
     }
 
+    /**
+     * @return HasMany<GameSession, $this>
+     */
+    public function gameSessions(): HasMany
+    {
+        return $this->hasMany(GameSession::class);
+    }
+
     public function isLikedBy(?User $user): bool
     {
         if (! $user) {
