@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\Api\IdempotencyKeyConflictException;
 use App\Exceptions\Api\InsufficientWalletBalanceException;
 use App\Exceptions\Api\InvalidClerkTokenException;
 use App\Exceptions\Api\InvalidClerkWebhookException;
@@ -41,6 +42,7 @@ return Application::configure(basePath: dirname(__DIR__))
             InvalidClerkTokenException::class,
             InvalidClerkWebhookException::class,
             InsufficientWalletBalanceException::class,
+            IdempotencyKeyConflictException::class,
             PackAlreadyOwnedException::class,
             PaymentDeclinedException::class,
             PartyFullException::class,
