@@ -1,6 +1,6 @@
 # Implementation Progress — Yowimo Backend
 
-**Assessed:** 2026-08-14, `dev`@`1f81022`, by direct code inspection. Analysis only — no code modified.
+**Assessed:** 2026-08-15, after Sprint 6 (Game Engine: rounds & turns) landed, by direct code inspection.
 **Sources:** `docs/audit/*`, `docs/implementation/IMPLEMENTATION_ORDER.md`, `.claude/CURRENT_PHASE.md`, `.claude/IMPLEMENTATION_STATUS.md`.
 
 "Blocked" below means zero code exists **and** an upstream dependency isn't finished yet. "Not Started" means zero code exists but nothing is stopping work from beginning today.
@@ -18,6 +18,7 @@ Built, exposed, tested — no further work planned:
 - **Token Bundle purchase (top-up)** — `POST /token-bundles/{id}/purchase` credits the wallet via `PurchaseService` + a manual/test `PaymentProvider` driver, idempotency-key enforced.
 - **Pack purchase & inventory** — `POST /packs/{id}/purchase` debits the wallet via `PackPurchaseService` (race-guarded), records ownership in `pack_purchases`, and gates full (non-preview) `PackCard` content behind ownership.
 - **Party membership & lifecycle** — `party_members` table + `PartyMembershipService`; `POST/DELETE /parties/{id}/join,leave`, host-only `POST /parties/{id}/start,end`; `players_count` wired to real membership counts.
+- **Domain events & listeners backbone** — `app/Events`/`app/Listeners`; `PartyCreated`, `PartyMemberJoined`, `PartyStarted`, `WalletCredited`, `WalletDebited`, `PurchaseCompleted` all dispatch fire-after-commit; `RecordAnalyticsEvent` proven end-to-end on the Horizon queue.
 
 ## In progress modules
 
@@ -28,8 +29,9 @@ Real code exists; work remains to finish the module:
 | **User Profile** | View/edit own profile. | Public profile view, avatar upload, account deletion. |
 | **Token Bundles** | Catalog list + purchase (top-up). | `show` endpoint; a real payment provider (currently manual/test only). |
 | **Packs** | Catalog + purchase + ownership-gated full content. | Nothing planned — scope complete for now. |
-| **Horizon / Queue** | Installed, configured. | Gate needs to extend past `local`; no job has ever been dispatched yet. |
+| **Horizon / Queue** | Installed, configured, and active since Sprint 5 (`RecordAnalyticsEvent` proven end-to-end). | Gate still needs to extend past `local` (Sprint 11, once an admin concept exists). |
 | **Sponsorship** | `is_sponsored`/`sponsor_name` columns exist on `parties`. | Everything else — no sponsor entity or flow. |
+| **Game Engine (rounds/turns)** | `game_sessions`/`rounds`/`turns` tables + `GameSessionService`; host-only start/next-turn, randomized turn order, host-configurable rounds, Truth/Dare card dealing, auto-completion. | Timers, AFK handling, votes, scoring, rewards, `RoundCompleted`/`GameCompleted` events — all Sprint 7. |
 
 ## Blocked modules
 
@@ -37,18 +39,15 @@ Zero code, and an upstream dependency must land first:
 
 | Module | Blocked on |
 |---|---|
-| **Game Engine (rounds/turns/timers)** | Domain Events backbone |
-| **Realtime (Reverb)** | Domain Events backbone + Game Engine |
-| **Notifications** | Domain Events backbone + active queue |
-| **AI Host** | Domain Events backbone + Realtime |
-| **Analytics/Observability** | Domain Events backbone |
+| **Realtime (Reverb)** | Game Engine (Sprint 7, in progress) |
+| **AI Host** | Realtime |
 
 ## Not started modules
 
 Zero code, nothing blocking — ready to schedule:
 
 - CI/CD Pipeline
-- Domain Events & Listeners backbone
+- Notifications
 - Friends / Social Graph
 - Admin Panel
 
@@ -82,7 +81,7 @@ Illustrative only — assumes ~1 engineer-week per sprint per `IMPLEMENTATION_OR
 | Reference frame | Progress |
 |---|---|
 | Pre-roadmap foundation (Auth, Catalog, Party create/like, Wallet engine) | **~100%** of its own scope — done |
-| `IMPLEMENTATION_ORDER.md` 14-sprint plan | **0 of 14 sprints complete (0%)** — Sprint 1 not yet started |
-| Full documented platform vision (`docs/architecture/`) | **~15%** — 3 modules complete, 1 built-unexposed, 6 in progress, the rest (16) not started/blocked/deferred |
+| `IMPLEMENTATION_ORDER.md` 14-sprint plan | **6 of 14 sprints complete (~43%)** — Sprint 7 (Game Engine: timers/scoring) is next |
+| Full documented platform vision (`docs/architecture/`) | **~23%** — 6 modules complete, 5 in progress (incl. Game Engine), the rest (~15) not started/blocked/deferred |
 
 `docs/architecture/60_PLATFORM_ROADMAP.md` claims Phase 1 is fully complete including Friends, Marketplace, Notifications, Realtime, and Voice — the code does not support that claim (see `docs/audit/ARCHITECTURE_GAP_ANALYSIS.md`). The figures above are the code-verified numbers.

@@ -1,6 +1,6 @@
 # Implementation Status — Yowimo Backend
 
-**Assessed:** 2026-08-14, `dev`@`1f81022`, by direct code inspection against `docs/architecture/`. Analysis only — no code modified.
+**Assessed:** 2026-08-15, after Sprint 6 (Game Engine: rounds & turns) landed, by direct code inspection against `docs/architecture/`.
 **Sources:** `docs/audit/*`, `docs/implementation/IMPLEMENTATION_ORDER.md`, `.claude/CURRENT_PHASE.md`.
 
 **Status legend:** ✅ Complete · 🟡 Partial · 🔵 Built, unexposed · ⬜ Missing
@@ -20,8 +20,8 @@
 | Wallet API (routes/controller) | ✅ Complete | 100% read + token-bundle top-up write path | No | Maintain | Wallet Ledger Engine |
 | CI/CD Pipeline | ⬜ Missing | 0% | N/A — net new (infra) | High (carried over from Sprint 1) | — |
 | Marketplace (purchase/inventory) | ✅ Complete | Token bundle purchase (top-up) + pack purchase/inventory/ownership both done | No | Maintain | Wallet API, Token Bundles, Pack Catalog |
-| Domain Events & Listeners | ⬜ Missing | 0% | N/A — net new | **High (Sprint 5, enabling infra)** | Existing services (Wallet, Party, PartyMembership, Purchases) to retrofit dispatch calls into |
-| Game Engine (rounds/turns/timers/scoring) | ⬜ Missing | 0% | N/A — net new | High (Sprint 6–7) | Party Lifecycle, Pack Catalog, Domain Events |
+| Domain Events & Listeners | ✅ Complete | 100% | No | Maintain | Existing services (Wallet, Party, PartyMembership, Purchases) — retrofitted |
+| Game Engine (rounds/turns/timers/scoring) | 🟡 Partial | ~50% (rounds/turns data + state machine done; timers/scoring/rewards missing) | No — extend only | **High (Sprint 7, next)** | Party Lifecycle, Pack Catalog, Domain Events |
 | Realtime (Reverb) | ⬜ Missing | 0% | N/A — net new | Medium (Sprint 8) | Domain Events, Game Engine |
 | Notifications | ⬜ Missing | 0% | N/A — net new | Medium (Sprint 9) | Domain Events, Queue activation |
 | Friends / Social Graph | ⬜ Missing | 0% | N/A — net new | Medium (Sprint 10) | Auth (Users) |

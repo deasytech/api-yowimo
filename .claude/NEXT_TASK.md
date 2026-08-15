@@ -1,63 +1,61 @@
 # Current Task
 
-Domain events & listeners backbone: introduce `app/Events`/`app/Listeners`, retrofit existing services to dispatch events after their transactions commit, and prove the Horizon queue actually processes a job end-to-end.
+Game Engine: turn timers, AFK handling, and round/game completion — server-authoritative timers on top of the Sprint 6 rounds/turns state machine, plus reward granting and completion events.
 
 # Why This Task
 
-Per `docs/implementation/IMPLEMENTATION_ORDER.md` Sprint 5, this is the next item now that Sprint 4 (party membership & lifecycle) has landed. It's flagged in the plan's dependency graph (`IMPLEMENTATION_ORDER.md` §D) as "the single structural insight" of the whole roadmap: Realtime (Sprint 8), Notifications (Sprint 9), Analytics (Sprint 12), and the Game Engine's reward payouts (Sprint 7) all sit behind this piece of infrastructure, so building it now — once, early — is cheaper than bolting a bespoke trigger into each of those features later.
+Per `docs/implementation/IMPLEMENTATION_ORDER.md` Sprint 7, this is the next item now that Sprint 6 (Game Engine: rounds & turns) has landed. Sprint 6 deliberately built the state machine REST/poll-driven only — no timers — so game-logic bugs and infrastructure bugs wouldn't be debugged simultaneously. Sprint 7 adds the time-sensitive layer on top of an already-correct, already-tested state machine, and is flagged in the plan as the first time-sensitive logic in the codebase (needs explicit resume-after-crash test coverage).
 
 # Objectives
 
-- [ ] Introduce `app/Events` and `app/Listeners` directories following standard Laravel event/listener conventions.
-- [ ] Fire events for what already exists, dispatched **after** each owning transaction commits (fire-after-commit, not mid-transaction):
-  - `PartyCreated` — from `PartyService::create()`.
-  - `PartyMemberJoined` — from `PartyMembershipService::join()`.
-  - `PartyStarted` — from `PartyMembershipService::start()`.
-  - `WalletCredited` — from `WalletService::credit()`.
-  - `WalletDebited` — from `WalletService::debit()`.
-  - `PurchaseCompleted` — from `PurchaseService`/`PackPurchaseService` on successful purchase.
-- [ ] Put one real listener on the Horizon queue (`ShouldQueue`) — e.g. an analytics-event-recording listener that just logs/persists that an event fired — to prove the queue path works end-to-end (Horizon is installed and configured per `.claude/IMPLEMENTATION_STATUS.md` but no job has ever been dispatched through it yet).
-- [ ] Do not change the outward behavior of any retrofitted service — these are additive `event()` calls, not logic changes. Existing tests for `WalletService`, `PartyService`, `PartyMembershipService`, `PurchaseService`, and `PackPurchaseService` must pass unmodified.
-- [ ] Do not touch `WalletService`'s ledger arithmetic, locking, or idempotency logic — only add a dispatch call at the point the transaction commits.
+- [ ] Add a server-authoritative turn timer (scheduled tick or queued delayed job — now safe to build since Sprint 5 activated the Horizon queue).
+- [ ] Add AFK/skip handling for a player who doesn't act before their timer expires.
+- [ ] On round completion and on game completion, grant rewards via the existing `WalletService::credit()` path (reuses Sprint 1–3 machinery).
+- [ ] Fire `RoundCompleted`/`GameCompleted` domain events (reuses the Sprint 5 events/listeners backbone) — these were deliberately left out of Sprint 6's `GameSessionService::nextTurn()`, which only flips `status` to `completed` without firing an event.
+- [ ] Do not change Sprint 6's turn-order, card-dealing, or round/session-advancement logic in `app/Services/Game/GameSessionService.php` except to hook in the timer/reward/event additions.
+- [ ] Ensure timer state survives a worker restart/crash (resume behavior) — this is the first time-sensitive logic in the codebase, so there's no existing pattern to copy.
 
 # Dependencies
 
 Must already exist before starting (all confirmed present):
 
-- `app/Services/Wallet/WalletService.php`, `app/Services/Purchase/PurchaseService.php`, `app/Services/Purchase/PackPurchaseService.php`, `app/Services/Parties/PartyService.php`, `app/Services/Parties/PartyMembershipService.php` — the services to retrofit.
-- Horizon/queue config — installed, configured, but currently idle (see `docs/audit/MODULE_STATUS.md`).
+- `app/Services/Game/GameSessionService.php`, `app/Models/GameSession.php`, `app/Models/Round.php`, `app/Models/Turn.php` — the Sprint 6 state machine to extend, unmodified except for the additive hooks above.
+- `app/Http/Controllers/Api/V1/GameSessionController.php`, `POST /parties/{id}/game/start`, `POST /game/{id}/next-turn` — existing endpoints, not expected to change shape.
+- `app/Services/Wallet/WalletService.php` — reward path, unmodified.
+- `app/Events`/`app/Listeners` — Sprint 5 backbone, unmodified.
+- Horizon/queue — active since Sprint 5.
 
 # Files Likely to Change
 
 New:
 
-- `app/Events/PartyCreated.php`, `PartyMemberJoined.php`, `PartyStarted.php`, `WalletCredited.php`, `WalletDebited.php`, `PurchaseCompleted.php`.
-- `app/Listeners/*` — at minimum one queued listener proving the Horizon path works.
-- `tests/Feature/Events/*` or equivalent — assert each event fires with the right payload, using `Event::fake()`.
+- `app/Events/RoundCompleted.php`, `app/Events/GameCompleted.php`.
+- A timer mechanism — exact file(s) depend on the chosen approach (confirm with the user; see "If Ambiguous" below).
+- `tests/Feature/Services/GameSessionTimerTest.php` or equivalent, including a resume-after-crash case.
 
 Edited:
 
-- `app/Services/Wallet/WalletService.php`, `app/Services/Purchase/PurchaseService.php`, `app/Services/Purchase/PackPurchaseService.php`, `app/Services/Parties/PartyService.php`, `app/Services/Parties/PartyMembershipService.php` — add a dispatch call each, after the owning `DB::transaction()` commits.
+- `app/Services/Game/GameSessionService.php` — hook in reward granting + event dispatch on round/session completion; add AFK/skip handling to `nextTurn()` or an adjacent method.
 
 Explicitly not expected to change:
 
-- Any existing migration.
-- The ledger/locking/idempotency internals of `WalletService`.
-- Any existing controller, route, policy, or resource.
+- `app/Services/Wallet/WalletService.php`, the wallet ledger, or any migration.
+- Sprint 6's turn-order randomization, card-dealing/reshuffle logic, or the `game_sessions`/`rounds`/`turns` schema (unless a timer column is genuinely required, in which case confirm with the user first — CLAUDE.md's migration rule).
+- `tests/Feature/Services/GameSessionServiceTest.php`, `tests/Feature/Api/V1/GameSessionControllerTest.php` (Sprint 6's tests must keep passing unmodified).
 
 # Definition of Done
 
-- All six events fire from the correct service method, after (not during) the owning transaction, verified with `Event::fake()`.
-- At least one listener is queued (`ShouldQueue`): a `Queue::fake()` test asserts it's pushed onto the queue, **and** a separate integration test runs it against the real queue connection (queue worker or `php artisan queue:work --once`, not `Queue::fake()`) and asserts its actual effect — `Queue::fake()` alone only proves dispatch, not that Horizon can execute the job.
+- A turn that isn't acted on within its timer is automatically skipped/AFK-handled without a client request.
+- Round and game completion grant the correct reward via `WalletService::credit()` and fire `RoundCompleted`/`GameCompleted`.
+- Timer state correctly resumes after a simulated worker restart/crash.
 - `vendor/bin/pint --dirty --format agent` is clean.
-- Full test suite passes (`php artisan test --compact`), including all existing Wallet/Party/Purchase tests unchanged.
+- Full test suite passes (`php artisan test --compact`), including all existing Sprint 6 Game Engine tests unchanged.
 
 # Testing Requirements
 
-- New tests asserting each event dispatches with the expected payload from its owning service call.
-- A `Queue::fake()` test proving the first queued listener is pushed onto the queue, plus a separate integration test that runs it through the real queue connection and asserts its effect (not faked) — this is the test that actually proves the Horizon path works, per the Objectives goal above.
+- New tests covering: timer expiry triggers AFK/skip, reward is credited on round/game completion, `RoundCompleted`/`GameCompleted` fire with `Event::fake()`, and a resume-after-crash scenario for the timer mechanism.
 - Full regression: `php artisan test --compact` must remain green.
 
 # If Ambiguous
 
-The exact listener(s) beyond the one proving the queue path, and the precise event payload shape (full model vs. IDs only), aren't specified in `docs/implementation/IMPLEMENTATION_ORDER.md` — confirm with the user before inventing either, per `CLAUDE.md`.
+`IMPLEMENTATION_ORDER.md`'s Sprint 7 entry doesn't specify: the exact timer mechanism (scheduled tick vs. delayed job), the timer duration per turn, the precise AFK/skip rule (how many misses before what happens), or the reward amount/formula per round/game. Confirm these with the user before inventing any of them, per `CLAUDE.md`.
