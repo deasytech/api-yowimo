@@ -3,6 +3,8 @@
 namespace App\Services\Wallet;
 
 use App\Enums\WalletTransactionType;
+use App\Events\WalletCredited;
+use App\Events\WalletDebited;
 use App\Exceptions\Api\InsufficientWalletBalanceException;
 use App\Models\User;
 use App\Models\Wallet;
@@ -142,6 +144,10 @@ class WalletService
             }
 
             $wallet->update(['balance' => $newBalance]);
+
+            $signedAmount >= 0
+                ? WalletCredited::dispatch($transaction->id, $user->id)
+                : WalletDebited::dispatch($transaction->id, $user->id);
 
             return $transaction;
         });

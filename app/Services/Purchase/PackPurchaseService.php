@@ -3,6 +3,7 @@
 namespace App\Services\Purchase;
 
 use App\Enums\WalletTransactionType;
+use App\Events\PurchaseCompleted;
 use App\Exceptions\Api\InsufficientWalletBalanceException;
 use App\Exceptions\Api\PackAlreadyOwnedException;
 use App\Models\Pack;
@@ -58,6 +59,8 @@ class PackPurchaseService
             ]);
 
             $purchase->setRelation('walletTransaction', $transaction);
+
+            PurchaseCompleted::dispatch($user->id, $pack->getMorphClass(), $pack->id, $transaction->id);
 
             return $purchase;
         });

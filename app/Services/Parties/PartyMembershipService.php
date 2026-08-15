@@ -3,6 +3,8 @@
 namespace App\Services\Parties;
 
 use App\Enums\PartyStatus;
+use App\Events\PartyMemberJoined;
+use App\Events\PartyStarted;
 use App\Exceptions\Api\InvalidPartyTransitionException;
 use App\Exceptions\Api\PartyFullException;
 use App\Exceptions\Api\PartyHostCannotLeaveException;
@@ -49,6 +51,8 @@ class PartyMembershipService
             ]);
 
             $party->increment('players_count');
+
+            PartyMemberJoined::dispatch($party->id, $user->id);
         });
 
         return $party->refresh();
@@ -87,6 +91,8 @@ class PartyMembershipService
         }
 
         $party->update(['status' => PartyStatus::Live]);
+
+        PartyStarted::dispatch($party->id);
 
         return $party->refresh();
     }

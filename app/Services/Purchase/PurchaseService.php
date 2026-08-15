@@ -3,6 +3,7 @@
 namespace App\Services\Purchase;
 
 use App\Enums\WalletTransactionType;
+use App\Events\PurchaseCompleted;
 use App\Exceptions\Api\PaymentDeclinedException;
 use App\Models\TokenBundle;
 use App\Models\User;
@@ -28,7 +29,7 @@ class PurchaseService
             throw new PaymentDeclinedException;
         }
 
-        return $this->wallets->credit(
+        $transaction = $this->wallets->credit(
             $user,
             $bundle->tokens,
             WalletTransactionType::TopUp,
@@ -36,5 +37,11 @@ class PurchaseService
             description: "Purchased token bundle: {$bundle->name}",
             idempotencyKey: $idempotencyKey,
         );
+
+        if ($transaction->wasRecentlyCreated) {
+            PurchaseCompleted::dispatch($user->id, $bundle->getMorphClass(), $bundle->id, $transaction->id);
+        }
+
+        return $transaction;
     }
 }

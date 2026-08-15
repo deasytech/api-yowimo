@@ -4,6 +4,7 @@ namespace App\Services\Parties;
 
 use App\Enums\PartyStatus;
 use App\Enums\PartyVisibility;
+use App\Events\PartyCreated;
 use App\Models\Party;
 use App\Models\PartyMember;
 use App\Models\User;
@@ -118,6 +119,8 @@ class PartyService
             'user_id' => $host->id,
             'joined_at' => now(),
         ]);
+
+        PartyCreated::dispatch($party->id, $host->id);
 
         return $party;
     }
