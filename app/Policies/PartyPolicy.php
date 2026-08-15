@@ -89,4 +89,12 @@ class PartyPolicy
     {
         return $party->host_id === $user->id;
     }
+
+    /**
+     * Determine whether the user can start or advance a game session for the party. Host-only.
+     */
+    public function manageGame(User $user, Party $party): bool
+    {
+        return $party->host_id === $user->id;
+    }
 }

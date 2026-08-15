@@ -1,21 +1,24 @@
 # Current Phase — Yowimo Backend
 
-**Assessed:** 2026-08-14, against `dev`@`1f81022`, by direct code inspection (no code changed to produce this file).
+**Assessed:** 2026-08-15, against `dev` after Sprint 6 landed, by direct code inspection.
 **Basis:** `docs/audit/*`, `docs/implementation/IMPLEMENTATION_ORDER.md`, `.claude/PROJECT_CONTEXT.md`.
 
 ---
 
 ## Current Sprint
 
-**Sprint 4 — Party Membership & Lifecycle** (`docs/implementation/IMPLEMENTATION_ORDER.md`), **done.** Two housekeeping items from Sprint 1 remain open (see below) but nothing blocks starting Sprint 5.
+**Sprint 6 — Game Engine: rounds & turns (data + state machine)** (`docs/implementation/IMPLEMENTATION_ORDER.md`), **done.** Nothing blocks starting Sprint 7.
 
-- ✅ `party_members` table (`party_id`, `user_id`, `joined_at`, unique per party/user) + `PartyMember` model.
-- ✅ `POST /parties/{id}/join` — idempotent (re-joining is a no-op), rejects a full party (409) or a party not in `Scheduled`/`Live` status (422) cleanly.
-- ✅ `DELETE /parties/{id}/leave` — idempotent (leaving without membership is a no-op); the host is blocked from leaving their own party (409) and must call `/end` instead.
-- ✅ Host-only `POST /parties/{id}/start` (`Draft`/`Scheduled` → `Live`) and `POST /parties/{id}/end` (`Live` → `Ended`), invalid transitions rejected (422); host-only check enforced via `PartyPolicy`, not an inline controller check.
-- ✅ `parties.players_count` wired to real membership counts (increment/decrement on join/leave, floor-guarded at zero) — closes `TECHNICAL_DEBT.md` #3.
-- ✅ Host is auto-enrolled as a `party_members` row at party creation time (`PartyService::create`), consistent with `players_count` defaulting to 1.
-- ✅ `PartyResource` exposes `joined_by_me`, mirroring the existing `liked_by_me` field.
+- ✅ `game_sessions`, `rounds`, `turns` tables + `GameSessionService`.
+- ✅ Host-only `POST /parties/{id}/game/start` (requires `Live` party status) creates a session, randomizes turn order once, deals the first card from the party's `Pack`.
+- ✅ Host may configure `rounds` (5/10/15/20, default 10) on start.
+- ✅ Host-only `POST /game/{id}/next-turn` completes the current turn, deals the next one (alternating Truth/Dare, reshuffling once a kind is exhausted), advances rounds, and auto-completes the session after the last turn of the last round.
+- ✅ Scoped to `PackCardKind` (Truth/Dare) only, per plan — no timers, votes, scoring, or rewards yet (Sprint 7).
+- ✅ No domain events fired for game-session state changes yet — `RoundCompleted`/`GameCompleted` are explicitly Sprint 7's job (bundled with reward granting per `IMPLEMENTATION_ORDER.md`); adding them now would be inventing scope ahead of the plan.
+
+Sprint 5 (done previously): `app/Events`/`app/Listeners` backbone; `PartyCreated`, `PartyMemberJoined`, `PartyStarted`, `WalletCredited`, `WalletDebited`, `PurchaseCompleted` all dispatch fire-after-commit; one queued listener (`RecordAnalyticsEvent`) proven against the real Horizon queue.
+
+Sprint 4 (done previously): `party_members` table + `PartyMembershipService`; join/leave/start/end lifecycle; `players_count` wired to real membership counts.
 
 Sprint 3 (done previously): `pack_purchases` table + `PackPurchaseService`, `POST /packs/{id}/purchase` debiting the wallet, race-guarded, ownership-gated `PackCard` content.
 
@@ -41,6 +44,7 @@ Built, exposed via API, and tested:
 | **Wallet (read API)** | `GET /wallet`, `GET /wallet/transactions` (cursor-paginated) over the existing `WalletService` ledger, `WalletPolicy`-guarded. |
 | **Token Bundle purchase (top-up)** | `POST /token-bundles/{id}/purchase` — `PurchaseService` + manual/test `PaymentProvider` driver, credits via `WalletService::credit()`, `Idempotency-Key` enforced. No real payment gateway yet. |
 | **Pack purchase & inventory** | `POST /packs/{id}/purchase` — `PackPurchaseService`, debits via `WalletService::debit()`, race-guarded, `Idempotency-Key` enforced, gates full `PackCard` content behind ownership. |
+| **Domain events & listeners backbone** | `app/Events`/`app/Listeners`; six events dispatch fire-after-commit from Wallet/Party/PartyMembership/Purchase services; `RecordAnalyticsEvent` proven end-to-end on the Horizon queue. |
 
 ---
 
@@ -55,6 +59,7 @@ Real code exists but the module is narrower than its documented scope, or is unr
 | **Token Bundles** | List (catalog) + `POST /token-bundles/{id}/purchase` (credits wallet, idempotent). | No `show` endpoint. Purchase uses a manual/test `PaymentProvider`, not a real payment gateway. |
 | **Packs (catalog + purchase)** | List/discover/show, `POST /packs/{id}/purchase` (debits wallet, grants ownership, full content unlocked). | Nothing planned — scope complete for the current roadmap. |
 | **Sponsorship** | `parties.is_sponsored` / `sponsor_name` columns exist. | No sponsor entity, no sponsor-facing flow of any kind — schema hint only. |
+| **Game Engine (rounds/turns)** | `game_sessions`/`rounds`/`turns` tables + `GameSessionService`; host-only start/next-turn, randomized turn order, host-configurable rounds, Truth/Dare card dealing with no-repeat-until-exhausted, auto-completion. | Timers, AFK handling, votes, scoring, rewards, and the `RoundCompleted`/`GameCompleted` events — all Sprint 7. |
 
 ---
 
@@ -62,7 +67,7 @@ Real code exists but the module is narrower than its documented scope, or is unr
 
 No migration, model, route, or config exists for any of these:
 
-Game Engine (rounds/turns/timers/scoring), Domain events & listeners, Realtime (Reverb), Notifications, Chat/Messaging, Friends/social graph, AI Host, Voice/Video (LiveKit), Admin Panel, Moderation/Trust & Safety, Analytics/Observability infrastructure, Creator Economy, Corporate/Multi-Tenant/Enterprise, Internationalization, CI/CD pipeline.
+Realtime (Reverb), Notifications, Chat/Messaging, Friends/social graph, AI Host, Voice/Video (LiveKit), Admin Panel, Moderation/Trust & Safety, Analytics/Observability infrastructure, Creator Economy, Corporate/Multi-Tenant/Enterprise, Internationalization, CI/CD pipeline.
 
 (Marketplace purchase flow/inventory/ownership moved to Partially Complete above — token bundle and pack purchase both now exist; only a real payment gateway is missing.)
 
@@ -70,12 +75,11 @@ Game Engine (rounds/turns/timers/scoring), Domain events & listeners, Realtime (
 
 ## Current Priority
 
-Start **Sprint 5 — Domain events & listeners backbone** (`docs/implementation/IMPLEMENTATION_ORDER.md`):
+Start **Sprint 7 — Game Engine: timers, scoring, completion** (`docs/implementation/IMPLEMENTATION_ORDER.md`):
 
-1. Introduce `app/Events` and `app/Listeners`. Fire events for what already exists: `PartyCreated`, `PartyMemberJoined`, `PartyStarted`, `WalletCredited`, `WalletDebited`, `PurchaseCompleted` — refactoring existing services to dispatch, not changing their outward behavior.
-2. Put the first real job on the Horizon queue (e.g., an analytics-event-recording listener) to prove the queue path actually works end-to-end, not just in config.
-
-This touches multiple existing, tested services (Wallet, Purchase, Party, PartyMembership) to add `event()` calls — confirm the event list and dispatch points with the user before starting, per `.claude/ARCHITECTURE_RULES.md`'s precedence note, since it's the first change since Phase 1 that cuts across every core service at once.
+1. Server-authoritative turn timer (scheduled tick or queued delayed job — safe to build now that Sprint 5 activated the queue), AFK handling.
+2. On round/game completion, grant rewards via the existing `WalletService::credit()` path and fire `RoundCompleted`/`GameCompleted` events (reuses the Sprint 5 backbone) — these were deliberately deferred out of Sprint 6.
+3. **Risk:** medium — timer correctness under server restarts/worker crashes needs explicit test coverage (resume behavior), since this is the first time-sensitive logic in the codebase; confirm the exact timer mechanism and AFK/skip rules with the user before starting, since `IMPLEMENTATION_ORDER.md` doesn't fully specify them.
 
 Lower-priority, not blocking, carried over from Sprint 1:
 - Schedule `clerk:sync-users` as an hourly self-heal job.
@@ -85,7 +89,7 @@ Lower-priority, not blocking, carried over from Sprint 1:
 
 ## Next Recommended Sprint
 
-**Sprint 6 — Game Engine: rounds & turns (data + state machine)**, once Sprint 5 lands: `game_sessions`, `rounds`, `turns` tables + `GameSessionService`; host-only `POST /parties/{id}/game/start` (requires `Live` party status from Sprint 4) deals cards from the party's `Pack` and advances turns via explicit `POST /game/{id}/next-turn` (poll-driven, no timers yet). Scope to `PackCardKind` (Truth/Dare) only.
+**Sprint 8 — Realtime (Reverb)**, once Sprint 7 lands: install `laravel/reverb`, add `config/broadcasting.php`, define a presence channel for the party lobby and a private channel for an active game session; broadcast the events fired since Sprint 5–7 (`PartyMemberJoined`, `TurnStarted`, `RoundCompleted`, etc.). Should not need to touch game-logic code — transport-only risk.
 
 ---
 
@@ -96,7 +100,7 @@ A single number is misleading given the scope gap between the documented vision 
 | Reference frame | Completion | Basis |
 |---|---|---|
 | **Pre-roadmap foundation** (Clerk auth, catalog, party create/like, wallet engine) | **~100%** of its own scope | This slice is finished, tested, and stable — no further work planned against it except the Sprint 1 exposure fix. |
-| **`docs/implementation/IMPLEMENTATION_ORDER.md`** (14-sprint actionable plan to a complete, playable core product) | **0 of 14 sprints executed (0%)** | Sprint 1 has not started; see above. |
-| **Full documented platform vision** (`docs/architecture/`, ~26 modules incl. Marketplace, Realtime, AI, Admin, Enterprise, Creator Economy) | **~19%** | 5 of ~26 modules fully built+exposed (Auth, Game Catalog, Party Likes, Wallet, Marketplace-purchase), 4 partial, ~17 with zero code. Weighted toward "exists and works," not toward doc page count. |
+| **`docs/implementation/IMPLEMENTATION_ORDER.md`** (14-sprint actionable plan to a complete, playable core product) | **6 of 14 sprints executed (~43%)** | Sprints 1–6 done; Sprint 7 (Game Engine: timers/scoring) is next. |
+| **Full documented platform vision** (`docs/architecture/`, ~26 modules incl. Marketplace, Realtime, AI, Admin, Enterprise, Creator Economy) | **~23%** | 6 of ~26 modules fully built+exposed (Auth, Game Catalog, Party Likes, Wallet, Marketplace-purchase, Domain Events), 5 partial (incl. Game Engine), ~15 with zero code. Weighted toward "exists and works," not toward doc page count. |
 
 For context: `docs/architecture/60_PLATFORM_ROADMAP.md` claims "Phase 1: Foundation" is `Status: Completed` including Friends, Marketplace, Notifications, Realtime, and Voice — that claim does not hold against the code (see `docs/audit/ARCHITECTURE_GAP_ANALYSIS.md`). The 15% figure above is the code-verified number; treat any completion claim inside `docs/architecture/` as aspirational framing, not status.

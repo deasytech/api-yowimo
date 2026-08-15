@@ -2,6 +2,9 @@
 
 namespace App\Support;
 
+use App\Exceptions\Api\GameSessionAlreadyActiveException;
+use App\Exceptions\Api\GameSessionNotActiveException;
+use App\Exceptions\Api\GameSessionPackUnavailableException;
 use App\Exceptions\Api\IdempotencyKeyConflictException;
 use App\Exceptions\Api\InsufficientWalletBalanceException;
 use App\Exceptions\Api\InvalidClerkTokenException;
@@ -115,6 +118,33 @@ class ApiExceptionRegistrar
             $exceptions,
             InvalidPartyTransitionException::class,
             fn (InvalidPartyTransitionException $e) => ApiResponse::error(
+                $e->getMessage(),
+                status: 422
+            )
+        );
+
+        self::registerHandler(
+            $exceptions,
+            GameSessionAlreadyActiveException::class,
+            fn (GameSessionAlreadyActiveException $e) => ApiResponse::error(
+                $e->getMessage(),
+                status: 409
+            )
+        );
+
+        self::registerHandler(
+            $exceptions,
+            GameSessionNotActiveException::class,
+            fn (GameSessionNotActiveException $e) => ApiResponse::error(
+                $e->getMessage(),
+                status: 422
+            )
+        );
+
+        self::registerHandler(
+            $exceptions,
+            GameSessionPackUnavailableException::class,
+            fn (GameSessionPackUnavailableException $e) => ApiResponse::error(
                 $e->getMessage(),
                 status: 422
             )

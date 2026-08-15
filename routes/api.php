@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\ClerkWebhookController;
+use App\Http\Controllers\Api\V1\GameSessionController;
 use App\Http\Controllers\Api\V1\GameTypeController;
 use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\PackController;
@@ -40,6 +41,8 @@ Route::prefix('v1')->group(function () {
         Route::delete('/parties/{party}/leave', [PartyMembershipController::class, 'leave']);
         Route::post('/parties/{party}/start', [PartyMembershipController::class, 'start']);
         Route::post('/parties/{party}/end', [PartyMembershipController::class, 'end']);
+        Route::post('/parties/{party}/game/start', [GameSessionController::class, 'start']);
+        Route::post('/game/{gameSession}/next-turn', [GameSessionController::class, 'nextTurn']);
     });
 
     Route::post('/webhooks/clerk', ClerkWebhookController::class)->middleware('throttle:webhooks');
