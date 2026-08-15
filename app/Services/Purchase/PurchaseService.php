@@ -39,6 +39,12 @@ class PurchaseService
                 return $existing;
             }
 
+            // Known gap: ManualPaymentProvider has no real side effect to lose
+            // track of, but once a real gateway lands, a failure between this
+            // charge succeeding and the transaction below committing would
+            // leave no record of the charge, so a retry would charge again.
+            // Fix then by passing $idempotencyKey to the gateway's own native
+            // idempotency support rather than reconciling it ourselves.
             if (! $this->paymentProvider->charge($user, $bundle)) {
                 throw new PaymentDeclinedException;
             }
