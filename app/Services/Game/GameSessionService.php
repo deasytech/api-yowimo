@@ -5,10 +5,13 @@ namespace App\Services\Game;
 use App\Enums\GameSessionStatus;
 use App\Enums\PackCardKind;
 use App\Enums\PartyStatus;
+use App\Events\GameCompleted;
+use App\Events\RoundCompleted;
 use App\Exceptions\Api\GameSessionAlreadyActiveException;
 use App\Exceptions\Api\GameSessionNotActiveException;
 use App\Exceptions\Api\GameSessionPackUnavailableException;
 use App\Exceptions\Api\InvalidPartyTransitionException;
+use App\Jobs\SkipAfkTurn;
 use App\Models\GameSession;
 use App\Models\PackCard;
 use App\Models\Party;
@@ -26,6 +29,11 @@ class GameSessionService
      * @var array<int, int>
      */
     public const ALLOWED_ROUNDS_COUNTS = [5, 10, 15, 20];
+
+    /**
+     * Seconds a player has to act on their turn before it's auto-skipped as AFK.
+     */
+    public const TURN_TIMEOUT_SECONDS = 30;
 
     private const DEFAULT_ROUNDS_COUNT = 10;
 
@@ -92,48 +100,92 @@ class GameSessionService
                 throw new GameSessionNotActiveException;
             }
 
-            $round = $session->currentRound();
             $turn = $session->currentTurn();
             $turn->update(['completed_at' => now()]);
 
-            $turnOrder = $session->turn_order;
-            $nextIndex = $session->current_turn_index + 1;
+            return $this->advance($session);
+        });
+    }
 
-            if ($nextIndex < count($turnOrder)) {
-                $session->update(['current_turn_index' => $nextIndex]);
-                $this->dealTurn($session, $round, $nextIndex, $turnOrder[$nextIndex]);
+    /**
+     * Called by the delayed timer job (and the crash-recovery sweep) once a turn's
+     * timer expires. No-ops if the turn was already completed by the time it runs
+     * (host already advanced normally, or a previous run already handled it), or if
+     * the timer genuinely hasn't elapsed yet — the `sync` queue driver ignores
+     * `->delay()` and runs jobs immediately, so this guard is what makes the AFK
+     * skip correct regardless of queue driver, not just a testing workaround.
+     */
+    public function skipAfkTurn(int $turnId): ?GameSession
+    {
+        return DB::transaction(function () use ($turnId) {
+            $turn = Turn::query()->whereKey($turnId)->lockForUpdate()->first();
 
-                return $session->fresh();
+            if (! $turn || $turn->completed_at !== null) {
+                return null;
             }
 
-            $round->update(['completed_at' => now()]);
-
-            if ($session->current_round_number >= $session->rounds_count) {
-                $session->update([
-                    'status' => GameSessionStatus::Completed,
-                    'ended_at' => now(),
-                ]);
-
-                return $session->fresh();
+            if (now()->lessThan($turn->started_at->copy()->addSeconds(self::TURN_TIMEOUT_SECONDS))) {
+                return null;
             }
 
-            $nextRoundNumber = $session->current_round_number + 1;
+            $session = GameSession::query()->whereKey($turn->game_session_id)->lockForUpdate()->firstOrFail();
 
-            $newRound = Round::create([
-                'game_session_id' => $session->id,
-                'number' => $nextRoundNumber,
-                'started_at' => now(),
-            ]);
+            if ($session->status !== GameSessionStatus::Running || $session->currentTurn()?->id !== $turn->id) {
+                return null;
+            }
 
-            $session->update([
-                'current_round_number' => $nextRoundNumber,
-                'current_turn_index' => 0,
-            ]);
+            $turn->update(['completed_at' => now(), 'is_afk' => true]);
 
-            $this->dealTurn($session, $newRound, 0, $turnOrder[0]);
+            return $this->advance($session);
+        });
+    }
+
+    /**
+     * Advance from the just-completed current turn: deal the next turn, or complete
+     * the round/session if that was the last turn of the round/game.
+     */
+    private function advance(GameSession $session): GameSession
+    {
+        $round = $session->currentRound();
+        $turnOrder = $session->turn_order;
+        $nextIndex = $session->current_turn_index + 1;
+
+        if ($nextIndex < count($turnOrder)) {
+            $session->update(['current_turn_index' => $nextIndex]);
+            $this->dealTurn($session, $round, $nextIndex, $turnOrder[$nextIndex]);
 
             return $session->fresh();
-        });
+        }
+
+        $round->update(['completed_at' => now()]);
+        RoundCompleted::dispatch($session->id, $round->id, $round->number);
+
+        if ($session->current_round_number >= $session->rounds_count) {
+            $session->update([
+                'status' => GameSessionStatus::Completed,
+                'ended_at' => now(),
+            ]);
+            GameCompleted::dispatch($session->id, $session->party_id);
+
+            return $session->fresh();
+        }
+
+        $nextRoundNumber = $session->current_round_number + 1;
+
+        $newRound = Round::create([
+            'game_session_id' => $session->id,
+            'number' => $nextRoundNumber,
+            'started_at' => now(),
+        ]);
+
+        $session->update([
+            'current_round_number' => $nextRoundNumber,
+            'current_turn_index' => 0,
+        ]);
+
+        $this->dealTurn($session, $newRound, 0, $turnOrder[0]);
+
+        return $session->fresh();
     }
 
     private function dealTurn(GameSession $session, Round $round, int $position, int $userId): Turn
@@ -143,7 +195,7 @@ class GameSessionService
 
         $card = $this->selectCard($session, $kind);
 
-        return Turn::create([
+        $turn = Turn::create([
             'game_session_id' => $session->id,
             'round_id' => $round->id,
             'user_id' => $userId,
@@ -151,6 +203,36 @@ class GameSessionService
             'position' => $position,
             'started_at' => now(),
         ]);
+
+        SkipAfkTurn::dispatch($turn->id)
+            ->delay(now()->addSeconds(self::TURN_TIMEOUT_SECONDS))
+            ->afterCommit();
+
+        return $turn;
+    }
+
+    /**
+     * Crash-recovery safety net: re-processes any turn whose timer has expired but
+     * that's still open, in case its delayed queue job was lost (e.g. a Redis
+     * restart) rather than merely delayed. Idempotent — skipAfkTurn() no-ops for
+     * turns already completed by the time it runs.
+     */
+    public function sweepExpiredTurns(): int
+    {
+        $expiredTurnIds = Turn::query()
+            ->whereNull('completed_at')
+            ->where('started_at', '<=', now()->subSeconds(self::TURN_TIMEOUT_SECONDS))
+            ->pluck('id');
+
+        $skipped = 0;
+
+        foreach ($expiredTurnIds as $turnId) {
+            if ($this->skipAfkTurn($turnId) !== null) {
+                $skipped++;
+            }
+        }
+
+        return $skipped;
     }
 
     /**

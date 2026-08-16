@@ -1,19 +1,24 @@
 <?php
 
+use App\Enums\PackCardKind;
 use App\Enums\PartyStatus;
 use App\Enums\PartyVisibility;
 use App\Enums\WalletTransactionType;
+use App\Events\GameCompleted;
 use App\Events\PartyCreated;
 use App\Events\PartyMemberJoined;
 use App\Events\PartyStarted;
 use App\Events\PurchaseCompleted;
+use App\Events\RoundCompleted;
 use App\Events\WalletCredited;
 use App\Events\WalletDebited;
 use App\Models\Pack;
+use App\Models\PackCard;
 use App\Models\Party;
 use App\Models\PartyMember;
 use App\Models\TokenBundle;
 use App\Models\User;
+use App\Services\Game\GameSessionService;
 use App\Services\Parties\PartyMembershipService;
 use App\Services\Parties\PartyService;
 use App\Services\Purchase\PackPurchaseService;
@@ -117,4 +122,45 @@ it('fires PurchaseCompleted for a pack purchase', function () {
         && $event->referenceType === $pack->getMorphClass()
         && $event->referenceId === $pack->id
         && $event->walletTransactionId === $purchase->wallet_transaction_id);
+});
+
+it('fires RoundCompleted when every member has taken their turn for a round', function () {
+    Event::fake([RoundCompleted::class]);
+
+    $pack = Pack::factory()->create();
+    PackCard::factory()->count(5)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Truth]);
+    PackCard::factory()->count(5)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Dare]);
+
+    $host = User::factory()->create();
+    $party = Party::factory()->create(['host_id' => $host->id, 'pack_id' => $pack->id, 'status' => PartyStatus::Live]);
+    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $host->id]);
+
+    $service = app(GameSessionService::class);
+    $session = $service->start($host, $party, 5);
+    $round = $session->currentRound();
+
+    $session = $service->nextTurn($session);
+
+    Event::assertDispatched(RoundCompleted::class, fn ($event) => $event->gameSessionId === $session->id
+        && $event->roundId === $round->id
+        && $event->roundNumber === 1);
+});
+
+it('fires GameCompleted when the last round of the last turn completes', function () {
+    Event::fake([GameCompleted::class]);
+
+    $pack = Pack::factory()->create();
+    PackCard::factory()->count(5)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Truth]);
+    PackCard::factory()->count(5)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Dare]);
+
+    $host = User::factory()->create();
+    $party = Party::factory()->create(['host_id' => $host->id, 'pack_id' => $pack->id, 'status' => PartyStatus::Live]);
+    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $host->id]);
+
+    $service = app(GameSessionService::class);
+    $session = $service->start($host, $party, 1);
+
+    $session = $service->nextTurn($session);
+
+    Event::assertDispatched(GameCompleted::class, fn ($event) => $event->gameSessionId === $session->id && $event->partyId === $party->id);
 });
