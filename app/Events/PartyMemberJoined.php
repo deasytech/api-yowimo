@@ -2,10 +2,12 @@
 
 namespace App\Events;
 
+use Illuminate\Broadcasting\PresenceChannel;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Foundation\Events\Dispatchable;
 
-class PartyMemberJoined implements ShouldDispatchAfterCommit
+class PartyMemberJoined implements ShouldBroadcast, ShouldDispatchAfterCommit
 {
     use Dispatchable;
 
@@ -13,4 +15,17 @@ class PartyMemberJoined implements ShouldDispatchAfterCommit
         public readonly int $partyId,
         public readonly int $userId,
     ) {}
+
+    /**
+     * @return array<int, PresenceChannel>
+     */
+    public function broadcastOn(): array
+    {
+        return [new PresenceChannel("party.{$this->partyId}")];
+    }
+
+    public function broadcastAs(): string
+    {
+        return 'party.member.joined';
+    }
 }
