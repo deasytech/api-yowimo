@@ -1,59 +1,62 @@
 # Current Task
 
-Realtime (Reverb): install Laravel Reverb, add a presence channel for the party lobby and a private channel for an active game session, and broadcast the domain events already firing since Sprint 5–7.
+Notifications v0: device/push-token registration, FCM integration, and `Notification` classes hooked to existing domain-event listeners.
 
 # Why This Task
 
-Per `docs/implementation/IMPLEMENTATION_ORDER.md` Sprint 8, this is the next item now that Sprint 7 (Game Engine: timers, AFK handling, completion events) has landed. The plan flags this sprint's risk as "medium, but contained" — the domain logic being broadcast was already built and tested REST-first (Sprints 4–7), so a realtime bug here is isolated to the transport layer, not the game rules. This sprint should not need to touch game-logic code at all, only add broadcasting listeners on top of the existing `app/Events` backbone.
+Per `docs/implementation/IMPLEMENTATION_ORDER.md` Sprint 9, this is the next item now that Sprint 8 (Realtime/Reverb) has landed. This sprint is a pure consumer of infrastructure that already exists and is already tested: the Sprint 5 events backbone, the Sprint 5 Horizon queue, and (optionally, for in-app notifications) the Sprint 8 broadcasting channels. Its failure mode is contained — "a notification doesn't send" — not a game-state or money bug, which is why the plan rates it low-medium risk.
 
 # Objectives
 
-- [ ] Install `laravel/reverb` and add `config/broadcasting.php`.
-- [ ] Define a presence channel for the party lobby (who's currently in the party) and a private channel for an active game session.
-- [ ] Broadcast the events that already exist and fire fire-after-commit: `PartyCreated`, `PartyMemberJoined`, `PartyStarted`, `WalletCredited`, `WalletDebited`, `PurchaseCompleted`, `RoundCompleted`, `GameCompleted` — via `ShouldBroadcast`/broadcasting listeners, not by changing what the events carry or when they fire.
-- [ ] Do not change any existing event's constructor/payload, and do not change `GameSessionService`, `WalletService`, `PartyService`, `PartyMembershipService`, or `PurchaseService` — this sprint is transport-only.
-- [ ] Do not add scoring, votes, or reward-granting — those remain unscheduled (see "If Ambiguous").
+- [ ] Add a device/push-token registration table (e.g. `push_tokens`: `user_id`, `token`, `platform`, timestamps) + a small service/endpoint for the mobile client to register/unregister a token.
+- [ ] Integrate FCM (Firebase Cloud Messaging) as the push channel — Laravel's `Notification` system supports a custom FCM channel; no first-party Laravel FCM channel ships in core, so a small custom `Illuminate\Notifications\Notification`-compatible channel class is expected.
+- [ ] Add `Notification` classes for at least the events named in the plan: `PartyMemberJoined`, `RoundCompleted`, `WalletCredited` — each notification is queued (`ShouldQueue`), consistent with `RecordAnalyticsEvent`'s precedent from Sprint 5.
+- [ ] Wire these notifications via `app/Listeners` (new listeners that call `$user->notify(...)` in response to the existing domain events), not by modifying the events themselves or the services that dispatch them.
+- [ ] Do not change any existing event's payload, dispatch point, or the services that fire them (`WalletService`, `PartyMembershipService`, `GameSessionService`, etc.) — this sprint only adds new listeners downstream of events that already fire correctly.
+- [ ] Do not touch `routes/channels.php`, the two Sprint 8 broadcast channels, or any `ShouldBroadcast` event — Notifications (push/FCM) and Realtime (in-app WebSocket) are separate concerns per `docs/architecture/`; don't conflate them without asking.
 
 # Dependencies
 
 Must already exist before starting (all confirmed present):
 
-- `app/Events/*` — `PartyCreated`, `PartyMemberJoined`, `PartyStarted`, `WalletCredited`, `WalletDebited`, `PurchaseCompleted`, `RoundCompleted`, `GameCompleted`, all dispatching fire-after-commit. Unmodified by this task.
-- `app/Models/Party.php`, `app/Models/GameSession.php` — the entities the presence/private channels authorize against.
-- Horizon/queue — active since Sprint 5, needed for queued broadcast jobs.
+- `app/Events`/`app/Listeners` — Sprint 5 backbone. `PartyMemberJoined`, `PartyStarted`, `RoundCompleted`, `GameCompleted`, `TurnStarted`, `WalletCredited`, `WalletDebited`, `PurchaseCompleted` all fire fire-after-commit.
+- Horizon/queue — active since Sprint 5, proven with `RecordAnalyticsEvent`.
+- `App\Models\User` — the notifiable target; already uses Laravel's `Notifiable` trait (confirmed in `docs/audit/MODULE_STATUS.md`).
 
 # Files Likely to Change
 
 New:
 
-- `config/broadcasting.php`, Reverb env vars.
-- `routes/channels.php` — presence channel for the party lobby, private channel for a game session.
-- Broadcasting listeners (or `ShouldBroadcast` on the existing events, per the approach confirmed with the user — see "If Ambiguous").
-- `tests/Feature/*` covering channel authorization and that the right events broadcast on the right channel.
+- `database/migrations/*_create_push_tokens_table.php`, `app/Models/PushToken.php`.
+- `app/Services/Notifications/PushTokenService.php` (or similar) + a controller/route for register/unregister, following the existing Form Request + Resource + Policy pattern used elsewhere in `app/Http`.
+- `app/Notifications/*` — one class per notification (e.g. `PartyMemberJoinedNotification`, `RoundCompletedNotification`, `WalletCreditedNotification`), each `ShouldQueue`.
+- A custom FCM notification channel (e.g. `app/Notifications/Channels/FcmChannel.php`) plus whatever FCM SDK/HTTP client wrapper it needs — confirm the FCM credential/config approach with the user before choosing a package (see "If Ambiguous").
+- `app/Listeners/*` — new listeners bridging existing events to `$user->notify(...)`.
+- Tests covering: token registration/unregistration, notification queuing (`Notification::fake()`), and at least one real-queue integration test in the `RecordAnalyticsEventTest.php` style (`config(['queue.default' => 'database'])` + `queue:work --once`).
 
 Edited:
 
-- Possibly `composer.json`/`config/app.php` (Reverb service provider registration, if not auto-discovered).
+- `routes/api.php` — add the push-token register/unregister route(s), inside the existing `auth:clerk` + `throttle:api` group.
 
 Explicitly not expected to change:
 
-- Any existing event's public properties/payload shape.
-- `app/Services/Game/GameSessionService.php`, `app/Services/Wallet/WalletService.php`, `app/Services/Parties/*`, `app/Services/Purchase/*`.
-- Any existing migration, model, or REST route/controller — this sprint adds a transport layer alongside the existing poll-driven API, it doesn't replace it.
+- Any existing event class (`PartyMemberJoined`, `RoundCompleted`, etc.) or the services that dispatch them.
+- `routes/channels.php`, `config/broadcasting.php`, `config/reverb.php` — Sprint 8's realtime layer, unrelated to push notifications.
+- `WalletService`, `GameSessionService`, `PartyMembershipService` internals.
 
 # Definition of Done
 
-- A party lobby's presence channel reflects real membership (join/leave) to a connected client.
-- A game session's private channel receives `RoundCompleted`/`GameCompleted` (and the other broadcast events) when they fire.
-- Channel authorization is enforced (only party members/the host can subscribe to their party's/session's channels).
+- A user can register a push token via the API and it's persisted, scoped to that user.
+- At least `PartyMemberJoined`, `RoundCompleted`, and `WalletCredited` trigger a queued notification to the relevant user(s).
+- One notification is proven against the real queue (not `Notification::fake()` alone), mirroring `RecordAnalyticsEventTest.php`'s "actually runs ... through a real queue worker" test.
 - `vendor/bin/pint --dirty --format agent` is clean.
-- Full test suite passes (`php artisan test --compact`), including all existing Sprint 1–7 tests unchanged.
+- Full test suite passes (`php artisan test --compact`), including all existing Sprint 1–8 tests unchanged.
 
 # Testing Requirements
 
-- New tests covering: channel authorization (member can subscribe, non-member is rejected), and that broadcasting an event doesn't alter its existing `Event::fake()`-verified dispatch behavior from `tests/Feature/Events/EventDispatchTest.php`.
+- New tests for: push-token register/unregister (including replacing an existing token for the same device, if that's the chosen dedup rule — confirm with the user), each new notification firing off its trigger event (`Notification::fake()`), and one real-queue integration test.
 - Full regression: `php artisan test --compact` must remain green.
 
 # If Ambiguous
 
-`IMPLEMENTATION_ORDER.md`'s Sprint 8 entry names a `TurnStarted` event as something to broadcast — that event doesn't exist; Sprint 6 and Sprint 7 never needed it (turn-dealing is currently only visible via the `POST /game/{id}/next-turn` response and `GameSessionResource.current_turn`). Confirm with the user before starting: (1) whether to add a `TurnStarted` event now so a turn-deal can be broadcast in real time, or defer that and broadcast only the events that already exist; (2) whether to implement broadcasting as `ShouldBroadcast` directly on the existing event classes, or as separate broadcasting listeners — `IMPLEMENTATION_ORDER.md` doesn't specify either. Also carried over, unscheduled: reward granting on round/game completion was explicitly dropped from Sprint 7 by the user and has no owning sprint in the plan — flag it if the user wants it slotted in before or after Realtime.
+`IMPLEMENTATION_ORDER.md`'s Sprint 9 entry doesn't specify: the FCM integration approach (a specific package like `kreait/laravel-firebase` vs. a hand-rolled HTTP client against FCM's HTTP v1 API), the full list of events that should notify (only three are named as examples — "e.g."), whether in-app (Reverb-broadcast) notifications are in scope alongside push, or the push-token dedup/replacement rule (one token per user, or per device). Confirm these with the user before inventing any of them, per `CLAUDE.md`.

@@ -1,6 +1,6 @@
 # Implementation Status — Yowimo Backend
 
-**Assessed:** 2026-08-16, after Sprint 7 (Game Engine: timers, AFK handling, completion events) landed, by direct code inspection against `docs/architecture/`.
+**Assessed:** 2026-08-17, after Sprint 8 (Realtime/Reverb) landed, by direct code inspection against `docs/architecture/`.
 **Sources:** `docs/audit/*`, `docs/implementation/IMPLEMENTATION_ORDER.md`, `.claude/CURRENT_PHASE.md`.
 
 **Status legend:** ✅ Complete · 🟡 Partial · 🔵 Built, unexposed · ⬜ Missing
@@ -22,8 +22,8 @@
 | Marketplace (purchase/inventory) | ✅ Complete | Token bundle purchase (top-up) + pack purchase/inventory/ownership both done | No | Maintain | Wallet API, Token Bundles, Pack Catalog |
 | Domain Events & Listeners | ✅ Complete | 100% | No | Maintain | Existing services (Wallet, Party, PartyMembership, Purchases) — retrofitted |
 | Game Engine (rounds/turns/timers/scoring) | 🟡 Partial | ~70% (rounds/turns/timers/AFK/completion-events done; votes/scoring/rewards missing — rewards explicitly descoped from Sprint 7, unscheduled) | No — extend only | Maintain (remaining scope unscheduled) | Party Lifecycle, Pack Catalog, Domain Events |
-| Realtime (Reverb) | ⬜ Missing | 0% | N/A — net new | **High (Sprint 8, next)** | Domain Events, Game Engine |
-| Notifications | ⬜ Missing | 0% | N/A — net new | Medium (Sprint 9) | Domain Events, Queue activation |
+| Realtime (Reverb) | 🟡 Partial | ~70% (Reverb installed; party lobby presence channel + game session private channel; `PartyMemberJoined`/`PartyStarted`/`TurnStarted`/`RoundCompleted`/`GameCompleted` broadcast) | No — extend only | Maintain | Domain Events, Game Engine |
+| Notifications | ⬜ Missing | 0% | N/A — net new | **High (Sprint 9, next)** | Domain Events, Queue activation |
 | Friends / Social Graph | ⬜ Missing | 0% | N/A — net new | Medium (Sprint 10) | Auth (Users) |
 | Admin Panel | ⬜ Missing | 0% | N/A — net new | Medium (Sprint 11) | Users, Parties, Wallet, Catalog (data to administer) |
 | Analytics / Observability | ⬜ Missing | 0% | N/A — net new | Medium (Sprint 12) | Domain Events |
