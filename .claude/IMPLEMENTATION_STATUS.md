@@ -1,6 +1,6 @@
 # Implementation Status — Yowimo Backend
 
-**Assessed:** 2026-08-15, after Sprint 6 (Game Engine: rounds & turns) landed, by direct code inspection against `docs/architecture/`.
+**Assessed:** 2026-08-16, after Sprint 7 (Game Engine: timers, AFK handling, completion events) landed, by direct code inspection against `docs/architecture/`.
 **Sources:** `docs/audit/*`, `docs/implementation/IMPLEMENTATION_ORDER.md`, `.claude/CURRENT_PHASE.md`.
 
 **Status legend:** ✅ Complete · 🟡 Partial · 🔵 Built, unexposed · ⬜ Missing
@@ -21,8 +21,8 @@
 | CI/CD Pipeline | ⬜ Missing | 0% | N/A — net new (infra) | High (carried over from Sprint 1) | — |
 | Marketplace (purchase/inventory) | ✅ Complete | Token bundle purchase (top-up) + pack purchase/inventory/ownership both done | No | Maintain | Wallet API, Token Bundles, Pack Catalog |
 | Domain Events & Listeners | ✅ Complete | 100% | No | Maintain | Existing services (Wallet, Party, PartyMembership, Purchases) — retrofitted |
-| Game Engine (rounds/turns/timers/scoring) | 🟡 Partial | ~50% (rounds/turns data + state machine done; timers/scoring/rewards missing) | No — extend only | **High (Sprint 7, next)** | Party Lifecycle, Pack Catalog, Domain Events |
-| Realtime (Reverb) | ⬜ Missing | 0% | N/A — net new | Medium (Sprint 8) | Domain Events, Game Engine |
+| Game Engine (rounds/turns/timers/scoring) | 🟡 Partial | ~70% (rounds/turns/timers/AFK/completion-events done; votes/scoring/rewards missing — rewards explicitly descoped from Sprint 7, unscheduled) | No — extend only | Maintain (remaining scope unscheduled) | Party Lifecycle, Pack Catalog, Domain Events |
+| Realtime (Reverb) | ⬜ Missing | 0% | N/A — net new | **High (Sprint 8, next)** | Domain Events, Game Engine |
 | Notifications | ⬜ Missing | 0% | N/A — net new | Medium (Sprint 9) | Domain Events, Queue activation |
 | Friends / Social Graph | ⬜ Missing | 0% | N/A — net new | Medium (Sprint 10) | Auth (Users) |
 | Admin Panel | ⬜ Missing | 0% | N/A — net new | Medium (Sprint 11) | Users, Parties, Wallet, Catalog (data to administer) |

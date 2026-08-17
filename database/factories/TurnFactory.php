@@ -29,6 +29,7 @@ class TurnFactory extends Factory
             'position' => 0,
             'started_at' => now(),
             'completed_at' => null,
+            'is_afk' => false,
         ];
     }
 }

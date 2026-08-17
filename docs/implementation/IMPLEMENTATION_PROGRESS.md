@@ -1,6 +1,6 @@
 # Implementation Progress — Yowimo Backend
 
-**Assessed:** 2026-08-15, after Sprint 6 (Game Engine: rounds & turns) landed, by direct code inspection.
+**Assessed:** 2026-08-16, after Sprint 7 (Game Engine: timers, AFK handling, completion events) landed, by direct code inspection.
 **Sources:** `docs/audit/*`, `docs/implementation/IMPLEMENTATION_ORDER.md`, `.claude/CURRENT_PHASE.md`, `.claude/IMPLEMENTATION_STATUS.md`.
 
 "Blocked" below means zero code exists **and** an upstream dependency isn't finished yet. "Not Started" means zero code exists but nothing is stopping work from beginning today.
@@ -19,6 +19,7 @@ Built, exposed, tested — no further work planned:
 - **Pack purchase & inventory** — `POST /packs/{id}/purchase` debits the wallet via `PackPurchaseService` (race-guarded), records ownership in `pack_purchases`, and gates full (non-preview) `PackCard` content behind ownership.
 - **Party membership & lifecycle** — `party_members` table + `PartyMembershipService`; `POST/DELETE /parties/{id}/join,leave`, host-only `POST /parties/{id}/start,end`; `players_count` wired to real membership counts.
 - **Domain events & listeners backbone** — `app/Events`/`app/Listeners`; `PartyCreated`, `PartyMemberJoined`, `PartyStarted`, `WalletCredited`, `WalletDebited`, `PurchaseCompleted` all dispatch fire-after-commit; `RecordAnalyticsEvent` proven end-to-end on the Horizon queue.
+- **Game Engine timers & completion events** — 30s server-authoritative turn timer (delayed queue job, `afterCommit()`), AFK-skip tracked per turn, crash-recovery sweep (`game:sweep-expired-turns`, scheduled every minute), `RoundCompleted`/`GameCompleted` events. Reward granting was explicitly descoped from this sprint per the user — see In progress below.
 
 ## In progress modules
 
@@ -29,9 +30,9 @@ Real code exists; work remains to finish the module:
 | **User Profile** | View/edit own profile. | Public profile view, avatar upload, account deletion. |
 | **Token Bundles** | Catalog list + purchase (top-up). | `show` endpoint; a real payment provider (currently manual/test only). |
 | **Packs** | Catalog + purchase + ownership-gated full content. | Nothing planned — scope complete for now. |
-| **Horizon / Queue** | Installed, configured, and active since Sprint 5 (`RecordAnalyticsEvent` proven end-to-end). | Gate still needs to extend past `local` (Sprint 11, once an admin concept exists). |
+| **Horizon / Queue** | Installed, configured, and active since Sprint 5 (`RecordAnalyticsEvent` proven end-to-end, now also driving the Sprint 7 turn-timer job). | Gate still needs to extend past `local` (Sprint 11, once an admin concept exists). |
 | **Sponsorship** | `is_sponsored`/`sponsor_name` columns exist on `parties`. | Everything else — no sponsor entity or flow. |
-| **Game Engine (rounds/turns)** | `game_sessions`/`rounds`/`turns` tables + `GameSessionService`; host-only start/next-turn, randomized turn order, host-configurable rounds, Truth/Dare card dealing, auto-completion. | Timers, AFK handling, votes, scoring, rewards, `RoundCompleted`/`GameCompleted` events — all Sprint 7. |
+| **Game Engine (rounds/turns/timers)** | `game_sessions`/`rounds`/`turns` tables + `GameSessionService`; host-only start/next-turn, randomized turn order, host-configurable rounds, Truth/Dare card dealing, auto-completion, 30s turn timer + AFK handling, `RoundCompleted`/`GameCompleted` events. | Votes, scoring, reward granting — unscheduled; rewards were explicitly dropped from Sprint 7 and have no owning sprint in `IMPLEMENTATION_ORDER.md`. |
 
 ## Blocked modules
 
@@ -39,7 +40,6 @@ Zero code, and an upstream dependency must land first:
 
 | Module | Blocked on |
 |---|---|
-| **Realtime (Reverb)** | Game Engine (Sprint 7, in progress) |
 | **AI Host** | Realtime |
 
 ## Not started modules
@@ -47,6 +47,7 @@ Zero code, and an upstream dependency must land first:
 Zero code, nothing blocking — ready to schedule:
 
 - CI/CD Pipeline
+- Realtime (Reverb) — next up, Sprint 8
 - Notifications
 - Friends / Social Graph
 - Admin Panel
@@ -81,7 +82,7 @@ Illustrative only — assumes ~1 engineer-week per sprint per `IMPLEMENTATION_OR
 | Reference frame | Progress |
 |---|---|
 | Pre-roadmap foundation (Auth, Catalog, Party create/like, Wallet engine) | **~100%** of its own scope — done |
-| `IMPLEMENTATION_ORDER.md` 14-sprint plan | **6 of 14 sprints complete (~43%)** — Sprint 7 (Game Engine: timers/scoring) is next |
-| Full documented platform vision (`docs/architecture/`) | **~23%** — 6 modules complete, 5 in progress (incl. Game Engine), the rest (~15) not started/blocked/deferred |
+| `IMPLEMENTATION_ORDER.md` 14-sprint plan | **7 of 14 sprints complete (50%)** — Sprint 8 (Realtime/Reverb) is next; reward granting from Sprint 7's original scope is descoped and unscheduled |
+| Full documented platform vision (`docs/architecture/`) | **~23%** — 6 modules complete, 5 in progress (incl. Game Engine, now with timers/AFK/completion events), the rest (~15) not started/blocked/deferred |
 
 `docs/architecture/60_PLATFORM_ROADMAP.md` claims Phase 1 is fully complete including Friends, Marketplace, Notifications, Realtime, and Voice — the code does not support that claim (see `docs/audit/ARCHITECTURE_GAP_ANALYSIS.md`). The figures above are the code-verified numbers.

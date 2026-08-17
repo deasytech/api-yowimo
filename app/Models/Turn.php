@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'position',
     'started_at',
     'completed_at',
+    'is_afk',
 ])]
 class Turn extends Model
 {
@@ -31,6 +32,7 @@ class Turn extends Model
             'position' => 'integer',
             'started_at' => 'datetime',
             'completed_at' => 'datetime',
+            'is_afk' => 'boolean',
         ];
     }
 

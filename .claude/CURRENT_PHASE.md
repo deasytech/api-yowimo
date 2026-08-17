@@ -1,20 +1,22 @@
 # Current Phase — Yowimo Backend
 
-**Assessed:** 2026-08-15, against `dev` after Sprint 6 landed, by direct code inspection.
+**Assessed:** 2026-08-16, against `dev` after Sprint 7 landed, by direct code inspection.
 **Basis:** `docs/audit/*`, `docs/implementation/IMPLEMENTATION_ORDER.md`, `.claude/PROJECT_CONTEXT.md`.
 
 ---
 
 ## Current Sprint
 
-**Sprint 6 — Game Engine: rounds & turns (data + state machine)** (`docs/implementation/IMPLEMENTATION_ORDER.md`), **done.** Nothing blocks starting Sprint 7.
+**Sprint 7 — Game Engine: timers, AFK handling, completion events** (`docs/implementation/IMPLEMENTATION_ORDER.md`), **done, with one scope change confirmed with the user.** Nothing blocks starting Sprint 8.
 
-- ✅ `game_sessions`, `rounds`, `turns` tables + `GameSessionService`.
-- ✅ Host-only `POST /parties/{id}/game/start` (requires `Live` party status) creates a session, randomizes turn order once, deals the first card from the party's `Pack`.
-- ✅ Host may configure `rounds` (5/10/15/20, default 10) on start.
-- ✅ Host-only `POST /game/{id}/next-turn` completes the current turn, deals the next one (alternating Truth/Dare, reshuffling once a kind is exhausted), advances rounds, and auto-completes the session after the last turn of the last round.
-- ✅ Scoped to `PackCardKind` (Truth/Dare) only, per plan — no timers, votes, scoring, or rewards yet (Sprint 7).
-- ✅ No domain events fired for game-session state changes yet — `RoundCompleted`/`GameCompleted` are explicitly Sprint 7's job (bundled with reward granting per `IMPLEMENTATION_ORDER.md`); adding them now would be inventing scope ahead of the plan.
+- ✅ Server-authoritative 30s turn timer: `GameSessionService::dealTurn()` dispatches a delayed `App\Jobs\SkipAfkTurn` job (`afterCommit()`), which AFK-skips the turn if it's still open when the job runs.
+- ✅ AFK skip is tracked per turn (`turns.is_afk`), not just silently advanced — available for future scoring/kick logic.
+- ✅ Crash/restart resume: `game:sweep-expired-turns` (scheduled every minute in `routes/console.php`) re-processes any turn whose timer expired but whose delayed job never ran (e.g. a lost Redis-backed job) — idempotent with the queue path via a `completed_at`/elapsed-time guard in `GameSessionService::skipAfkTurn()`.
+- ✅ `RoundCompleted`/`GameCompleted` domain events now fire (reusing the Sprint 5 backbone), from a shared `advance()` extracted out of Sprint 6's `nextTurn()` — no turn-order/card-dealing/round-advancement behavior changed, verified by Sprint 6's tests passing unmodified.
+- ⚠️ **Scope change from the original plan:** reward-granting via `WalletService::credit()` was explicitly dropped from this sprint per the user ("no amount is credited to players... during play"). `IMPLEMENTATION_ORDER.md`'s Sprint 7 entry bundles rewards with timers/completion — that bundling is now stale. No sprint in the current 14-sprint plan owns reward granting; it needs a design decision (amount/trigger/recipients) before it's scheduled anywhere.
+- ⚠️ `IMPLEMENTATION_ORDER.md`'s Sprint 8 entry also references a `TurnStarted` event for broadcasting — that event was never built (Sprint 6 nor 7 needed it; only `RoundCompleted`/`GameCompleted` exist). Flagged for Sprint 8 planning, not added speculatively here.
+
+Sprint 6 (done previously): `game_sessions`/`rounds`/`turns` tables + `GameSessionService`; host-only `POST /parties/{id}/game/start` and `POST /game/{id}/next-turn`; randomized turn order, host-configurable rounds, Truth/Dare card dealing with no-repeat-until-exhausted, auto-completion.
 
 Sprint 5 (done previously): `app/Events`/`app/Listeners` backbone; `PartyCreated`, `PartyMemberJoined`, `PartyStarted`, `WalletCredited`, `WalletDebited`, `PurchaseCompleted` all dispatch fire-after-commit; one queued listener (`RecordAnalyticsEvent`) proven against the real Horizon queue.
 
@@ -59,7 +61,7 @@ Real code exists but the module is narrower than its documented scope, or is unr
 | **Token Bundles** | List (catalog) + `POST /token-bundles/{id}/purchase` (credits wallet, idempotent). | No `show` endpoint. Purchase uses a manual/test `PaymentProvider`, not a real payment gateway. |
 | **Packs (catalog + purchase)** | List/discover/show, `POST /packs/{id}/purchase` (debits wallet, grants ownership, full content unlocked). | Nothing planned — scope complete for the current roadmap. |
 | **Sponsorship** | `parties.is_sponsored` / `sponsor_name` columns exist. | No sponsor entity, no sponsor-facing flow of any kind — schema hint only. |
-| **Game Engine (rounds/turns)** | `game_sessions`/`rounds`/`turns` tables + `GameSessionService`; host-only start/next-turn, randomized turn order, host-configurable rounds, Truth/Dare card dealing with no-repeat-until-exhausted, auto-completion. | Timers, AFK handling, votes, scoring, rewards, and the `RoundCompleted`/`GameCompleted` events — all Sprint 7. |
+| **Game Engine (rounds/turns/timers)** | `game_sessions`/`rounds`/`turns` tables + `GameSessionService`; host-only start/next-turn, randomized turn order, host-configurable rounds, Truth/Dare card dealing with no-repeat-until-exhausted, auto-completion; 30s server-authoritative turn timer with AFK-skip (tracked per turn), crash-recovery sweep, and `RoundCompleted`/`GameCompleted` events. | Votes, scoring, and reward granting — none of these were built; rewards were explicitly descoped from Sprint 7 by the user and have no owning sprint in the current plan (see Current Priority). |
 
 ---
 
@@ -75,11 +77,15 @@ Realtime (Reverb), Notifications, Chat/Messaging, Friends/social graph, AI Host,
 
 ## Current Priority
 
-Start **Sprint 7 — Game Engine: timers, scoring, completion** (`docs/implementation/IMPLEMENTATION_ORDER.md`):
+Start **Sprint 8 — Realtime (Reverb)** (`docs/implementation/IMPLEMENTATION_ORDER.md`):
 
-1. Server-authoritative turn timer (scheduled tick or queued delayed job — safe to build now that Sprint 5 activated the queue), AFK handling.
-2. On round/game completion, grant rewards via the existing `WalletService::credit()` path and fire `RoundCompleted`/`GameCompleted` events (reuses the Sprint 5 backbone) — these were deliberately deferred out of Sprint 6.
-3. **Risk:** medium — timer correctness under server restarts/worker crashes needs explicit test coverage (resume behavior), since this is the first time-sensitive logic in the codebase; confirm the exact timer mechanism and AFK/skip rules with the user before starting, since `IMPLEMENTATION_ORDER.md` doesn't fully specify them.
+1. Install `laravel/reverb`, add `config/broadcasting.php`, define a presence channel for the party lobby and a private channel for an active game session.
+2. Broadcast the events already fired since Sprint 5–7 (`PartyMemberJoined`, `RoundCompleted`, `GameCompleted`, etc.) via broadcasting listeners — should not need to touch game-logic code.
+3. **Ambiguity to confirm with the user before starting:** `IMPLEMENTATION_ORDER.md`'s Sprint 8 entry also names a `TurnStarted` event, which doesn't exist — Sprint 6/7 never needed it. Decide whether to add it (and where it should dispatch from) as part of Sprint 8, or broadcast only the events that already exist.
+4. **Risk:** medium, but contained — the domain logic being broadcast was already built and tested REST-first, so a realtime bug here is isolated to the transport layer, not the game rules.
+
+Outstanding, unscheduled (surfaced by Sprint 7 — needs a design decision before it can be assigned to a sprint):
+- Reward granting on round/game completion (amount, trigger, recipients) — explicitly out of Sprint 7 per the user; no sprint in the current 14-sprint plan owns it.
 
 Lower-priority, not blocking, carried over from Sprint 1:
 - Schedule `clerk:sync-users` as an hourly self-heal job.
@@ -89,7 +95,7 @@ Lower-priority, not blocking, carried over from Sprint 1:
 
 ## Next Recommended Sprint
 
-**Sprint 8 — Realtime (Reverb)**, once Sprint 7 lands: install `laravel/reverb`, add `config/broadcasting.php`, define a presence channel for the party lobby and a private channel for an active game session; broadcast the events fired since Sprint 5–7 (`PartyMemberJoined`, `TurnStarted`, `RoundCompleted`, etc.). Should not need to touch game-logic code — transport-only risk.
+**Sprint 9 — Notifications v0**, once Sprint 8 lands: device/push-token registration table, FCM integration, `Notification` classes hooked to existing Listeners (e.g. `PartyMemberJoined`, `RoundCompleted`, `WalletCredited`). Runs on the queue activated in Sprint 5. Risk: low-medium — purely additive consumer of already-correct events.
 
 ---
 
@@ -100,7 +106,7 @@ A single number is misleading given the scope gap between the documented vision 
 | Reference frame | Completion | Basis |
 |---|---|---|
 | **Pre-roadmap foundation** (Clerk auth, catalog, party create/like, wallet engine) | **~100%** of its own scope | This slice is finished, tested, and stable — no further work planned against it except the Sprint 1 exposure fix. |
-| **`docs/implementation/IMPLEMENTATION_ORDER.md`** (14-sprint actionable plan to a complete, playable core product) | **6 of 14 sprints executed (~43%)** | Sprints 1–6 done; Sprint 7 (Game Engine: timers/scoring) is next. |
-| **Full documented platform vision** (`docs/architecture/`, ~26 modules incl. Marketplace, Realtime, AI, Admin, Enterprise, Creator Economy) | **~23%** | 6 of ~26 modules fully built+exposed (Auth, Game Catalog, Party Likes, Wallet, Marketplace-purchase, Domain Events), 5 partial (incl. Game Engine), ~15 with zero code. Weighted toward "exists and works," not toward doc page count. |
+| **`docs/implementation/IMPLEMENTATION_ORDER.md`** (14-sprint actionable plan to a complete, playable core product) | **7 of 14 sprints executed (50%)** | Sprints 1–7 done (Sprint 7 minus reward-granting, descoped per the user); Sprint 8 (Realtime) is next. |
+| **Full documented platform vision** (`docs/architecture/`, ~26 modules incl. Marketplace, Realtime, AI, Admin, Enterprise, Creator Economy) | **~23%** | 6 of ~26 modules fully built+exposed (Auth, Game Catalog, Party Likes, Wallet, Marketplace-purchase, Domain Events), 5 partial (incl. Game Engine, which gained timers/AFK/events but is still short votes/scoring/rewards), ~15 with zero code. Weighted toward "exists and works," not toward doc page count. |
 
 For context: `docs/architecture/60_PLATFORM_ROADMAP.md` claims "Phase 1: Foundation" is `Status: Completed` including Friends, Marketplace, Notifications, Realtime, and Voice — that claim does not hold against the code (see `docs/audit/ARCHITECTURE_GAP_ANALYSIS.md`). The 15% figure above is the code-verified number; treat any completion claim inside `docs/architecture/` as aspirational framing, not status.

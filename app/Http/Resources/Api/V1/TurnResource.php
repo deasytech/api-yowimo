@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Api\V1;
 
 use App\Models\Turn;
+use App\Services\Game\GameSessionService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -21,6 +22,8 @@ class TurnResource extends JsonResource
             'card' => PackCardResource::make($this->whenLoaded('packCard')),
             'started_at' => $this->started_at,
             'completed_at' => $this->completed_at,
+            'expires_at' => $this->completed_at ? null : $this->started_at?->copy()->addSeconds(GameSessionService::TURN_TIMEOUT_SECONDS),
+            'is_afk' => $this->is_afk,
         ];
     }
 }
