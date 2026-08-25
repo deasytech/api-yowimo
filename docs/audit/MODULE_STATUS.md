@@ -1,8 +1,8 @@
 # Module Status — Yowimo Backend
 
-**Audit date:** 2026-08-14
+**Audit date:** 2026-08-25
 
-Status of every module named in `docs/architecture/` against what actually exists in code, as of `dev`@`1f81022`. Modules are grouped the way the architecture docs group them (see `02_SYSTEM_ARCHITECTURE.md`, `22_BACKEND_SERVICE_CATALOG.md`, `60_PLATFORM_ROADMAP.md`).
+Status of every module named in `docs/architecture/` against what actually exists in code, as of `dev`@`4946365` (Sprint 9 — Notifications v0). Modules are grouped the way the architecture docs group them (see `02_SYSTEM_ARCHITECTURE.md`, `22_BACKEND_SERVICE_CATALOG.md`, `60_PLATFORM_ROADMAP.md`).
 
 **Status key**
 
@@ -30,9 +30,9 @@ Status of every module named in `docs/architecture/` against what actually exist
 | **Wallet API (balance/history/topup)** | 🟡 Partial | `GET /wallet` and `GET /wallet/transactions` (cursor-paginated, `WalletPolicy`-guarded) ship real balance/currency/ledger data. `UserResource` no longer stubs `wallet.enabled: false`. No top-up/purchase (write) endpoint yet — see Sprint 2. |
 | **Token Bundles (catalog + purchase)** | 🟡 Partial | `GET /token-bundles` list + `POST /token-bundles/{id}/purchase` (credits the wallet via `PurchaseService`/`WalletService::credit()`, idempotency-key enforced). No `show` endpoint. |
 | **Marketplace (purchase flow, inventory, ownership)** | 🟡 Partial | Token bundle purchase (top-up, `PurchaseService`) and pack purchase (spend, `PackPurchaseService` + `pack_purchases` table, gates full `PackCard` content behind ownership) both exist. Token top-up uses a manual/test `PaymentProvider` — no real payment gateway yet. |
-| **Realtime (Reverb / channels / presence)** | ⬜ Not started | No `config/broadcasting.php`, no Reverb package, `BROADCAST_CONNECTION=log`. No channel classes anywhere. |
+| **Realtime (Reverb / channels / presence)** | 🟡 Partial (Sprint 8 landed) | `laravel/reverb` installed; `party.{id}` presence channel (party lobby) + `game-session.{id}` private channel (active game), both membership-gated via `PartyMember`. `PartyMemberJoined`, `PartyStarted`, `TurnStarted` (new this sprint), `RoundCompleted`, `GameCompleted` broadcast. Wallet/Purchase events and `PartyCreated` intentionally not broadcast (no per-user channel exists); `PartyMembershipService::leave()` still doesn't dispatch any event (pre-existing gap). No live client has verified the integration end-to-end. |
 | **AI Host ("Yowi")** | ⬜ Not started | No AI SDK installed, no provider abstraction, no prompt registry. Entire module (`11`, `26`, `48`) is speculative. |
-| **Notifications (push/in-app/email)** | ⬜ Not started | No `Notifications`/`Mail` directories, no FCM/APNs/SES wiring, `User` uses Laravel's `Notifiable` trait but nothing sends anything. |
+| **Notifications (push/in-app/email)** | 🟡 Partial (Sprint 9, 2026-08-23) | `push_tokens` table/API, `kreait/laravel-firebase` FCM channel, 3 of 9 fired domain events (`PartyMemberJoined`, `RoundCompleted`, `WalletCredited`) trigger a queued push notification. No real Firebase project/credentials configured in any environment yet (inert until set), no in-app/email delivery, no APNs (FCM covers iOS too, so not needed). |
 | **Chat / Messaging** | ⬜ Not started | No tables, no code. |
 | **Voice/Video (LiveKit)** | ⬜ Not started | No LiveKit SDK, no config, no code. |
 | **Rewards / XP / Bonuses** | ⬜ Not started | `WalletTransactionType` enum has a `Bonus` case, but nothing computes or grants rewards. |
@@ -51,6 +51,6 @@ Status of every module named in `docs/architecture/` against what actually exist
 
 ## Roll-up
 
-Of the ~26 modules the architecture docs treat as first-class platform components, **3 are fully built and exposed** (Auth, Game Catalog, Party Likes), **1 substantial engine is built but entirely unexposed** (Wallet), **4 are partial slices** (Profile, Party create/discover, Token Bundle catalog, Sponsorship schema hint), and **the remaining ~18 do not exist in any form** — no migration, no model, no route, no config.
+Of the 28 modules listed above, **4 are fully built and exposed** (Auth, Party lifecycle, Party Likes, Game Catalog), **1 substantial engine is built but only partially exposed** via a separate API layer (Wallet ledger — see Wallet API), **9 are partial slices** (User Profiles, Party create/discover, Game Engine, Wallet API, Token Bundles, Marketplace, Realtime, Notifications, Sponsorship schema hint), and **the remaining 14 do not exist in any form** — no migration, no model, no route, no config.
 
-This directly contradicts `docs/architecture/60_PLATFORM_ROADMAP.md`, which marks "Phase 1: Foundation" as **Status: Completed** and lists Authentication, Profiles, Friends, Party System, Wallet, Marketplace, Notifications, Realtime, Voice, and Infrastructure as done. Per the code, only Authentication and a read-only slice of Party/Wallet qualify; Friends, Marketplace, Notifications, Realtime, and Voice have zero code. See `ARCHITECTURE_GAP_ANALYSIS.md` for detail.
+This directly contradicts `docs/architecture/60_PLATFORM_ROADMAP.md`, which marks "Phase 1: Foundation" as **Status: Completed** and lists Authentication, Profiles, Friends, Party System, Wallet, Marketplace, Notifications, Realtime, Voice, and Infrastructure as done. Per the code: Authentication is genuinely done; Profiles, Party System, Wallet, Marketplace, Notifications, and Realtime are each only partial slices of their claimed scope (see the rows above); Friends and Voice have zero code. See `ARCHITECTURE_GAP_ANALYSIS.md` for detail.

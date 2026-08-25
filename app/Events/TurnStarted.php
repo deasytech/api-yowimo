@@ -7,14 +7,16 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Foundation\Events\Dispatchable;
 
-class RoundCompleted implements ShouldBroadcast, ShouldDispatchAfterCommit
+class TurnStarted implements ShouldBroadcast, ShouldDispatchAfterCommit
 {
     use Dispatchable;
 
     public function __construct(
         public readonly int $gameSessionId,
         public readonly int $roundId,
-        public readonly int $roundNumber,
+        public readonly int $turnId,
+        public readonly int $userId,
+        public readonly int $position,
     ) {}
 
     /**
@@ -27,6 +29,6 @@ class RoundCompleted implements ShouldBroadcast, ShouldDispatchAfterCommit
 
     public function broadcastAs(): string
     {
-        return 'round.completed';
+        return 'turn.started';
     }
 }

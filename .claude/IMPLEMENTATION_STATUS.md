@@ -1,6 +1,6 @@
 # Implementation Status — Yowimo Backend
 
-**Assessed:** 2026-08-16, after Sprint 7 (Game Engine: timers, AFK handling, completion events) landed, by direct code inspection against `docs/architecture/`.
+**Assessed:** 2026-08-23, after Sprint 9 (Notifications v0) landed, by direct code inspection against `docs/architecture/`.
 **Sources:** `docs/audit/*`, `docs/implementation/IMPLEMENTATION_ORDER.md`, `.claude/CURRENT_PHASE.md`.
 
 **Status legend:** ✅ Complete · 🟡 Partial · 🔵 Built, unexposed · ⬜ Missing
@@ -15,16 +15,16 @@
 | User Profile | 🟡 Partial | 40% (view/edit only) | No — extend only | Low | Auth |
 | Token Bundles (catalog + purchase) | 🟡 Partial | 80% (list + purchase; no `show`, no real payment gateway) | No — extend only | Low | Wallet API |
 | Sponsorship | 🟡 Partial | 10% (schema columns only) | No | Deferred | Party |
-| Horizon / Queue | 🟡 Partial | 20% (installed, inert; gate is `local`-only) | Yes — small (gate + first job) | High (Sprint 5) | — |
+| Horizon / Queue | 🟡 Partial | ~50% (queue processing proven via a real worker since Sprint 5 — `RecordAnalyticsEvent`, the turn-timer job, notification jobs; but `laravel/horizon` itself is only installed/configured, never actually started by any process here, so it's unverified as active; gate still `local`-only) | Yes — small (gate; run `php artisan horizon` instead of `queue:listen` if its features are wanted) | Maintain (gate extension deferred to Sprint 11) | — |
 | Wallet Ledger Engine | ✅ Complete | 100% internal / exposed via read API | No | Maintain | Auth |
 | Wallet API (routes/controller) | ✅ Complete | 100% read + token-bundle top-up write path | No | Maintain | Wallet Ledger Engine |
 | CI/CD Pipeline | ⬜ Missing | 0% | N/A — net new (infra) | High (carried over from Sprint 1) | — |
 | Marketplace (purchase/inventory) | ✅ Complete | Token bundle purchase (top-up) + pack purchase/inventory/ownership both done | No | Maintain | Wallet API, Token Bundles, Pack Catalog |
 | Domain Events & Listeners | ✅ Complete | 100% | No | Maintain | Existing services (Wallet, Party, PartyMembership, Purchases) — retrofitted |
 | Game Engine (rounds/turns/timers/scoring) | 🟡 Partial | ~70% (rounds/turns/timers/AFK/completion-events done; votes/scoring/rewards missing — rewards explicitly descoped from Sprint 7, unscheduled) | No — extend only | Maintain (remaining scope unscheduled) | Party Lifecycle, Pack Catalog, Domain Events |
-| Realtime (Reverb) | ⬜ Missing | 0% | N/A — net new | **High (Sprint 8, next)** | Domain Events, Game Engine |
-| Notifications | ⬜ Missing | 0% | N/A — net new | Medium (Sprint 9) | Domain Events, Queue activation |
-| Friends / Social Graph | ⬜ Missing | 0% | N/A — net new | Medium (Sprint 10) | Auth (Users) |
+| Realtime (Reverb) | 🟡 Partial | ~70% (Reverb installed; party lobby presence channel + game session private channel; `PartyMemberJoined`/`PartyStarted`/`TurnStarted`/`RoundCompleted`/`GameCompleted` broadcast) | No — extend only | Maintain | Domain Events, Game Engine |
+| Notifications | 🟡 Partial | ~40% (push-token registration, FCM channel, 3 of 9 fired events wired; no real Firebase project configured yet, no in-app delivery) | No — extend only | Maintain (remaining scope unscheduled) | Domain Events, Queue activation |
+| Friends / Social Graph | ⬜ Missing | 0% | N/A — net new | **High (Sprint 10, next)** | Auth (Users) |
 | Admin Panel | ⬜ Missing | 0% | N/A — net new | Medium (Sprint 11) | Users, Parties, Wallet, Catalog (data to administer) |
 | Analytics / Observability | ⬜ Missing | 0% | N/A — net new | Medium (Sprint 12) | Domain Events |
 | AI Host ("Yowi") | ⬜ Missing | 0% | N/A — net new | Medium (Sprint 13, narrow scope) | Domain Events, Realtime |

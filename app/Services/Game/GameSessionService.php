@@ -7,6 +7,7 @@ use App\Enums\PackCardKind;
 use App\Enums\PartyStatus;
 use App\Events\GameCompleted;
 use App\Events\RoundCompleted;
+use App\Events\TurnStarted;
 use App\Exceptions\Api\GameSessionAlreadyActiveException;
 use App\Exceptions\Api\GameSessionNotActiveException;
 use App\Exceptions\Api\GameSessionPackUnavailableException;
@@ -207,6 +208,8 @@ class GameSessionService
         SkipAfkTurn::dispatch($turn->id)
             ->delay(now()->addSeconds(self::TURN_TIMEOUT_SECONDS))
             ->afterCommit();
+
+        TurnStarted::dispatch($session->id, $round->id, $turn->id, $userId, $position);
 
         return $turn;
     }

@@ -10,6 +10,7 @@ use App\Events\PartyMemberJoined;
 use App\Events\PartyStarted;
 use App\Events\PurchaseCompleted;
 use App\Events\RoundCompleted;
+use App\Events\TurnStarted;
 use App\Events\WalletCredited;
 use App\Events\WalletDebited;
 use App\Models\Pack;
@@ -24,6 +25,8 @@ use App\Services\Parties\PartyService;
 use App\Services\Purchase\PackPurchaseService;
 use App\Services\Purchase\PurchaseService;
 use App\Services\Wallet\WalletService;
+use Illuminate\Broadcasting\PresenceChannel;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Support\Facades\Event;
 
 it('fires PartyCreated with the new party and its host', function () {
@@ -124,6 +127,26 @@ it('fires PurchaseCompleted for a pack purchase', function () {
         && $event->walletTransactionId === $purchase->wallet_transaction_id);
 });
 
+it('fires TurnStarted whenever a turn is dealt', function () {
+    Event::fake([TurnStarted::class]);
+
+    $pack = Pack::factory()->create();
+    PackCard::factory()->count(5)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Truth]);
+    PackCard::factory()->count(5)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Dare]);
+
+    $host = User::factory()->create();
+    $party = Party::factory()->create(['host_id' => $host->id, 'pack_id' => $pack->id, 'status' => PartyStatus::Live]);
+    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $host->id]);
+
+    $session = app(GameSessionService::class)->start($host, $party, 5);
+    $turn = $session->currentTurn();
+
+    Event::assertDispatched(TurnStarted::class, fn ($event) => $event->gameSessionId === $session->id
+        && $event->turnId === $turn->id
+        && $event->userId === $host->id
+        && $event->position === 0);
+});
+
 it('fires RoundCompleted when every member has taken their turn for a round', function () {
     Event::fake([RoundCompleted::class]);
 
@@ -163,4 +186,21 @@ it('fires GameCompleted when the last round of the last turn completes', functio
     $session = $service->nextTurn($session);
 
     Event::assertDispatched(GameCompleted::class, fn ($event) => $event->gameSessionId === $session->id && $event->partyId === $party->id);
+});
+
+it('broadcasts PartyMemberJoined and PartyStarted on the party presence channel', function () {
+    expect((new PartyMemberJoined(1, 2))->broadcastOn())->toEqual([new PresenceChannel('party.1')]);
+    expect((new PartyStarted(1))->broadcastOn())->toEqual([new PresenceChannel('party.1')]);
+});
+
+it('broadcasts TurnStarted and RoundCompleted on the game session private channel', function () {
+    expect((new TurnStarted(1, 2, 3, 4, 0))->broadcastOn())->toEqual([new PrivateChannel('game-session.1')]);
+    expect((new RoundCompleted(1, 2, 3))->broadcastOn())->toEqual([new PrivateChannel('game-session.1')]);
+});
+
+it('broadcasts GameCompleted on both the game session and the party channel', function () {
+    expect((new GameCompleted(1, 2))->broadcastOn())->toEqual([
+        new PrivateChannel('game-session.1'),
+        new PresenceChannel('party.2'),
+    ]);
 });

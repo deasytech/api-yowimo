@@ -607,11 +607,11 @@ SendGrid
 
 SMS
 
-Twilio
+Termii
 
 Future WhatsApp
 
-Twilio WhatsApp
+Termii WhatsApp
 
 Meta Business API
 

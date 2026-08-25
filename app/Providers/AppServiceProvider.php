@@ -28,6 +28,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if ($credentialsPath = env('FIREBASE_CREDENTIALS')) {
+            config(['firebase.projects.app.credentials' => storage_path('app/private/'.$credentialsPath)]);
+        }
+
         Auth::viaRequest('clerk', function (Request $request): ?User {
             $token = $request->bearerToken();
 

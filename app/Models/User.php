@@ -69,4 +69,12 @@ class User extends Authenticatable
     {
         return $this->hasOne(Wallet::class);
     }
+
+    /**
+     * @return HasOne<PushToken, $this>
+     */
+    public function pushToken(): HasOne
+    {
+        return $this->hasOne(PushToken::class);
+    }
 }
