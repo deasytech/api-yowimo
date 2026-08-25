@@ -1,62 +1,58 @@
 # Current Task
 
-Notifications v0: device/push-token registration, FCM integration, and `Notification` classes hooked to existing domain-event listeners.
+Friends / social graph v0: friend requests (send/accept/reject/cancel), a friends list, and unfriending.
 
 # Why This Task
 
-Per `docs/implementation/IMPLEMENTATION_ORDER.md` Sprint 9, this is the next item now that Sprint 8 (Realtime/Reverb) has landed. This sprint is a pure consumer of infrastructure that already exists and is already tested: the Sprint 5 events backbone, the Sprint 5 Horizon queue, and (optionally, for in-app notifications) the Sprint 8 broadcasting channels. Its failure mode is contained — "a notification doesn't send" — not a game-state or money bug, which is why the plan rates it low-medium risk.
+Per `docs/implementation/IMPLEMENTATION_ORDER.md` Sprint 10, this is the next item now that Sprint 9 (Notifications) has landed. It's independent of the game loop and of Sprint 9 — no shared infrastructure is required, though the domain events backbone (Sprint 5) and Notifications (Sprint 9) are natural (optional) extension points once the core CRUD exists. Its failure mode is contained to the social graph — not money or game state — which is why the plan rates it low risk.
 
 # Objectives
 
-- [ ] Add a device/push-token registration table (e.g. `push_tokens`: `user_id`, `token`, `platform`, timestamps) + a small service/endpoint for the mobile client to register/unregister a token.
-- [ ] Integrate FCM (Firebase Cloud Messaging) as the push channel — Laravel's `Notification` system supports a custom FCM channel; no first-party Laravel FCM channel ships in core, so a small custom `Illuminate\Notifications\Notification`-compatible channel class is expected.
-- [ ] Add `Notification` classes for at least the events named in the plan: `PartyMemberJoined`, `RoundCompleted`, `WalletCredited` — each notification is queued (`ShouldQueue`), consistent with `RecordAnalyticsEvent`'s precedent from Sprint 5.
-- [ ] Wire these notifications via `app/Listeners` (new listeners that call `$user->notify(...)` in response to the existing domain events), not by modifying the events themselves or the services that dispatch them.
-- [ ] Do not change any existing event's payload, dispatch point, or the services that fire them (`WalletService`, `PartyMembershipService`, `GameSessionService`, etc.) — this sprint only adds new listeners downstream of events that already fire correctly.
-- [ ] Do not touch `routes/channels.php`, the two Sprint 8 broadcast channels, or any `ShouldBroadcast` event — Notifications (push/FCM) and Realtime (in-app WebSocket) are separate concerns per `docs/architecture/`; don't conflate them without asking.
+- [ ] Add a `friendships` table modeling a directed request with status (`pending`/`accepted`/`rejected`/`blocked` — see `docs/architecture/38_DATABASE_SCHEMA_REFERENCE.md`'s `sender_id`/`receiver_id`/`status`/`accepted_at` shape; confirm the exact status set and whether `blocked` is in scope for v0 with the user before building it, since it implies additional visibility rules beyond simple accept/reject).
+- [ ] `FriendshipService` (or similar) + endpoints for: send a request, accept, reject, cancel a pending outgoing request, unfriend (remove an accepted friendship), and list friends/pending requests — following the existing Form Request + Resource + Policy pattern.
+- [ ] Guard against duplicate/overlapping requests (e.g. a pending request already exists in either direction, or the users are already friends) and self-requests.
+- [ ] Do not change any existing event, service, or model outside what's needed to add the `User` relation(s) for friendships (mirroring how `wallet()`/`pushToken()` were added to `User` in prior sprints).
 
 # Dependencies
 
 Must already exist before starting (all confirmed present):
 
-- `app/Events`/`app/Listeners` — Sprint 5 backbone. `PartyMemberJoined`, `PartyStarted`, `RoundCompleted`, `GameCompleted`, `TurnStarted`, `WalletCredited`, `WalletDebited`, `PurchaseCompleted` all fire fire-after-commit.
-- Horizon/queue — active since Sprint 5, proven with `RecordAnalyticsEvent`.
-- `App\Models\User` — the notifiable target; already uses Laravel's `Notifiable` trait (confirmed in `docs/audit/MODULE_STATUS.md`).
+- `App\Models\User` — both sides of a friendship.
+- `App\Support\ApiResponse`, existing Form Request + Resource + Policy conventions (see any of `PartyMembershipController`/`PartyMembershipService` for the closest precedent: a request/accept-shaped lifecycle over a pivot-like table).
 
 # Files Likely to Change
 
 New:
 
-- `database/migrations/*_create_push_tokens_table.php`, `app/Models/PushToken.php`.
-- `app/Services/Notifications/PushTokenService.php` (or similar) + a controller/route for register/unregister, following the existing Form Request + Resource + Policy pattern used elsewhere in `app/Http`.
-- `app/Notifications/*` — one class per notification (e.g. `PartyMemberJoinedNotification`, `RoundCompletedNotification`, `WalletCreditedNotification`), each `ShouldQueue`.
-- A custom FCM notification channel (e.g. `app/Notifications/Channels/FcmChannel.php`) plus whatever FCM SDK/HTTP client wrapper it needs — confirm the FCM credential/config approach with the user before choosing a package (see "If Ambiguous").
-- `app/Listeners/*` — new listeners bridging existing events to `$user->notify(...)`.
-- Tests covering: token registration/unregistration, notification queuing (`Notification::fake()`), and at least one real-queue integration test in the `RecordAnalyticsEventTest.php` style (`config(['queue.default' => 'database'])` + `queue:work --once`).
+- `database/migrations/*_create_friendships_table.php`, `app/Models/Friendship.php`.
+- `app/Services/Friends/FriendshipService.php` + `app/Http/Controllers/Api/V1/FriendshipController.php`.
+- `app/Http/Requests/Api/V1/*` for sending a request (and any other validated input).
+- `app/Http/Resources/Api/V1/FriendshipResource.php` (and/or a lightweight `FriendResource` for the accepted-friends list).
+- `app/Policies/FriendshipPolicy.php`.
+- Tests covering: send/accept/reject/cancel/unfriend, duplicate-request guards, self-request rejection, and listing.
 
 Edited:
 
-- `routes/api.php` — add the push-token register/unregister route(s), inside the existing `auth:clerk` + `throttle:api` group.
+- `routes/api.php` — new routes inside the existing `auth:clerk` + `throttle:api` group.
+- `app/Models/User.php` — a relation or two for friendships (additive only, mirroring the existing `wallet()`/`pushToken()` pattern).
 
 Explicitly not expected to change:
 
-- Any existing event class (`PartyMemberJoined`, `RoundCompleted`, etc.) or the services that dispatch them.
-- `routes/channels.php`, `config/broadcasting.php`, `config/reverb.php` — Sprint 8's realtime layer, unrelated to push notifications.
-- `WalletService`, `GameSessionService`, `PartyMembershipService` internals.
+- Anything in `app/Events`, `app/Listeners`, `app/Notifications` from prior sprints, or the services that dispatch existing events.
+- `routes/channels.php`, Realtime (Sprint 8), or push notifications (Sprint 9) — a `FriendRequestReceived`/`FriendRequestAccepted` notification is a reasonable *future* extension of this module but is not required for v0 unless the user asks for it now.
 
 # Definition of Done
 
-- A user can register a push token via the API and it's persisted, scoped to that user.
-- At least `PartyMemberJoined`, `RoundCompleted`, and `WalletCredited` trigger a queued notification to the relevant user(s).
-- One notification is proven against the real queue (not `Notification::fake()` alone), mirroring `RecordAnalyticsEventTest.php`'s "actually runs ... through a real queue worker" test.
+- A user can send a friend request, the recipient can accept or reject it, either side can unfriend an accepted friendship, and the sender can cancel a still-pending request.
+- Duplicate/self/already-friends requests are rejected with a clear error, not silently accepted or duplicated.
 - `vendor/bin/pint --dirty --format agent` is clean.
-- Full test suite passes (`php artisan test --compact`), including all existing Sprint 1–8 tests unchanged.
+- Full test suite passes (`php artisan test --compact`), including all existing Sprint 1–9 tests unchanged.
 
 # Testing Requirements
 
-- New tests for: push-token register/unregister (including replacing an existing token for the same device, if that's the chosen dedup rule — confirm with the user), each new notification firing off its trigger event (`Notification::fake()`), and one real-queue integration test.
+- New tests for every transition in the objectives above, including the guard/error paths.
 - Full regression: `php artisan test --compact` must remain green.
 
 # If Ambiguous
 
-`IMPLEMENTATION_ORDER.md`'s Sprint 9 entry doesn't specify: the FCM integration approach (a specific package like `kreait/laravel-firebase` vs. a hand-rolled HTTP client against FCM's HTTP v1 API), the full list of events that should notify (only three are named as examples — "e.g."), whether in-app (Reverb-broadcast) notifications are in scope alongside push, or the push-token dedup/replacement rule (one token per user, or per device). Confirm these with the user before inventing any of them, per `CLAUDE.md`.
+`IMPLEMENTATION_ORDER.md`'s Sprint 10 entry doesn't specify: the exact status set (does v0 need `blocked`, or just pending/accepted/rejected?), whether cancelling a pending request and rejecting an incoming one are the same operation or distinct, whether unfriending should be a hard delete or a soft "removed" status (for audit/undo purposes), and whether this sprint should also emit domain events (e.g. `FriendRequestAccepted`) for future Notifications/Realtime consumers or is purely REST-only for now. Confirm these with the user before inventing any of them, per `CLAUDE.md`.

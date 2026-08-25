@@ -1,21 +1,25 @@
 # Current Phase — Yowimo Backend
 
-**Assessed:** 2026-08-17, against `dev` after Sprint 8 landed, by direct code inspection.
+**Assessed:** 2026-08-23, against `dev` after Sprint 9 landed, by direct code inspection.
 **Basis:** `docs/audit/*`, `docs/implementation/IMPLEMENTATION_ORDER.md`, `.claude/PROJECT_CONTEXT.md`.
 
 ---
 
 ## Current Sprint
 
-**Sprint 8 — Realtime (Reverb)** (`docs/implementation/IMPLEMENTATION_ORDER.md`), **done, with scope decided with the user up front.** Nothing blocks starting Sprint 9.
+**Sprint 9 — Notifications v0** (`docs/implementation/IMPLEMENTATION_ORDER.md`), **done, with scope decided with the user up front.** Nothing blocks starting Sprint 10.
 
-- ✅ `laravel/reverb` installed; `config/broadcasting.php`/`config/reverb.php` published; `bootstrap/app.php` wires `routes/channels.php` via `withBroadcasting()` with `['middleware' => ['auth:clerk', 'throttle:api']]` — the framework's default `broadcasting/auth` route registration uses the `web` guard, which this API (Bearer-token-only, no sessions) doesn't use, so this had to be set explicitly, along with a `'guards' => ['clerk']` option on every channel in `routes/channels.php` (same underlying reason: `Broadcast::channel()` closures resolve the user via the *default* guard unless told otherwise).
-- ✅ `party.{partyId}` presence channel (party lobby) and `game-session.{gameSessionId}` private channel (active game), both membership-gated via `PartyMember`.
-- ✅ Added `App\Events\TurnStarted` (dispatched from `GameSessionService::dealTurn()`, fire-after-commit) — confirmed with the user, since `IMPLEMENTATION_ORDER.md`'s Sprint 8 entry names this event but it was never built in Sprint 6/7.
-- ✅ `ShouldBroadcast` added directly on the event classes (confirmed with the user over a separate-listener approach): `PartyMemberJoined`, `PartyStarted` → `party.{id}` presence channel; `TurnStarted`, `RoundCompleted` → `game-session.{id}` private channel; `GameCompleted` → both (game session + party lobby, since it's meaningful to each).
-- ⚠️ **Scope call made without asking, worth a second look:** `WalletCredited`/`WalletDebited`/`PurchaseCompleted`/`PartyCreated` were **not** broadcast — they're user-scoped, not party/game-scoped, and don't fit either channel this sprint defines (a private per-user channel would be needed). `IMPLEMENTATION_ORDER.md`'s Sprint 8 text technically lists broadcasting "the events already fired since Sprint 5–7" without qualification, so this narrows that literal reading.
-- ⚠️ **Known gap surfaced, not fixed:** `PartyMembershipService::leave()` never dispatches any event (a pre-existing Sprint 5 gap, not introduced here) — so the party presence channel reflects joins via `PartyMemberJoined`, but not leaves via a domain event (a leaving user's own WebSocket disconnect still updates the presence channel's live roster automatically, since that's Reverb's connection-tracking, not our event system).
-- ✅ Broadcasting auth is tested via `POST /broadcasting/auth` using the real `reverb` (Pusher-protocol) driver — the `null` driver used by the rest of the test suite (phpunit.xml) no-ops channel auth entirely and can't exercise these closures. Test-only quirk worth knowing: `routes/channels.php` registers channels against whichever broadcaster is default *at boot*, so switching `broadcasting.default` mid-test requires re-`require`-ing that file — see `tests/Feature/Broadcasting/ChannelAuthorizationTest.php`.
+- ✅ `push_tokens` table (`user_id` unique, `token`, `platform`) + `PushToken` model, `HasOne` from `User`. One token per user — registering a new token replaces the previous one (confirmed with the user over a multi-device-per-user model).
+- ✅ `App\Services\Notifications\PushTokenService` + `PushTokenController` (`POST /push-tokens`, `DELETE /push-tokens`), inside the existing `auth:clerk` + `throttle:api` group.
+- ✅ `kreait/laravel-firebase` installed for FCM (confirmed with the user over a hand-rolled HTTP v1 client) — no config publish needed, package merges its own `config/firebase.php`; project/credentials are read from `FIREBASE_CREDENTIALS`/`GOOGLE_APPLICATION_CREDENTIALS` (documented in `.env.example`, unset by default — push sends are inert until an environment sets real Firebase credentials).
+- ✅ `App\Notifications\Channels\FcmChannel` — resolves `Kreait\Firebase\Contract\Messaging` **lazily**, only after confirming the notifiable has a push token. This is a deliberate robustness fix, not incidental: the container's `Messaging` singleton throws immediately if Firebase credentials aren't configured, and constructor-injecting it would crash *every* notification attempt (including for the near-100% of users with no token yet) whenever Firebase isn't set up in an environment. Discovered because it broke unrelated Sprint 6/7 tests (`GameSessionServiceTest`/`GameSessionControllerTest`) that exercise `RoundCompleted` under the `sync` queue driver.
+- ✅ Three notifications, each `ShouldQueue`, wired via new listeners (not by touching the events or the services that dispatch them): `PartyMemberJoinedNotification`, `RoundCompletedNotification`, `WalletCreditedNotification`.
+- ⚠️ **Scope call made without asking, worth a second look:** `IMPLEMENTATION_ORDER.md`'s Sprint 9 entry names three trigger events but not their recipients. Chosen recipient logic: `PartyMemberJoined` notifies the **party host** only (not the joiner — a self-notification for one's own action isn't useful, and the joiner already knows); `RoundCompleted` notifies **every current party member** (resolved via `PartyMember` for the session's party, not a `turns`/`players` roster specific to the game); `WalletCredited` notifies the credited user directly (unambiguous from the event payload). None of this is stated in the plan — flag if the product intent differs.
+- ✅ Push-only this sprint (confirmed with the user over also adding in-app/Reverb-broadcast delivery for the same three events) — `routes/channels.php` and the Sprint 8 broadcast channels are untouched.
+- ✅ Only the three named events trigger notifications this sprint (confirmed with the user over covering all nine fired events) — `PartyCreated`, `PartyStarted`, `TurnStarted`, `GameCompleted`, `WalletDebited`, `PurchaseCompleted` do not notify yet.
+- ✅ Tests: token register/replace/unregister feature tests; `Notification::fake()` coverage for all three notifications (including the "host, not joiner" and "all party members" recipient rules); one real-queue integration test (`WalletCredited`) that mocks `Kreait\Firebase\Contract\Messaging` and drains the queue with `queue:work --stop-when-empty`, plus a no-token no-op regression test.
+
+Sprint 8 (done previously): `laravel/reverb`; `party.{id}` presence channel + `game-session.{id}` private channel, both membership-gated; `PartyMemberJoined`/`PartyStarted`/`TurnStarted`/`RoundCompleted`/`GameCompleted` broadcast. Wallet/Purchase/`PartyCreated` events and `PartyMembershipService::leave()` still aren't broadcast (unscheduled, per Sprint 8's notes).
 
 Sprint 7 (done previously): server-authoritative 30s turn timer (delayed queue job) with AFK-skip tracked per turn, crash-recovery sweep (`game:sweep-expired-turns`), `RoundCompleted`/`GameCompleted` events. Reward-granting was explicitly descoped by the user and remains unscheduled.
 
@@ -50,6 +54,7 @@ Built, exposed via API, and tested:
 | **Token Bundle purchase (top-up)** | `POST /token-bundles/{id}/purchase` — `PurchaseService` + manual/test `PaymentProvider` driver, credits via `WalletService::credit()`, `Idempotency-Key` enforced. No real payment gateway yet. |
 | **Pack purchase & inventory** | `POST /packs/{id}/purchase` — `PackPurchaseService`, debits via `WalletService::debit()`, race-guarded, `Idempotency-Key` enforced, gates full `PackCard` content behind ownership. |
 | **Domain events & listeners backbone** | `app/Events`/`app/Listeners`; six events dispatch fire-after-commit from Wallet/Party/PartyMembership/Purchase services; `RecordAnalyticsEvent` proven end-to-end on the Horizon queue. |
+| **Push token registration** | `POST`/`DELETE /push-tokens` over `PushTokenService`; one token per user, replace-on-register. |
 
 ---
 
@@ -65,7 +70,8 @@ Real code exists but the module is narrower than its documented scope, or is unr
 | **Packs (catalog + purchase)** | List/discover/show, `POST /packs/{id}/purchase` (debits wallet, grants ownership, full content unlocked). | Nothing planned — scope complete for the current roadmap. |
 | **Sponsorship** | `parties.is_sponsored` / `sponsor_name` columns exist. | No sponsor entity, no sponsor-facing flow of any kind — schema hint only. |
 | **Game Engine (rounds/turns/timers)** | `game_sessions`/`rounds`/`turns` tables + `GameSessionService`; host-only start/next-turn, randomized turn order, host-configurable rounds, Truth/Dare card dealing with no-repeat-until-exhausted, auto-completion; 30s server-authoritative turn timer with AFK-skip (tracked per turn), crash-recovery sweep, and `RoundCompleted`/`GameCompleted` events. | Votes, scoring, and reward granting — none of these were built; rewards were explicitly descoped from Sprint 7 by the user and have no owning sprint in the current plan (see Current Priority). |
-| **Realtime (Reverb)** | `laravel/reverb` installed; `party.{id}` presence channel + `game-session.{id}` private channel, both membership-gated; `PartyMemberJoined`/`PartyStarted`/`TurnStarted`/`RoundCompleted`/`GameCompleted` broadcast (new `TurnStarted` event added this sprint). | Wallet/Purchase/`PartyCreated` events aren't broadcast (no per-user channel exists yet — deliberately out of this sprint's two-channel scope); `PartyMembershipService::leave()` doesn't dispatch any event to broadcast (pre-existing Sprint 5 gap); no live client (React Native) has verified the integration end-to-end. |
+| **Realtime (Reverb)** | `laravel/reverb` installed; `party.{id}` presence channel + `game-session.{id}` private channel, both membership-gated; `PartyMemberJoined`/`PartyStarted`/`TurnStarted`/`RoundCompleted`/`GameCompleted` broadcast. | Wallet/Purchase/`PartyCreated` events aren't broadcast (no per-user channel exists yet — deliberately out of Sprint 8's two-channel scope); `PartyMembershipService::leave()` doesn't dispatch any event to broadcast (pre-existing Sprint 5 gap); no live client (React Native) has verified the integration end-to-end. |
+| **Notifications** | `push_tokens` table/API; FCM channel; `PartyMemberJoinedNotification`/`RoundCompletedNotification`/`WalletCreditedNotification`, each queued off a new listener. | No real Firebase project/credentials configured in any environment yet (push is wired but inert until `FIREBASE_CREDENTIALS` is set); only 3 of 9 fired events notify; no in-app delivery; no client (React Native) has verified receiving a real push. |
 
 ---
 
@@ -73,23 +79,24 @@ Real code exists but the module is narrower than its documented scope, or is unr
 
 No migration, model, route, or config exists for any of these:
 
-Notifications, Chat/Messaging, Friends/social graph, AI Host, Voice/Video (LiveKit), Admin Panel, Moderation/Trust & Safety, Analytics/Observability infrastructure, Creator Economy, Corporate/Multi-Tenant/Enterprise, Internationalization, CI/CD pipeline.
+Chat/Messaging, Friends/social graph, AI Host, Voice/Video (LiveKit), Admin Panel, Moderation/Trust & Safety, Analytics/Observability infrastructure, Creator Economy, Corporate/Multi-Tenant/Enterprise, Internationalization, CI/CD pipeline.
 
-(Marketplace purchase flow/inventory/ownership moved to Partially Complete above — token bundle and pack purchase both now exist; only a real payment gateway is missing.)
+(Marketplace purchase flow/inventory/ownership moved to Partially Complete above — token bundle and pack purchase both now exist; only a real payment gateway is missing. Notifications moved to Partially Complete above.)
 
 ---
 
 ## Current Priority
 
-Start **Sprint 9 — Notifications v0** (`docs/implementation/IMPLEMENTATION_ORDER.md`):
+Start **Sprint 10 — Friends / social graph** (`docs/implementation/IMPLEMENTATION_ORDER.md`):
 
-1. Device/push-token registration table; FCM integration; `Notification` classes hooked to existing Listeners (e.g. notify on `PartyMemberJoined`, `RoundCompleted`, `WalletCredited`).
-2. Runs on the queue activated in Sprint 5.
-3. **Risk:** low-medium — purely additive consumer of already-correct events; failure mode is "notification doesn't send," not "game state is wrong."
+1. `friends`/`friend_requests` tables, request/accept/reject endpoints.
+2. Independent of the game loop and of Sprint 9 — no shared infrastructure required.
+3. **Risk:** low — new, isolated domain with no dependency on money or game state.
 
 Outstanding, unscheduled (needs a design decision before it can be assigned to a sprint):
 - Reward granting on round/game completion (amount, trigger, recipients) — explicitly out of Sprint 7 per the user; no sprint in the current 14-sprint plan owns it.
-- Broadcasting Wallet/Purchase events and `PartyMemberLeft` — surfaced by Sprint 8; would need a per-user private channel and (for leave) a new domain event that doesn't exist yet. Not scheduled; flag if Sprint 9 (Notifications) ends up wanting the same per-user channel infrastructure.
+- Broadcasting Wallet/Purchase events and `PartyMemberLeft` — surfaced by Sprint 8; would need a per-user private channel and (for leave) a new domain event that doesn't exist yet.
+- Notifications beyond v0: the remaining 6 fired events, in-app (Reverb) delivery, and configuring a real Firebase project per environment — none scheduled.
 
 Lower-priority, not blocking, carried over from Sprint 1:
 - Schedule `clerk:sync-users` as an hourly self-heal job.
@@ -99,7 +106,7 @@ Lower-priority, not blocking, carried over from Sprint 1:
 
 ## Next Recommended Sprint
 
-**Sprint 10 — Friends / social graph**, once Sprint 9 lands: `friends`/`friend_requests` tables, request/accept/reject endpoints. Independent of the game loop; flagged as parallelizable earlier if a second engineer is available. Risk: low — new, isolated domain with no dependency on money or game state.
+**Sprint 11 — Admin panel v0**, once Sprint 10 lands: install Filament; resources for Users, Parties, Wallet transactions (read-only/audit), GameTypes/Packs/PackCards/TokenBundles. Risk: low — additive tooling over existing tables.
 
 ---
 
@@ -110,7 +117,7 @@ A single number is misleading given the scope gap between the documented vision 
 | Reference frame | Completion | Basis |
 |---|---|---|
 | **Pre-roadmap foundation** (Clerk auth, catalog, party create/like, wallet engine) | **~100%** of its own scope | This slice is finished, tested, and stable — no further work planned against it except the Sprint 1 exposure fix. |
-| **`docs/implementation/IMPLEMENTATION_ORDER.md`** (14-sprint actionable plan to a complete, playable core product) | **8 of 14 sprints executed (~57%)** | Sprints 1–8 done (Sprint 7 minus reward-granting, descoped per the user); Sprint 9 (Notifications) is next. |
-| **Full documented platform vision** (`docs/architecture/`, ~26 modules incl. Marketplace, Realtime, AI, Admin, Enterprise, Creator Economy) | **~25%** | 6 of ~26 modules fully built+exposed (Auth, Game Catalog, Party Likes, Wallet, Marketplace-purchase, Domain Events), 6 partial (incl. Game Engine and the new Realtime), ~14 with zero code. Weighted toward "exists and works," not toward doc page count. |
+| **`docs/implementation/IMPLEMENTATION_ORDER.md`** (14-sprint actionable plan to a complete, playable core product) | **9 of 14 sprints executed (~64%)** | Sprints 1–9 done (Sprint 7 minus reward-granting, descoped per the user); Sprint 10 (Friends) is next. |
+| **Full documented platform vision** (`docs/architecture/`, ~26 modules incl. Marketplace, Realtime, AI, Admin, Enterprise, Creator Economy) | **~27%** | 7 of ~26 modules fully built+exposed (Auth, Game Catalog, Party Likes, Wallet, Marketplace-purchase, Domain Events, Push token registration), 6 partial (incl. Game Engine, Realtime, and the new Notifications), ~13 with zero code. Weighted toward "exists and works," not toward doc page count. |
 
-For context: `docs/architecture/60_PLATFORM_ROADMAP.md` claims "Phase 1: Foundation" is `Status: Completed` including Friends, Marketplace, Notifications, Realtime, and Voice — that claim does not hold against the code (see `docs/audit/ARCHITECTURE_GAP_ANALYSIS.md`). The 15% figure above is the code-verified number; treat any completion claim inside `docs/architecture/` as aspirational framing, not status.
+For context: `docs/architecture/60_PLATFORM_ROADMAP.md` claims "Phase 1: Foundation" is `Status: Completed` including Friends, Marketplace, Notifications, Realtime, and Voice — that claim does not hold against the code (see `docs/audit/ARCHITECTURE_GAP_ANALYSIS.md`). The figures above are the code-verified numbers; treat any completion claim inside `docs/architecture/` as aspirational framing, not status.
