@@ -77,4 +77,20 @@ class User extends Authenticatable
     {
         return $this->hasOne(PushToken::class);
     }
+
+    /**
+     * @return HasMany<Friendship, $this>
+     */
+    public function sentFriendRequests(): HasMany
+    {
+        return $this->hasMany(Friendship::class, 'sender_id');
+    }
+
+    /**
+     * @return HasMany<Friendship, $this>
+     */
+    public function receivedFriendRequests(): HasMany
+    {
+        return $this->hasMany(Friendship::class, 'receiver_id');
+    }
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\ClerkWebhookController;
+use App\Http\Controllers\Api\V1\FriendshipController;
 use App\Http\Controllers\Api\V1\GameSessionController;
 use App\Http\Controllers\Api\V1\GameTypeController;
 use App\Http\Controllers\Api\V1\MeController;
@@ -47,6 +48,14 @@ Route::prefix('v1')->group(function () {
 
         Route::post('/push-tokens', [PushTokenController::class, 'store']);
         Route::delete('/push-tokens', [PushTokenController::class, 'destroy']);
+
+        Route::get('/friends', [FriendshipController::class, 'index']);
+        Route::delete('/friends/{friendship}', [FriendshipController::class, 'destroy']);
+        Route::get('/friend-requests', [FriendshipController::class, 'pending']);
+        Route::post('/friend-requests', [FriendshipController::class, 'store']);
+        Route::post('/friend-requests/{friendship}/accept', [FriendshipController::class, 'accept']);
+        Route::post('/friend-requests/{friendship}/reject', [FriendshipController::class, 'reject']);
+        Route::delete('/friend-requests/{friendship}', [FriendshipController::class, 'cancel']);
     });
 
     Route::post('/webhooks/clerk', ClerkWebhookController::class)->middleware('throttle:webhooks');

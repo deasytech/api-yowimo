@@ -1,6 +1,6 @@
 # Implementation Progress — Yowimo Backend
 
-**Assessed:** 2026-08-23, after Sprint 9 (Notifications v0) landed, by direct code inspection.
+**Assessed:** 2026-08-26, after Sprint 10 (Friends / social graph) landed, by direct code inspection.
 **Sources:** `docs/audit/*`, `docs/implementation/IMPLEMENTATION_ORDER.md`, `.claude/CURRENT_PHASE.md`, `.claude/IMPLEMENTATION_STATUS.md`.
 
 "Blocked" below means zero code exists **and** an upstream dependency isn't finished yet. "Not Started" means zero code exists but nothing is stopping work from beginning today.
@@ -21,6 +21,7 @@ Built, exposed, tested — no further work planned:
 - **Domain events & listeners backbone** — `app/Events`/`app/Listeners`; `PartyCreated`, `PartyMemberJoined`, `PartyStarted`, `WalletCredited`, `WalletDebited`, `PurchaseCompleted` all dispatch fire-after-commit; `RecordAnalyticsEvent` proven end-to-end via a real queue worker.
 - **Game Engine timers & completion events** — 30s server-authoritative turn timer (delayed queue job, `afterCommit()`), AFK-skip tracked per turn, crash-recovery sweep (`game:sweep-expired-turns`, scheduled every minute), `RoundCompleted`/`GameCompleted` events. Reward granting was explicitly descoped from this sprint per the user — see In progress below.
 - **Push token registration** — `POST`/`DELETE /push-tokens` over `PushTokenService`; one token per user, replace-on-register.
+- **Friends / Social Graph** — `friendships` table + `FriendshipService`; send/accept/reject/cancel a pending request, unfriend (soft `removed` status), list friends/pending requests either direction. `FriendRequestSent`/`FriendRequestAccepted` domain events dispatch for future consumers; nothing listens yet.
 
 ## In progress modules
 
@@ -50,8 +51,7 @@ Zero code, and an upstream dependency must land first:
 Zero code, nothing blocking — ready to schedule:
 
 - CI/CD Pipeline
-- Friends / Social Graph — next up, Sprint 10
-- Admin Panel
+- Admin Panel — next up, Sprint 11
 
 **Deferred** (zero code, intentionally not scheduled pending a business trigger — see `IMPLEMENTATION_ORDER.md` §G): Chat/Messaging, Voice/Video (LiveKit), Moderation/Trust & Safety, Creator Economy, Corporate/Multi-Tenant/Enterprise, Internationalization.
 
@@ -84,7 +84,7 @@ Illustrative only — assumes ~1 engineer-week per sprint per `IMPLEMENTATION_OR
 | Reference frame | Progress |
 |---|---|
 | Pre-roadmap foundation (Auth, Catalog, Party create/like, Wallet engine) | **~100%** of its own scope — done |
-| `IMPLEMENTATION_ORDER.md` 14-sprint plan | **9 of 14 sprints complete (~64%)** — Sprint 10 (Friends) is next; reward granting from Sprint 7's original scope is descoped and unscheduled |
-| Full documented platform vision (`docs/architecture/`) | **~27%** — 7 modules complete, 6 in progress (incl. Game Engine, Realtime, and the new Notifications), the rest (~13) not started/blocked/deferred |
+| `IMPLEMENTATION_ORDER.md` 14-sprint plan | **10 of 14 sprints complete (~71%)** — Sprint 11 (Admin panel) is next; reward granting from Sprint 7's original scope is descoped and unscheduled |
+| Full documented platform vision (`docs/architecture/`) | **~31%** — 8 modules complete, 6 in progress (incl. Game Engine, Realtime, and Notifications), the rest (~12) not started/blocked/deferred |
 
 `docs/architecture/60_PLATFORM_ROADMAP.md` claims Phase 1 is fully complete including Friends, Marketplace, Notifications, Realtime, and Voice — the code does not support that claim (see `docs/audit/ARCHITECTURE_GAP_ANALYSIS.md`). The figures above are the code-verified numbers.
