@@ -1,23 +1,21 @@
 # Current Phase — Yowimo Backend
 
-**Assessed:** 2026-08-23, against `dev` after Sprint 9 landed, by direct code inspection.
+**Assessed:** 2026-08-26, against `dev` after Sprint 10 landed, by direct code inspection.
 **Basis:** `docs/audit/*`, `docs/implementation/IMPLEMENTATION_ORDER.md`, `.claude/PROJECT_CONTEXT.md`.
 
 ---
 
 ## Current Sprint
 
-**Sprint 9 — Notifications v0** (`docs/implementation/IMPLEMENTATION_ORDER.md`), **done, with scope decided with the user up front.** Nothing blocks starting Sprint 10.
+**Sprint 10 — Friends / social graph** (`docs/implementation/IMPLEMENTATION_ORDER.md`), **done, with scope decided with the user up front.** Nothing blocks starting Sprint 11.
 
-- ✅ `push_tokens` table (`user_id` unique, `token`, `platform`) + `PushToken` model, `HasOne` from `User`. One token per user — registering a new token replaces the previous one (confirmed with the user over a multi-device-per-user model).
-- ✅ `App\Services\Notifications\PushTokenService` + `PushTokenController` (`POST /push-tokens`, `DELETE /push-tokens`), inside the existing `auth:clerk` + `throttle:api` group.
-- ✅ `kreait/laravel-firebase` installed for FCM (confirmed with the user over a hand-rolled HTTP v1 client) — no config publish needed, package merges its own `config/firebase.php`; project/credentials are read from `FIREBASE_CREDENTIALS`/`GOOGLE_APPLICATION_CREDENTIALS` (documented in `.env.example`, unset by default — push sends are inert until an environment sets real Firebase credentials).
-- ✅ `App\Notifications\Channels\FcmChannel` — resolves `Kreait\Firebase\Contract\Messaging` **lazily**, only after confirming the notifiable has a push token. This is a deliberate robustness fix, not incidental: the container's `Messaging` singleton throws immediately if Firebase credentials aren't configured, and constructor-injecting it would crash *every* notification attempt (including for the near-100% of users with no token yet) whenever Firebase isn't set up in an environment. Discovered because it broke unrelated Sprint 6/7 tests (`GameSessionServiceTest`/`GameSessionControllerTest`) that exercise `RoundCompleted` under the `sync` queue driver.
-- ✅ Three notifications, each `ShouldQueue`, wired via new listeners (not by touching the events or the services that dispatch them): `PartyMemberJoinedNotification`, `RoundCompletedNotification`, `WalletCreditedNotification`.
-- ⚠️ **Scope call made without asking, worth a second look:** `IMPLEMENTATION_ORDER.md`'s Sprint 9 entry names three trigger events but not their recipients. Chosen recipient logic: `PartyMemberJoined` notifies the **party host** only (not the joiner — a self-notification for one's own action isn't useful, and the joiner already knows); `RoundCompleted` notifies **every current party member** (resolved via `PartyMember` for the session's party, not a `turns`/`players` roster specific to the game); `WalletCredited` notifies the credited user directly (unambiguous from the event payload). None of this is stated in the plan — flag if the product intent differs.
-- ✅ Push-only this sprint (confirmed with the user over also adding in-app/Reverb-broadcast delivery for the same three events) — `routes/channels.php` and the Sprint 8 broadcast channels are untouched.
-- ✅ Only the three named events trigger notifications this sprint (confirmed with the user over covering all nine fired events) — `PartyCreated`, `PartyStarted`, `TurnStarted`, `GameCompleted`, `WalletDebited`, `PurchaseCompleted` do not notify yet.
-- ✅ Tests: token register/replace/unregister feature tests; `Notification::fake()` coverage for all three notifications (including the "host, not joiner" and "all party members" recipient rules); one real-queue integration test (`WalletCredited`) that mocks `Kreait\Firebase\Contract\Messaging` and drains the queue with `queue:work --stop-when-empty`, plus a no-token no-op regression test.
+- ✅ `friendships` table (`sender_id`/`receiver_id`/`status`/`accepted_at`, per `docs/architecture/38_DATABASE_SCHEMA_REFERENCE.md`) + `Friendship` model, `sentFriendRequests()`/`receivedFriendRequests()` `HasMany` from `User`. `blocked` stays out of scope for v0 (unchanged from the plan).
+- ✅ `App\Services\Friends\FriendshipService` + `FriendshipController` — send (`POST /friend-requests`), accept/reject (`POST /friend-requests/{id}/accept,reject`), cancel a pending outgoing request (`DELETE /friend-requests/{id}`), unfriend (`DELETE /friends/{id}`), list friends (`GET /friends`) and pending requests, both directions (`GET /friend-requests`) — all inside the existing `auth:clerk` + `throttle:api` group, following the Form Request + Resource + Policy pattern (`FriendshipPolicy` gates *who*: sender-only cancel, receiver-only accept/reject, either side to unfriend; the service gates *state*, throwing `InvalidFriendshipTransitionException` on a bad transition).
+- ⚠️ **Scope calls made with the user up front, confirmed before coding (not guessed):** (1) cancelling a pending outgoing request and rejecting an incoming one are **distinct operations** (`cancel` vs `reject`, sender vs receiver only); (2) unfriending is a **soft status change** (`removed`), not a hard delete — added `cancelled`/`removed` status values beyond the doc's four (`pending`/`accepted`/`blocked`/`rejected`) to support this; (3) this sprint **does dispatch domain events** — `FriendRequestSent`/`FriendRequestAccepted` (`ShouldDispatchAfterCommit`, unbroadcast — no per-user channel exists yet, same reason Wallet/Purchase/`PartyCreated` aren't broadcast) — for future Notifications/Realtime consumers, but no listener/notification consumes them yet (that remains unscheduled, as the plan intended).
+- ✅ Guards duplicate/overlapping requests (a pending request in either direction, or already-accepted) and self-requests (`Rule::notIn` in `StoreFriendshipRequest`), with a `lockForUpdate` transaction in `FriendshipService::send()` to close the race.
+- ✅ Tests: full transition coverage (send/accept/reject/cancel/unfriend + every guard/authorization path) in `FriendshipControllerTest`, plus `FriendRequestSent`/`FriendRequestAccepted` dispatch assertions added to the existing `EventDispatchTest`.
+
+Sprint 9 (done previously): `push_tokens` table + `PushTokenService`; `kreait/laravel-firebase` FCM channel (lazily resolved, to avoid crashing every notification attempt when Firebase isn't configured); `PartyMemberJoinedNotification`/`RoundCompletedNotification`/`WalletCreditedNotification` off new listeners (host-only, all-party-members, and credited-user recipient rules respectively); push-only, 3 of 9 fired events wired, confirmed with the user; no real Firebase project configured in any environment yet.
 
 Sprint 8 (done previously): `laravel/reverb`; `party.{id}` presence channel + `game-session.{id}` private channel, both membership-gated; `PartyMemberJoined`/`PartyStarted`/`TurnStarted`/`RoundCompleted`/`GameCompleted` broadcast. Wallet/Purchase/`PartyCreated` events and `PartyMembershipService::leave()` still aren't broadcast (unscheduled, per Sprint 8's notes).
 
@@ -55,6 +53,7 @@ Built, exposed via API, and tested:
 | **Pack purchase & inventory** | `POST /packs/{id}/purchase` — `PackPurchaseService`, debits via `WalletService::debit()`, race-guarded, `Idempotency-Key` enforced, gates full `PackCard` content behind ownership. |
 | **Domain events & listeners backbone** | `app/Events`/`app/Listeners`; six events dispatch fire-after-commit from Wallet/Party/PartyMembership/Purchase services; `RecordAnalyticsEvent` proven end-to-end on the Horizon queue. |
 | **Push token registration** | `POST`/`DELETE /push-tokens` over `PushTokenService`; one token per user, replace-on-register. |
+| **Friends / social graph** | `friendships` table + `FriendshipService`; send/accept/reject/cancel/unfriend + list friends/pending requests, `FriendshipPolicy`-guarded. `FriendRequestSent`/`FriendRequestAccepted` domain events dispatch, unconsumed for now. |
 
 ---
 
@@ -79,24 +78,25 @@ Real code exists but the module is narrower than its documented scope, or is unr
 
 No migration, model, route, or config exists for any of these:
 
-Chat/Messaging, Friends/social graph, AI Host, Voice/Video (LiveKit), Admin Panel, Moderation/Trust & Safety, Analytics/Observability infrastructure, Creator Economy, Corporate/Multi-Tenant/Enterprise, Internationalization, CI/CD pipeline.
+Chat/Messaging, AI Host, Voice/Video (LiveKit), Admin Panel, Moderation/Trust & Safety, Analytics/Observability infrastructure, Creator Economy, Corporate/Multi-Tenant/Enterprise, Internationalization, CI/CD pipeline.
 
-(Marketplace purchase flow/inventory/ownership moved to Partially Complete above — token bundle and pack purchase both now exist; only a real payment gateway is missing. Notifications moved to Partially Complete above.)
+(Marketplace purchase flow/inventory/ownership moved to Partially Complete above — token bundle and pack purchase both now exist; only a real payment gateway is missing. Notifications and Friends/social graph moved to Completed above.)
 
 ---
 
 ## Current Priority
 
-Start **Sprint 10 — Friends / social graph** (`docs/implementation/IMPLEMENTATION_ORDER.md`):
+Start **Sprint 11 — Admin panel v0** (`docs/implementation/IMPLEMENTATION_ORDER.md`):
 
-1. `friends`/`friend_requests` tables, request/accept/reject endpoints.
-2. Independent of the game loop and of Sprint 9 — no shared infrastructure required.
-3. **Risk:** low — new, isolated domain with no dependency on money or game state.
+1. Install Filament; resources for Users, Parties, Wallet transactions (read-only/audit), GameTypes/Packs/PackCards/TokenBundles.
+2. Extend the `viewHorizon` gate to admin roles now that an admin concept exists.
+3. **Risk:** low — additive tooling over existing tables; the main risk is scope creep (docs specify a huge admin surface — build only Users/Parties/Content/Wallet-audit now, defer the rest).
 
 Outstanding, unscheduled (needs a design decision before it can be assigned to a sprint):
 - Reward granting on round/game completion (amount, trigger, recipients) — explicitly out of Sprint 7 per the user; no sprint in the current 14-sprint plan owns it.
 - Broadcasting Wallet/Purchase events and `PartyMemberLeft` — surfaced by Sprint 8; would need a per-user private channel and (for leave) a new domain event that doesn't exist yet.
 - Notifications beyond v0: the remaining 6 fired events, in-app (Reverb) delivery, and configuring a real Firebase project per environment — none scheduled.
+- Consuming `FriendRequestSent`/`FriendRequestAccepted` for Notifications/Realtime — the events exist (Sprint 10) but nothing listens yet.
 
 Lower-priority, not blocking, carried over from Sprint 1:
 - Schedule `clerk:sync-users` as an hourly self-heal job.
@@ -106,7 +106,7 @@ Lower-priority, not blocking, carried over from Sprint 1:
 
 ## Next Recommended Sprint
 
-**Sprint 11 — Admin panel v0**, once Sprint 10 lands: install Filament; resources for Users, Parties, Wallet transactions (read-only/audit), GameTypes/Packs/PackCards/TokenBundles. Risk: low — additive tooling over existing tables.
+**Sprint 12 — Analytics & observability baseline**, once Sprint 11 lands: persist an `analytics_events` feed off the Sprint 5 event backbone; add `/health` checks for DB/Redis/Queue/Broadcast; wire error tracking. Risk: low — read-side/observational work, no changes to write paths.
 
 ---
 
@@ -117,7 +117,7 @@ A single number is misleading given the scope gap between the documented vision 
 | Reference frame | Completion | Basis |
 |---|---|---|
 | **Pre-roadmap foundation** (Clerk auth, catalog, party create/like, wallet engine) | **~100%** of its own scope | This slice is finished, tested, and stable — no further work planned against it except the Sprint 1 exposure fix. |
-| **`docs/implementation/IMPLEMENTATION_ORDER.md`** (14-sprint actionable plan to a complete, playable core product) | **9 of 14 sprints executed (~64%)** | Sprints 1–9 done (Sprint 7 minus reward-granting, descoped per the user); Sprint 10 (Friends) is next. |
-| **Full documented platform vision** (`docs/architecture/`, ~26 modules incl. Marketplace, Realtime, AI, Admin, Enterprise, Creator Economy) | **~27%** | 7 of ~26 modules fully built+exposed (Auth, Game Catalog, Party Likes, Wallet, Marketplace-purchase, Domain Events, Push token registration), 6 partial (incl. Game Engine, Realtime, and the new Notifications), ~13 with zero code. Weighted toward "exists and works," not toward doc page count. |
+| **`docs/implementation/IMPLEMENTATION_ORDER.md`** (14-sprint actionable plan to a complete, playable core product) | **10 of 14 sprints executed (~71%)** | Sprints 1–10 done (Sprint 7 minus reward-granting, descoped per the user); Sprint 11 (Admin panel) is next. |
+| **Full documented platform vision** (`docs/architecture/`, ~26 modules incl. Marketplace, Realtime, AI, Admin, Enterprise, Creator Economy) | **~31%** | 8 of ~26 modules fully built+exposed (Auth, Game Catalog, Party Likes, Wallet, Marketplace-purchase, Domain Events, Push token registration, Friends/social graph), 6 partial (incl. Game Engine, Realtime, and Notifications), ~12 with zero code. Weighted toward "exists and works," not toward doc page count. |
 
 For context: `docs/architecture/60_PLATFORM_ROADMAP.md` claims "Phase 1: Foundation" is `Status: Completed` including Friends, Marketplace, Notifications, Realtime, and Voice — that claim does not hold against the code (see `docs/audit/ARCHITECTURE_GAP_ANALYSIS.md`). The figures above are the code-verified numbers; treat any completion claim inside `docs/architecture/` as aspirational framing, not status.

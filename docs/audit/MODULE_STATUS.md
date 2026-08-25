@@ -1,8 +1,8 @@
 # Module Status — Yowimo Backend
 
-**Audit date:** 2026-08-25
+**Audit date:** 2026-08-26
 
-Status of every module named in `docs/architecture/` against what actually exists in code, as of `dev`@`4946365` (Sprint 9 — Notifications v0). Modules are grouped the way the architecture docs group them (see `02_SYSTEM_ARCHITECTURE.md`, `22_BACKEND_SERVICE_CATALOG.md`, `60_PLATFORM_ROADMAP.md`).
+Status of every module named in `docs/architecture/` against what actually exists in code, as of `dev` after Sprint 10 — Friends / social graph. Modules are grouped the way the architecture docs group them (see `02_SYSTEM_ARCHITECTURE.md`, `22_BACKEND_SERVICE_CATALOG.md`, `60_PLATFORM_ROADMAP.md`).
 
 **Status key**
 
@@ -20,7 +20,7 @@ Status of every module named in `docs/architecture/` against what actually exist
 |---|---|---|
 | **Authentication (Clerk)** | ✅ Built | Custom `clerk` guard, JWT verification w/ JWKS caching, JIT provisioning, webhook sync, backfill command. Fully tested. |
 | **User Profiles** | 🟡 Partial | `GET/PATCH /users/me` only — view + edit own profile. No public profile view, no avatar upload, no account deletion. |
-| **Friends / Social Graph** | ⬜ Not started | No `friends` table, model, controller, or route. Extensively specified in docs 02–07, 22, 39, 41, 43–47. |
+| **Friends / Social Graph** | ✅ Built (Sprint 10, 2026-08-26) | `friendships` table + `FriendshipService`; `POST/GET /friend-requests`, `POST /friend-requests/{id}/accept,reject`, `DELETE /friend-requests/{id}` (cancel), `GET /friends`, `DELETE /friends/{id}` (unfriend, soft `removed` status). `FriendRequestSent`/`FriendRequestAccepted` domain events dispatch but are not yet consumed by Notifications/Realtime. `blocked` status intentionally out of v0 scope. |
 | **Party (create/discover)** | 🟡 Partial | `index`/`store`/`show` only. Room-code generation, visibility rules, draft/scheduled/live status derivation all real. |
 | **Party lifecycle (join/leave/start/end/players)** | ✅ Built | `party_members` table + `PartyMembershipService`; `POST/DELETE /parties/{id}/join,leave`, host-only `POST /parties/{id}/start,end`. `players_count` wired to real membership counts. Host auto-joins on party creation and cannot leave (must end instead). |
 | **Party Likes** | ✅ Built | Full like/unlike with idempotent counters, tested. |

@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use App\Exceptions\Api\AlreadyFriendsException;
+use App\Exceptions\Api\DuplicateFriendRequestException;
 use App\Exceptions\Api\GameSessionAlreadyActiveException;
 use App\Exceptions\Api\GameSessionNotActiveException;
 use App\Exceptions\Api\GameSessionPackUnavailableException;
@@ -9,6 +11,7 @@ use App\Exceptions\Api\IdempotencyKeyConflictException;
 use App\Exceptions\Api\InsufficientWalletBalanceException;
 use App\Exceptions\Api\InvalidClerkTokenException;
 use App\Exceptions\Api\InvalidClerkWebhookException;
+use App\Exceptions\Api\InvalidFriendshipTransitionException;
 use App\Exceptions\Api\InvalidPartyTransitionException;
 use App\Exceptions\Api\PackAlreadyOwnedException;
 use App\Exceptions\Api\PartyFullException;
@@ -118,6 +121,33 @@ class ApiExceptionRegistrar
             $exceptions,
             InvalidPartyTransitionException::class,
             fn (InvalidPartyTransitionException $e) => ApiResponse::error(
+                $e->getMessage(),
+                status: 422
+            )
+        );
+
+        self::registerHandler(
+            $exceptions,
+            DuplicateFriendRequestException::class,
+            fn (DuplicateFriendRequestException $e) => ApiResponse::error(
+                $e->getMessage(),
+                status: 409
+            )
+        );
+
+        self::registerHandler(
+            $exceptions,
+            AlreadyFriendsException::class,
+            fn (AlreadyFriendsException $e) => ApiResponse::error(
+                $e->getMessage(),
+                status: 409
+            )
+        );
+
+        self::registerHandler(
+            $exceptions,
+            InvalidFriendshipTransitionException::class,
+            fn (InvalidFriendshipTransitionException $e) => ApiResponse::error(
                 $e->getMessage(),
                 status: 422
             )

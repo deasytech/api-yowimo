@@ -4,6 +4,8 @@ use App\Enums\PackCardKind;
 use App\Enums\PartyStatus;
 use App\Enums\PartyVisibility;
 use App\Enums\WalletTransactionType;
+use App\Events\FriendRequestAccepted;
+use App\Events\FriendRequestSent;
 use App\Events\GameCompleted;
 use App\Events\PartyCreated;
 use App\Events\PartyMemberJoined;
@@ -13,12 +15,14 @@ use App\Events\RoundCompleted;
 use App\Events\TurnStarted;
 use App\Events\WalletCredited;
 use App\Events\WalletDebited;
+use App\Models\Friendship;
 use App\Models\Pack;
 use App\Models\PackCard;
 use App\Models\Party;
 use App\Models\PartyMember;
 use App\Models\TokenBundle;
 use App\Models\User;
+use App\Services\Friends\FriendshipService;
 use App\Services\Game\GameSessionService;
 use App\Services\Parties\PartyMembershipService;
 use App\Services\Parties\PartyService;
@@ -186,6 +190,33 @@ it('fires GameCompleted when the last round of the last turn completes', functio
     $session = $service->nextTurn($session);
 
     Event::assertDispatched(GameCompleted::class, fn ($event) => $event->gameSessionId === $session->id && $event->partyId === $party->id);
+});
+
+it('fires FriendRequestSent when a friend request is sent', function () {
+    Event::fake([FriendRequestSent::class]);
+
+    $sender = User::factory()->create();
+    $receiver = User::factory()->create();
+
+    $friendship = app(FriendshipService::class)->send($sender, $receiver);
+
+    Event::assertDispatched(FriendRequestSent::class, fn ($event) => $event->friendshipId === $friendship->id
+        && $event->senderId === $sender->id
+        && $event->receiverId === $receiver->id);
+});
+
+it('fires FriendRequestAccepted when a pending request is accepted', function () {
+    Event::fake([FriendRequestAccepted::class]);
+
+    $sender = User::factory()->create();
+    $receiver = User::factory()->create();
+    $friendship = Friendship::factory()->create(['sender_id' => $sender->id, 'receiver_id' => $receiver->id]);
+
+    app(FriendshipService::class)->accept($friendship);
+
+    Event::assertDispatched(FriendRequestAccepted::class, fn ($event) => $event->friendshipId === $friendship->id
+        && $event->senderId === $sender->id
+        && $event->receiverId === $receiver->id);
 });
 
 it('broadcasts PartyMemberJoined and PartyStarted on the party presence channel', function () {

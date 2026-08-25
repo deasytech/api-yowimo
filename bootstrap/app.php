@@ -1,9 +1,12 @@
 <?php
 
+use App\Exceptions\Api\AlreadyFriendsException;
+use App\Exceptions\Api\DuplicateFriendRequestException;
 use App\Exceptions\Api\IdempotencyKeyConflictException;
 use App\Exceptions\Api\InsufficientWalletBalanceException;
 use App\Exceptions\Api\InvalidClerkTokenException;
 use App\Exceptions\Api\InvalidClerkWebhookException;
+use App\Exceptions\Api\InvalidFriendshipTransitionException;
 use App\Exceptions\Api\InvalidPartyTransitionException;
 use App\Exceptions\Api\PackAlreadyOwnedException;
 use App\Exceptions\Api\PartyFullException;
@@ -53,6 +56,9 @@ return Application::configure(basePath: dirname(__DIR__))
             PartyNotJoinableException::class,
             PartyHostCannotLeaveException::class,
             InvalidPartyTransitionException::class,
+            DuplicateFriendRequestException::class,
+            AlreadyFriendsException::class,
+            InvalidFriendshipTransitionException::class,
         ]);
 
         ApiExceptionRegistrar::register($exceptions);

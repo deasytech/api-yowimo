@@ -1,6 +1,6 @@
 # Implementation Status — Yowimo Backend
 
-**Assessed:** 2026-08-23, after Sprint 9 (Notifications v0) landed, by direct code inspection against `docs/architecture/`.
+**Assessed:** 2026-08-26, after Sprint 10 (Friends / social graph) landed, by direct code inspection against `docs/architecture/`.
 **Sources:** `docs/audit/*`, `docs/implementation/IMPLEMENTATION_ORDER.md`, `.claude/CURRENT_PHASE.md`.
 
 **Status legend:** ✅ Complete · 🟡 Partial · 🔵 Built, unexposed · ⬜ Missing
@@ -24,8 +24,8 @@
 | Game Engine (rounds/turns/timers/scoring) | 🟡 Partial | ~70% (rounds/turns/timers/AFK/completion-events done; votes/scoring/rewards missing — rewards explicitly descoped from Sprint 7, unscheduled) | No — extend only | Maintain (remaining scope unscheduled) | Party Lifecycle, Pack Catalog, Domain Events |
 | Realtime (Reverb) | 🟡 Partial | ~70% (Reverb installed; party lobby presence channel + game session private channel; `PartyMemberJoined`/`PartyStarted`/`TurnStarted`/`RoundCompleted`/`GameCompleted` broadcast) | No — extend only | Maintain | Domain Events, Game Engine |
 | Notifications | 🟡 Partial | ~40% (push-token registration, FCM channel, 3 of 9 fired events wired; no real Firebase project configured yet, no in-app delivery) | No — extend only | Maintain (remaining scope unscheduled) | Domain Events, Queue activation |
-| Friends / Social Graph | ⬜ Missing | 0% | N/A — net new | **High (Sprint 10, next)** | Auth (Users) |
-| Admin Panel | ⬜ Missing | 0% | N/A — net new | Medium (Sprint 11) | Users, Parties, Wallet, Catalog (data to administer) |
+| Friends / Social Graph | ✅ Complete | 100% (v0 scope: send/accept/reject/cancel/unfriend, list friends/pending) | No | Maintain | Auth (Users) |
+| Admin Panel | ⬜ Missing | 0% | N/A — net new | **High (Sprint 11, next)** | Users, Parties, Wallet, Catalog (data to administer) |
 | Analytics / Observability | ⬜ Missing | 0% | N/A — net new | Medium (Sprint 12) | Domain Events |
 | AI Host ("Yowi") | ⬜ Missing | 0% | N/A — net new | Medium (Sprint 13, narrow scope) | Domain Events, Realtime |
 | Chat / Messaging | ⬜ Missing | 0% | N/A — net new | Deferred | Friends, Realtime |
