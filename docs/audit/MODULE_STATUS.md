@@ -1,8 +1,8 @@
 # Module Status — Yowimo Backend
 
-**Audit date:** 2026-08-14
+**Audit date:** 2026-08-25
 
-Status of every module named in `docs/architecture/` against what actually exists in code, as of `dev`@`1f81022`. Modules are grouped the way the architecture docs group them (see `02_SYSTEM_ARCHITECTURE.md`, `22_BACKEND_SERVICE_CATALOG.md`, `60_PLATFORM_ROADMAP.md`).
+Status of every module named in `docs/architecture/` against what actually exists in code, as of `dev`@`4946365` (Sprint 9 — Notifications v0). Modules are grouped the way the architecture docs group them (see `02_SYSTEM_ARCHITECTURE.md`, `22_BACKEND_SERVICE_CATALOG.md`, `60_PLATFORM_ROADMAP.md`).
 
 **Status key**
 
@@ -51,6 +51,6 @@ Status of every module named in `docs/architecture/` against what actually exist
 
 ## Roll-up
 
-Of the ~26 modules the architecture docs treat as first-class platform components, **3 are fully built and exposed** (Auth, Game Catalog, Party Likes), **1 substantial engine is built but entirely unexposed** (Wallet), **4 are partial slices** (Profile, Party create/discover, Token Bundle catalog, Sponsorship schema hint), and **the remaining ~18 do not exist in any form** — no migration, no model, no route, no config.
+Of the 28 modules listed above, **4 are fully built and exposed** (Auth, Party lifecycle, Party Likes, Game Catalog), **1 substantial engine is built but only partially exposed** via a separate API layer (Wallet ledger — see Wallet API), **9 are partial slices** (User Profiles, Party create/discover, Game Engine, Wallet API, Token Bundles, Marketplace, Realtime, Notifications, Sponsorship schema hint), and **the remaining 14 do not exist in any form** — no migration, no model, no route, no config.
 
-This directly contradicts `docs/architecture/60_PLATFORM_ROADMAP.md`, which marks "Phase 1: Foundation" as **Status: Completed** and lists Authentication, Profiles, Friends, Party System, Wallet, Marketplace, Notifications, Realtime, Voice, and Infrastructure as done. Per the code, only Authentication and a read-only slice of Party/Wallet qualify; Friends, Marketplace, Notifications, Realtime, and Voice have zero code. See `ARCHITECTURE_GAP_ANALYSIS.md` for detail.
+This directly contradicts `docs/architecture/60_PLATFORM_ROADMAP.md`, which marks "Phase 1: Foundation" as **Status: Completed** and lists Authentication, Profiles, Friends, Party System, Wallet, Marketplace, Notifications, Realtime, Voice, and Infrastructure as done. Per the code: Authentication is genuinely done; Profiles, Party System, Wallet, Marketplace, Notifications, and Realtime are each only partial slices of their claimed scope (see the rows above); Friends and Voice have zero code. See `ARCHITECTURE_GAP_ANALYSIS.md` for detail.

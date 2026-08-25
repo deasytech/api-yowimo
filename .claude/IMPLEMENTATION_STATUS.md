@@ -15,7 +15,7 @@
 | User Profile | 🟡 Partial | 40% (view/edit only) | No — extend only | Low | Auth |
 | Token Bundles (catalog + purchase) | 🟡 Partial | 80% (list + purchase; no `show`, no real payment gateway) | No — extend only | Low | Wallet API |
 | Sponsorship | 🟡 Partial | 10% (schema columns only) | No | Deferred | Party |
-| Horizon / Queue | 🟡 Partial | 20% (installed, inert; gate is `local`-only) | Yes — small (gate + first job) | High (Sprint 5) | — |
+| Horizon / Queue | 🟡 Partial | ~50% (queue processing proven via a real worker since Sprint 5 — `RecordAnalyticsEvent`, the turn-timer job, notification jobs; but `laravel/horizon` itself is only installed/configured, never actually started by any process here, so it's unverified as active; gate still `local`-only) | Yes — small (gate; run `php artisan horizon` instead of `queue:listen` if its features are wanted) | Maintain (gate extension deferred to Sprint 11) | — |
 | Wallet Ledger Engine | ✅ Complete | 100% internal / exposed via read API | No | Maintain | Auth |
 | Wallet API (routes/controller) | ✅ Complete | 100% read + token-bundle top-up write path | No | Maintain | Wallet Ledger Engine |
 | CI/CD Pipeline | ⬜ Missing | 0% | N/A — net new (infra) | High (carried over from Sprint 1) | — |
