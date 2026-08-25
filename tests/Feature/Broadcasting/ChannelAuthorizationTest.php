@@ -26,7 +26,7 @@ beforeEach(function () {
         'broadcasting.connections.reverb.secret' => 'test-secret',
         'broadcasting.connections.reverb.app_id' => 'test-app-id',
     ]);
-    require base_path('routes/channels.php');
+    require_once base_path('routes/channels.php');
 });
 
 function authenticateAsClerkUser(string $sub): User
