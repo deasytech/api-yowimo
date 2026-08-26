@@ -2,7 +2,7 @@
 
 **Audit date:** 2026-08-26
 
-Status of every module named in `docs/architecture/` against what actually exists in code, as of `dev` after Sprint 10 — Friends / social graph. Modules are grouped the way the architecture docs group them (see `02_SYSTEM_ARCHITECTURE.md`, `22_BACKEND_SERVICE_CATALOG.md`, `60_PLATFORM_ROADMAP.md`).
+Status of every module named in `docs/architecture/` against what actually exists in code, as of `dev` after Sprint 11 — Admin panel v0. Modules are grouped the way the architecture docs group them (see `02_SYSTEM_ARCHITECTURE.md`, `22_BACKEND_SERVICE_CATALOG.md`, `60_PLATFORM_ROADMAP.md`).
 
 **Status key**
 
@@ -38,7 +38,7 @@ Status of every module named in `docs/architecture/` against what actually exist
 | **Rewards / XP / Bonuses** | ⬜ Not started | `WalletTransactionType` enum has a `Bonus` case, but nothing computes or grants rewards. |
 | **Sponsorship** | 🟡 Partial (schema hint only) | `parties.is_sponsored`/`sponsor_name` columns exist on the `parties` table; no sponsor entity, no sponsor-facing anything. |
 | **Referrals** | ⬜ Not started | No tables, no code. |
-| **Admin Panel** | ⬜ Not started | No Filament, no Spatie Permissions, no admin routes/controllers. `HorizonServiceProvider` gate is the only "admin" surface, and it's `local`-only. |
+| **Admin Panel** | ✅ Built (Sprint 11, 2026-08-26) | `filament/filament` v5 panel at `/admin`, gated on a new `is_admin` boolean on `users`, separate password-based login on the existing `web` guard (independent of the API's `clerk` guard). `UserResource` (view/edit, no create/delete), `PartyResource`/`WalletTransactionResource` (view/audit only — no create/edit/delete registered), `GameTypeResource`/`PackResource`/`PackCardResource`/`TokenBundleResource` (full CRUD, the real write path for catalog content). `HorizonServiceProvider`'s `viewHorizon` gate now also allows `is_admin` users, additive to its existing `local`-only bypass. No in-panel password-management UI, no moderation/analytics/enterprise admin surface — deliberately out of v0 scope. |
 | **Moderation / Trust & Safety** | ⬜ Not started | No reports table, no moderation pipeline, no trust score. |
 | **Analytics / Observability** | ⬜ Not started | No analytics-events table, no `/health` beyond Laravel's default `/up`, no Sentry/Prometheus/Grafana wiring. |
 | **Creator Economy** | ⬜ Not started | No creator entity, payout, or revenue-share logic anywhere. |

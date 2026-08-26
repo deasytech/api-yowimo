@@ -14,7 +14,10 @@
       "WebFetch(domain:clerk.com)",
       "Bash(git fetch *)",
       "Bash(xargs -I{} sh -c 'echo ==={}===; cat {}')",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(composer audit *)",
+      "Bash(composer show *)",
+      "Bash(echo \"exit: $?\")"
     ],
     "additionalDirectories": [
       "/private/tmp"

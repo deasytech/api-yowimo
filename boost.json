@@ -12,6 +12,7 @@
         "laravel-best-practices",
         "configuring-horizon",
         "pest-testing",
+        "echo-development",
         "tailwindcss-development"
     ]
 }

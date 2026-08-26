@@ -1,6 +1,6 @@
 # Implementation Progress — Yowimo Backend
 
-**Assessed:** 2026-08-26, after Sprint 10 (Friends / social graph) landed, by direct code inspection.
+**Assessed:** 2026-08-26, after Sprint 11 (Admin panel v0) landed, by direct code inspection.
 **Sources:** `docs/audit/*`, `docs/implementation/IMPLEMENTATION_ORDER.md`, `.claude/CURRENT_PHASE.md`, `.claude/IMPLEMENTATION_STATUS.md`.
 
 "Blocked" below means zero code exists **and** an upstream dependency isn't finished yet. "Not Started" means zero code exists but nothing is stopping work from beginning today.
@@ -22,6 +22,7 @@ Built, exposed, tested — no further work planned:
 - **Game Engine timers & completion events** — 30s server-authoritative turn timer (delayed queue job, `afterCommit()`), AFK-skip tracked per turn, crash-recovery sweep (`game:sweep-expired-turns`, scheduled every minute), `RoundCompleted`/`GameCompleted` events. Reward granting was explicitly descoped from this sprint per the user — see In progress below.
 - **Push token registration** — `POST`/`DELETE /push-tokens` over `PushTokenService`; one token per user, replace-on-register.
 - **Friends / Social Graph** — `friendships` table + `FriendshipService`; send/accept/reject/cancel a pending request, unfriend (soft `removed` status), list friends/pending requests either direction. `FriendRequestSent`/`FriendRequestAccepted` domain events dispatch for future consumers; nothing listens yet.
+- **Admin Panel v0** — `filament/filament` v5 panel at `/admin`, gated on a new `is_admin` boolean on `users`, separate password-based login on the `web` guard. `UserResource` (view/edit, no delete), `PartyResource`/`WalletTransactionResource` (view/audit only), `GameTypeResource`/`PackResource`/`PackCardResource`/`TokenBundleResource` (full CRUD — the real write path for catalog content). `viewHorizon` gate extended to admins.
 
 ## In progress modules
 
@@ -32,7 +33,7 @@ Real code exists; work remains to finish the module:
 | **User Profile** | View/edit own profile. | Public profile view, avatar upload, account deletion. |
 | **Token Bundles** | Catalog list + purchase (top-up). | `show` endpoint; a real payment provider (currently manual/test only). |
 | **Packs** | Catalog + purchase + ownership-gated full content. | Nothing planned — scope complete for now. |
-| **Horizon / Queue** | Queue processing itself is active and proven since Sprint 5 — `RecordAnalyticsEvent`, the Sprint 7 turn-timer job, and the Sprint 9 notification jobs are all confirmed end-to-end via a real queue worker in tests. `laravel/horizon` is installed and configured (`config/horizon.php`, dashboard gate), but no process anywhere in this repo (dev script, deploy config) actually runs `php artisan horizon` — local dev runs a plain `php artisan queue:listen` worker instead, so Horizon itself (supervisors, auto-balancing, dashboard data) is unverified as active, only installed. | Gate still needs to extend past `local` (Sprint 11, once an admin concept exists); Horizon itself needs to actually be started somewhere (dev script and/or deploy) if its supervisor/dashboard features are wanted over a plain queue worker. |
+| **Horizon / Queue** | Queue processing itself is active and proven since Sprint 5 — `RecordAnalyticsEvent`, the Sprint 7 turn-timer job, and the Sprint 9 notification jobs are all confirmed end-to-end via a real queue worker in tests. `laravel/horizon` is installed and configured (`config/horizon.php`, dashboard gate); the gate now also allows `is_admin` users (Sprint 11), in addition to its `local`-only bypass. | No process anywhere in this repo (dev script, deploy config) actually runs `php artisan horizon` — local dev runs a plain `php artisan queue:listen` worker instead, so Horizon itself (supervisors, auto-balancing, dashboard data) is unverified as active, only installed. |
 | **Sponsorship** | `is_sponsored`/`sponsor_name` columns exist on `parties`. | Everything else — no sponsor entity or flow. |
 | **Game Engine (rounds/turns/timers)** | `game_sessions`/`rounds`/`turns` tables + `GameSessionService`; host-only start/next-turn, randomized turn order, host-configurable rounds, Truth/Dare card dealing, auto-completion, 30s turn timer + AFK handling, `RoundCompleted`/`GameCompleted` events. | Votes, scoring, reward granting — unscheduled; rewards were explicitly dropped from Sprint 7 and have no owning sprint in `IMPLEMENTATION_ORDER.md`. |
 | **Realtime (Reverb)** | `laravel/reverb` installed; `party.{id}` presence channel + `game-session.{id}` private channel; `PartyMemberJoined`/`PartyStarted`/`TurnStarted`/`RoundCompleted`/`GameCompleted` broadcast. | Wallet/Purchase events and `PartyCreated` aren't broadcast (no per-user channel yet); `PartyMembershipService::leave()` still doesn't dispatch any event; no live client integration verified. |
@@ -51,7 +52,7 @@ Zero code, and an upstream dependency must land first:
 Zero code, nothing blocking — ready to schedule:
 
 - CI/CD Pipeline
-- Admin Panel — next up, Sprint 11
+- Analytics / Observability — next up, Sprint 12
 
 **Deferred** (zero code, intentionally not scheduled pending a business trigger — see `IMPLEMENTATION_ORDER.md` §G): Chat/Messaging, Voice/Video (LiveKit), Moderation/Trust & Safety, Creator Economy, Corporate/Multi-Tenant/Enterprise, Internationalization.
 
@@ -84,7 +85,7 @@ Illustrative only — assumes ~1 engineer-week per sprint per `IMPLEMENTATION_OR
 | Reference frame | Progress |
 |---|---|
 | Pre-roadmap foundation (Auth, Catalog, Party create/like, Wallet engine) | **~100%** of its own scope — done |
-| `IMPLEMENTATION_ORDER.md` 14-sprint plan | **10 of 14 sprints complete (~71%)** — Sprint 11 (Admin panel) is next; reward granting from Sprint 7's original scope is descoped and unscheduled |
-| Full documented platform vision (`docs/architecture/`) | **~31%** — 8 modules complete, 6 in progress (incl. Game Engine, Realtime, and Notifications), the rest (~12) not started/blocked/deferred |
+| `IMPLEMENTATION_ORDER.md` 14-sprint plan | **11 of 14 sprints complete (~79%)** — Sprint 12 (Analytics baseline) is next; reward granting from Sprint 7's original scope is descoped and unscheduled |
+| Full documented platform vision (`docs/architecture/`) | **~35%** — 9 modules complete, 6 in progress (incl. Game Engine, Realtime, and Notifications), the rest (~11) not started/blocked/deferred |
 
 `docs/architecture/60_PLATFORM_ROADMAP.md` claims Phase 1 is fully complete including Friends, Marketplace, Notifications, Realtime, and Voice — the code does not support that claim (see `docs/audit/ARCHITECTURE_GAP_ANALYSIS.md`). The figures above are the code-verified numbers.
