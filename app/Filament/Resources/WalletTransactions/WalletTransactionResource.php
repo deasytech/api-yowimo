@@ -10,9 +10,9 @@ use App\Models\WalletTransaction;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
+use UnitEnum;
 
 class WalletTransactionResource extends Resource
 {
@@ -20,7 +20,11 @@ class WalletTransactionResource extends Resource
 
     protected static ?string $navigationLabel = 'Wallet Transactions';
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-banknotes';
+
+    protected static string|UnitEnum|null $navigationGroup = 'Finance';
+
+    protected static ?int $navigationSort = 1;
 
     public static function infolist(Schema $schema): Schema
     {
