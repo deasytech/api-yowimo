@@ -1,6 +1,6 @@
 # Implementation Status — Yowimo Backend
 
-**Assessed:** 2026-08-26, after Sprint 10 (Friends / social graph) landed, by direct code inspection against `docs/architecture/`.
+**Assessed:** 2026-08-26, after Sprint 11 (Admin panel v0) landed, by direct code inspection against `docs/architecture/`.
 **Sources:** `docs/audit/*`, `docs/implementation/IMPLEMENTATION_ORDER.md`, `.claude/CURRENT_PHASE.md`.
 
 **Status legend:** ✅ Complete · 🟡 Partial · 🔵 Built, unexposed · ⬜ Missing
@@ -15,7 +15,7 @@
 | User Profile | 🟡 Partial | 40% (view/edit only) | No — extend only | Low | Auth |
 | Token Bundles (catalog + purchase) | 🟡 Partial | 80% (list + purchase; no `show`, no real payment gateway) | No — extend only | Low | Wallet API |
 | Sponsorship | 🟡 Partial | 10% (schema columns only) | No | Deferred | Party |
-| Horizon / Queue | 🟡 Partial | ~50% (queue processing proven via a real worker since Sprint 5 — `RecordAnalyticsEvent`, the turn-timer job, notification jobs; but `laravel/horizon` itself is only installed/configured, never actually started by any process here, so it's unverified as active; gate still `local`-only) | Yes — small (gate; run `php artisan horizon` instead of `queue:listen` if its features are wanted) | Maintain (gate extension deferred to Sprint 11) | — |
+| Horizon / Queue | 🟡 Partial | ~60% (queue processing proven via a real worker since Sprint 5 — `RecordAnalyticsEvent`, the turn-timer job, notification jobs; `viewHorizon` gate now also allows `is_admin` users, in addition to the `local`-only bypass, since Sprint 11; but `laravel/horizon` itself is only installed/configured, never actually started by any process here, so it's unverified as active) | Yes — small (run `php artisan horizon` instead of `queue:listen` if its features are wanted) | Maintain | — |
 | Wallet Ledger Engine | ✅ Complete | 100% internal / exposed via read API | No | Maintain | Auth |
 | Wallet API (routes/controller) | ✅ Complete | 100% read + token-bundle top-up write path | No | Maintain | Wallet Ledger Engine |
 | CI/CD Pipeline | ⬜ Missing | 0% | N/A — net new (infra) | High (carried over from Sprint 1) | — |
@@ -25,8 +25,8 @@
 | Realtime (Reverb) | 🟡 Partial | ~70% (Reverb installed; party lobby presence channel + game session private channel; `PartyMemberJoined`/`PartyStarted`/`TurnStarted`/`RoundCompleted`/`GameCompleted` broadcast) | No — extend only | Maintain | Domain Events, Game Engine |
 | Notifications | 🟡 Partial | ~40% (push-token registration, FCM channel, 3 of 9 fired events wired; no real Firebase project configured yet, no in-app delivery) | No — extend only | Maintain (remaining scope unscheduled) | Domain Events, Queue activation |
 | Friends / Social Graph | ✅ Complete | 100% (v0 scope: send/accept/reject/cancel/unfriend, list friends/pending) | No | Maintain | Auth (Users) |
-| Admin Panel | ⬜ Missing | 0% | N/A — net new | **High (Sprint 11, next)** | Users, Parties, Wallet, Catalog (data to administer) |
-| Analytics / Observability | ⬜ Missing | 0% | N/A — net new | Medium (Sprint 12) | Domain Events |
+| Admin Panel | ✅ Complete | 100% (v0 scope: Filament panel, `is_admin`-gated, separate password login; Users view/edit, Parties/Wallet view-only, catalog full CRUD) | No | Maintain (no in-panel password management yet — unscheduled) | Users, Parties, Wallet, Catalog (data to administer) |
+| Analytics / Observability | ⬜ Missing | 0% | N/A — net new | **High (Sprint 12, next)** | Domain Events |
 | AI Host ("Yowi") | ⬜ Missing | 0% | N/A — net new | Medium (Sprint 13, narrow scope) | Domain Events, Realtime |
 | Chat / Messaging | ⬜ Missing | 0% | N/A — net new | Deferred | Friends, Realtime |
 | Voice/Video (LiveKit) | ⬜ Missing | 0% | N/A — net new | Deferred | Realtime |
@@ -39,7 +39,7 @@
 
 ## Notes
 
-- **"Needs Refactor?"** answers whether *existing* code must change. It's `N/A` for modules with zero code today — those need net-new construction, not refactoring. Only three modules currently need refactor-level touch-up: the Wallet Ledger's `UserResource` stub, the Horizon gate/queue activation, and (implicitly) every existing service that will later need domain-event dispatch calls added (tracked as a Domain Events dependency, not a refactor of the target module itself).
+- **"Needs Refactor?"** answers whether *existing* code must change. It's `N/A` for modules with zero code today — those need net-new construction, not refactoring. The Horizon gate's admin extension landed in Sprint 11; actually running `php artisan horizon` (queue activation) is the one remaining refactor-level touch-up on that module.
 - **No module needs a rewrite.** Every "Needs Refactor?: Yes" item is a small, isolated, additive fix — consistent with `docs/audit/TECHNICAL_DEBT.md`'s finding that nothing shipped so far is broken, only incomplete or unexposed.
 - **Complete % is per-module scope**, not weighted by lines of code or doc page count — e.g. Game Catalog is 90% because only an admin/write path is missing, while Wallet Ledger is 100% internally complete but contributes 0% of its value until the API layer exists (tracked as a separate row).
 - Full per-module evidence: `docs/audit/MODULE_STATUS.md`. Full dependency rationale and sprint sequencing: `docs/implementation/IMPLEMENTATION_ORDER.md`.

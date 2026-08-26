@@ -4,6 +4,9 @@ namespace App\Models;
 
 use App\Enums\UserStatus;
 use Database\Factories\UserFactory;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Models\Contracts\HasName;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -26,8 +29,10 @@ use Illuminate\Notifications\Notifiable;
     'interests',
     'privacy_settings',
     'status',
+    'password',
+    'is_admin',
 ])]
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser, HasName
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, SoftDeletes;
@@ -43,7 +48,19 @@ class User extends Authenticatable
             'date_of_birth' => 'date',
             'last_seen_at' => 'datetime',
             'status' => UserStatus::class,
+            'password' => 'hashed',
+            'is_admin' => 'boolean',
         ];
+    }
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return $this->is_admin;
+    }
+
+    public function getFilamentName(): string
+    {
+        return $this->display_name ?? $this->username ?? $this->email ?? "User #{$this->id}";
     }
 
     /**

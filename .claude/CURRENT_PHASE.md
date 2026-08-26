@@ -1,19 +1,23 @@
 # Current Phase — Yowimo Backend
 
-**Assessed:** 2026-08-26, against `dev` after Sprint 10 landed, by direct code inspection.
+**Assessed:** 2026-08-26, against `dev` after Sprint 11 landed, by direct code inspection.
 **Basis:** `docs/audit/*`, `docs/implementation/IMPLEMENTATION_ORDER.md`, `.claude/PROJECT_CONTEXT.md`.
 
 ---
 
 ## Current Sprint
 
-**Sprint 10 — Friends / social graph** (`docs/implementation/IMPLEMENTATION_ORDER.md`), **done, with scope decided with the user up front.** Nothing blocks starting Sprint 11.
+**Sprint 11 — Admin panel v0** (`docs/implementation/IMPLEMENTATION_ORDER.md`), **done, with three design gaps confirmed with the user up front.** Nothing blocks starting Sprint 12.
 
-- ✅ `friendships` table (`sender_id`/`receiver_id`/`status`/`accepted_at`, per `docs/architecture/38_DATABASE_SCHEMA_REFERENCE.md`) + `Friendship` model, `sentFriendRequests()`/`receivedFriendRequests()` `HasMany` from `User`. `blocked` stays out of scope for v0 (unchanged from the plan).
-- ✅ `App\Services\Friends\FriendshipService` + `FriendshipController` — send (`POST /friend-requests`), accept/reject (`POST /friend-requests/{id}/accept,reject`), cancel a pending outgoing request (`DELETE /friend-requests/{id}`), unfriend (`DELETE /friends/{id}`), list friends (`GET /friends`) and pending requests, both directions (`GET /friend-requests`) — all inside the existing `auth:clerk` + `throttle:api` group, following the Form Request + Resource + Policy pattern (`FriendshipPolicy` gates *who*: sender-only cancel, receiver-only accept/reject, either side to unfriend; the service gates *state*, throwing `InvalidFriendshipTransitionException` on a bad transition).
-- ⚠️ **Scope calls made with the user up front, confirmed before coding (not guessed):** (1) cancelling a pending outgoing request and rejecting an incoming one are **distinct operations** (`cancel` vs `reject`, sender vs receiver only); (2) unfriending is a **soft status change** (`removed`), not a hard delete — added `cancelled`/`removed` status values beyond the doc's four (`pending`/`accepted`/`blocked`/`rejected`) to support this; (3) this sprint **does dispatch domain events** — `FriendRequestSent`/`FriendRequestAccepted` (`ShouldDispatchAfterCommit`, unbroadcast — no per-user channel exists yet, same reason Wallet/Purchase/`PartyCreated` aren't broadcast) — for future Notifications/Realtime consumers, but no listener/notification consumes them yet (that remains unscheduled, as the plan intended).
-- ✅ Guards duplicate/overlapping requests (a pending request in either direction, or already-accepted) and self-requests (`Rule::notIn` in `StoreFriendshipRequest`), with a `lockForUpdate` transaction in `FriendshipService::send()` to close the race.
-- ✅ Tests: full transition coverage (send/accept/reject/cancel/unfriend + every guard/authorization path) in `FriendshipControllerTest`, plus `FriendRequestSent`/`FriendRequestAccepted` dispatch assertions added to the existing `EventDispatchTest`.
+- ✅ `filament/filament` (v5) installed; `App\Providers\Filament\AdminPanelProvider` registered in `bootstrap/providers.php`, default `/admin` path, default `web` session guard (untouched — `config/auth.php` already had it, unrelated to the API's `clerk` guard).
+- ✅ **Scope calls made with the user up front, confirmed before coding (not guessed):** (1) admin status is a new `is_admin` boolean column on `users` (not a role/permission package, not an email allowlist); (2) panel login is a **separate password-based login** on the existing `web` guard, independent of Clerk — `users` gained nullable `password`/`remember_token` columns via migration, since neither existed before; (3) Users are **view/edit, not full CRUD** — no create or delete action is registered anywhere in `UserResource` (`canCreate()`/`canDelete()`/`canDeleteAny()` all hard-return `false`, in addition to the routes simply not existing).
+- ✅ `App\Models\User` implements `Filament\Models\Contracts\FilamentUser` (`canAccessPanel()` gates on `is_admin`) and `Filament\Models\Contracts\HasName` (`getFilamentName()` — the model has no `name` column, only `display_name`/`username`/`email`).
+- ✅ Filament resources in `app/Filament/Resources/`: `UserResource` (view/edit, no create/delete, `is_admin` toggle is the only in-panel way to promote further admins), `PartyResource` (view/audit only — no create/edit/delete registered), `WalletTransactionResource` (view/audit only — the ledger's `LogicException` guard on `updating`/`deleting` was already there, but the panel doesn't expose the actions in the first place either), `GameTypeResource`/`PackResource`/`PackCardResource`/`TokenBundleResource` (full CRUD — the intended write path for catalog content, replacing seed-only data).
+- ✅ `viewHorizon` gate (`app/Providers/HorizonServiceProvider.php`) extended to `$user->is_admin`, additive — the existing `local`-only bypass is untouched.
+- ✅ Tests: `tests/Feature/Admin/` — panel access (admin/non-admin/guest), wallet-transaction read-only enforcement (both the resource's `can*()` methods and the actual routes), full create/edit/delete round-trip on a catalog resource (`GameType`), user edit + `is_admin` toggle, and the Horizon gate extension.
+- ⚠️ Not built (deliberately, per the plan's own scope note about a much larger documented admin surface): moderation tools, analytics dashboards, enterprise/multi-tenant admin. An admin's own password is set via `tinker`/seeder for now — no in-panel password-management UI (out of scope for v0).
+
+Sprint 10 (done previously): `friendships` table (`sender_id`/`receiver_id`/`status`/`accepted_at`) + `Friendship` model; `App\Services\Friends\FriendshipService` + `FriendshipController` — send/accept/reject/cancel/unfriend, list friends and pending requests both directions, `FriendshipPolicy`-guarded; `blocked` stays out of scope for v0; unfriending is a soft `removed` status, not a hard delete; `FriendRequestSent`/`FriendRequestAccepted` domain events dispatch, unconsumed for now.
 
 Sprint 9 (done previously): `push_tokens` table + `PushTokenService`; `kreait/laravel-firebase` FCM channel (lazily resolved, to avoid crashing every notification attempt when Firebase isn't configured); `PartyMemberJoinedNotification`/`RoundCompletedNotification`/`WalletCreditedNotification` off new listeners (host-only, all-party-members, and credited-user recipient rules respectively); push-only, 3 of 9 fired events wired, confirmed with the user; no real Firebase project configured in any environment yet.
 
@@ -54,6 +58,7 @@ Built, exposed via API, and tested:
 | **Domain events & listeners backbone** | `app/Events`/`app/Listeners`; six events dispatch fire-after-commit from Wallet/Party/PartyMembership/Purchase services; `RecordAnalyticsEvent` proven end-to-end on the Horizon queue. |
 | **Push token registration** | `POST`/`DELETE /push-tokens` over `PushTokenService`; one token per user, replace-on-register. |
 | **Friends / social graph** | `friendships` table + `FriendshipService`; send/accept/reject/cancel/unfriend + list friends/pending requests, `FriendshipPolicy`-guarded. `FriendRequestSent`/`FriendRequestAccepted` domain events dispatch, unconsumed for now. |
+| **Admin Panel v0** | `filament/filament`; `is_admin`-gated `/admin` panel with a separate password-based login; Users (view/edit), Parties (view/audit), Wallet transactions (view/audit, no write actions registered), GameTypes/Packs/PackCards/TokenBundles (full CRUD). `viewHorizon` gate extended to admins. |
 
 ---
 
@@ -78,25 +83,27 @@ Real code exists but the module is narrower than its documented scope, or is unr
 
 No migration, model, route, or config exists for any of these:
 
-Chat/Messaging, AI Host, Voice/Video (LiveKit), Admin Panel, Moderation/Trust & Safety, Analytics/Observability infrastructure, Creator Economy, Corporate/Multi-Tenant/Enterprise, Internationalization, CI/CD pipeline.
+Chat/Messaging, AI Host, Voice/Video (LiveKit), Moderation/Trust & Safety, Analytics/Observability infrastructure, Creator Economy, Corporate/Multi-Tenant/Enterprise, Internationalization, CI/CD pipeline.
 
-(Marketplace purchase flow/inventory/ownership moved to Partially Complete above — token bundle and pack purchase both now exist; only a real payment gateway is missing. Notifications and Friends/social graph moved to Completed above.)
+(Marketplace purchase flow/inventory/ownership moved to Partially Complete above — token bundle and pack purchase both now exist; only a real payment gateway is missing. Notifications, Friends/social graph, and Admin Panel v0 moved to Completed above.)
 
 ---
 
 ## Current Priority
 
-Start **Sprint 11 — Admin panel v0** (`docs/implementation/IMPLEMENTATION_ORDER.md`):
+Start **Sprint 12 — Analytics & observability baseline** (`docs/implementation/IMPLEMENTATION_ORDER.md`):
 
-1. Install Filament; resources for Users, Parties, Wallet transactions (read-only/audit), GameTypes/Packs/PackCards/TokenBundles.
-2. Extend the `viewHorizon` gate to admin roles now that an admin concept exists.
-3. **Risk:** low — additive tooling over existing tables; the main risk is scope creep (docs specify a huge admin surface — build only Users/Parties/Content/Wallet-audit now, defer the rest).
+1. Persist an `analytics_events` feed off the Sprint 5 event backbone.
+2. Add `/health` checks for DB/Redis/Queue/Broadcast.
+3. Wire error tracking (Sentry or equivalent).
+4. **Risk:** low — read-side/observational work, no changes to write paths.
 
 Outstanding, unscheduled (needs a design decision before it can be assigned to a sprint):
 - Reward granting on round/game completion (amount, trigger, recipients) — explicitly out of Sprint 7 per the user; no sprint in the current 14-sprint plan owns it.
 - Broadcasting Wallet/Purchase events and `PartyMemberLeft` — surfaced by Sprint 8; would need a per-user private channel and (for leave) a new domain event that doesn't exist yet.
 - Notifications beyond v0: the remaining 6 fired events, in-app (Reverb) delivery, and configuring a real Firebase project per environment — none scheduled.
 - Consuming `FriendRequestSent`/`FriendRequestAccepted` for Notifications/Realtime — the events exist (Sprint 10) but nothing listens yet.
+- In-panel password management for admins (Sprint 11 set an admin's password via `tinker`/seeder only — no self-service UI) — no sprint owns this.
 
 Lower-priority, not blocking, carried over from Sprint 1:
 - Schedule `clerk:sync-users` as an hourly self-heal job.
@@ -106,7 +113,7 @@ Lower-priority, not blocking, carried over from Sprint 1:
 
 ## Next Recommended Sprint
 
-**Sprint 12 — Analytics & observability baseline**, once Sprint 11 lands: persist an `analytics_events` feed off the Sprint 5 event backbone; add `/health` checks for DB/Redis/Queue/Broadcast; wire error tracking. Risk: low — read-side/observational work, no changes to write paths.
+**Sprint 13 — AI Host v0 (narrow scope)**, once Sprint 12 lands: a single `AIProvider` interface with one concrete OpenAI implementation, one prompt triggered by `RoundCompleted`/`GameCompleted`, delivered into the game's realtime channel. Risk: low-medium — scoped narrowly on purpose; the doc's full "Yowi" persona is out of scope.
 
 ---
 
@@ -117,7 +124,7 @@ A single number is misleading given the scope gap between the documented vision 
 | Reference frame | Completion | Basis |
 |---|---|---|
 | **Pre-roadmap foundation** (Clerk auth, catalog, party create/like, wallet engine) | **~100%** of its own scope | This slice is finished, tested, and stable — no further work planned against it except the Sprint 1 exposure fix. |
-| **`docs/implementation/IMPLEMENTATION_ORDER.md`** (14-sprint actionable plan to a complete, playable core product) | **10 of 14 sprints executed (~71%)** | Sprints 1–10 done (Sprint 7 minus reward-granting, descoped per the user); Sprint 11 (Admin panel) is next. |
-| **Full documented platform vision** (`docs/architecture/`, ~26 modules incl. Marketplace, Realtime, AI, Admin, Enterprise, Creator Economy) | **~31%** | 8 of ~26 modules fully built+exposed (Auth, Game Catalog, Party Likes, Wallet, Marketplace-purchase, Domain Events, Push token registration, Friends/social graph), 6 partial (incl. Game Engine, Realtime, and Notifications), ~12 with zero code. Weighted toward "exists and works," not toward doc page count. |
+| **`docs/implementation/IMPLEMENTATION_ORDER.md`** (14-sprint actionable plan to a complete, playable core product) | **11 of 14 sprints executed (~79%)** | Sprints 1–11 done (Sprint 7 minus reward-granting, descoped per the user); Sprint 12 (Analytics & observability baseline) is next. |
+| **Full documented platform vision** (`docs/architecture/`, ~26 modules incl. Marketplace, Realtime, AI, Admin, Enterprise, Creator Economy) | **~35%** | 9 of ~26 modules fully built+exposed (Auth, Game Catalog, Party Likes, Wallet, Marketplace-purchase, Domain Events, Push token registration, Friends/social graph, Admin Panel v0), 6 partial (incl. Game Engine, Realtime, and Notifications), ~11 with zero code. Weighted toward "exists and works," not toward doc page count. |
 
 For context: `docs/architecture/60_PLATFORM_ROADMAP.md` claims "Phase 1: Foundation" is `Status: Completed` including Friends, Marketplace, Notifications, Realtime, and Voice — that claim does not hold against the code (see `docs/audit/ARCHITECTURE_GAP_ANALYSIS.md`). The figures above are the code-verified numbers; treat any completion claim inside `docs/architecture/` as aspirational framing, not status.

@@ -18,9 +18,9 @@ The `defaults` array defines the complete base supervisor config. The `environme
 
 Horizon does not enforce queue order when using `balance: auto` on a single supervisor. The `queue` array order is ignored for load balancing. To process `notifications` before `default`, use two separately named supervisors: one for the high-priority queue with a higher `maxProcesses`, and one for the low-priority queue with a lower cap. The docs include an explicit note about this.
 
-### Use `balance: false` with matching `minProcesses`/`maxProcesses` to keep a fixed number of workers on a dedicated queue
+### Use `balance: false` to keep a fixed number of workers on a dedicated queue
 
-Auto-balancing suits variable load, but a queue may need a hard cap instead, such as a video-processing queue limited to 2 workers. `maxProcesses` alone only sets a ceiling: even with `balance: false`, Horizon still scales the pool between `minProcesses` and `maxProcesses` based on queue backlog, so an idle queue would drop to `minProcesses` (1 by default) instead of staying at 2. To guarantee exactly N workers run at all times, set `balance: false` and set `minProcesses` to the same value as `maxProcesses` (e.g. `minProcesses: 2` and `maxProcesses: 2`).
+Auto-balancing suits variable load, but if a queue should always have exactly N workers such as a video-processing queue limited to 2, set `balance: false` and `maxProcesses: 2`. Auto-balancing would scale it up during bursts, which may be undesirable.
 
 ### Set `balanceCooldown` to prevent rapid worker scaling under bursty load
 

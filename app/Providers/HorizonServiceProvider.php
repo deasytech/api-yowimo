@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\User;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Gate;
 use Laravel\Horizon\HorizonApplicationServiceProvider;
@@ -18,6 +19,7 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
         Gate::define(
             'viewHorizon',
             fn (?Authenticatable $user = null): bool => app()->environment('local')
+                || ($user instanceof User && $user->is_admin)
         );
     }
 }
