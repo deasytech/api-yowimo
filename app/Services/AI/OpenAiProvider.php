@@ -15,14 +15,20 @@ class OpenAiProvider implements AIProvider
             throw new RuntimeException('OpenAI API key is not configured.');
         }
 
+        $model = config('services.openai.model');
+
+        // o-series reasoning models reject `max_tokens` and require
+        // `max_completion_tokens` instead.
+        $tokenLimitKey = preg_match('/^o\d/', (string) $model) ? 'max_completion_tokens' : 'max_tokens';
+
         $response = Http::withToken($apiKey)
             ->timeout(10)
             ->post('https://api.openai.com/v1/chat/completions', [
-                'model' => config('services.openai.model'),
+                'model' => $model,
                 'messages' => [
                     ['role' => 'user', 'content' => $prompt],
                 ],
-                'max_tokens' => 150,
+                $tokenLimitKey => 150,
             ])
             ->throw();
 

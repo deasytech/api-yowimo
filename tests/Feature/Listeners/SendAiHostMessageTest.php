@@ -15,6 +15,9 @@ use Illuminate\Events\CallQueuedListener;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 
+/**
+ * @return array{0: User, 1: Party}
+ */
 function createLiveSoloGameSessionForAiHost(): array
 {
     $pack = Pack::factory()->create();

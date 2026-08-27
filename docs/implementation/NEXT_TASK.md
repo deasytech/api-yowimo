@@ -4,7 +4,7 @@ Hardening pass: expand test coverage, tune rate limits on write-heavy endpoints,
 
 # Why This Task
 
-Per `docs/implementation/IMPLEMENTATION_ORDER.md` Sprint 14, this is the last sprint in the 14-sprint plan, now that Sprint 13 (AI Host v0) has landed. It deliberately produces no new user-facing behavior — only confidence in what already exists.
+Per `docs/implementation/IMPLEMENTATION_ORDER.md` Sprint 14, this is the last sprint in the 14-sprint plan, now that Sprint 13 (AI Host v0) has landed. It deliberately introduces no new product features — only confidence in, and tuning of, what already exists (rate limits on existing endpoints may change; no route, payload, or business logic does).
 
 # Objectives
 

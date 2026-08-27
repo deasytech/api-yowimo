@@ -7,7 +7,7 @@
 
 ## Current Sprint
 
-**Sprint 13 — AI Host v0 (narrow scope)** (`docs/implementation/IMPLEMENTATION_ORDER.md`), **done, with four scope calls confirmed with the user up front.** Nothing blocks starting Sprint 14.
+**Sprint 13 — AI Host v0 (narrow scope)** (`docs/implementation/IMPLEMENTATION_ORDER.md`), **done, with four scope calls confirmed with the user up front.** Nothing technically blocks starting Sprint 14, but its four sub-objectives still need scope confirmed with the user before coding — see Current Priority below.
 
 - ✅ **Scope calls made with the user up front, confirmed before coding (not guessed):** (1) trigger is `GameCompleted` only, not `RoundCompleted` — one message per finished game, not per round; (2) tone is a playful in-character host reaction, not a neutral recap or pure hype; (3) failure policy is skip-silently-and-log (matches the Sprint 9 no-token no-op pattern) — no retry, no fallback broadcast message; (4) model is `gpt-4o-mini`, configurable via `OPENAI_MODEL`.
 - ✅ `App\Services\AI\AIProvider` interface (`respond(string $prompt): string`) + `App\Services\AI\OpenAiProvider` — a lean `Illuminate\Support\Facades\Http` call to the OpenAI chat-completions endpoint (no SDK package added, consistent with keeping a one-method interface simple); bound in `AppServiceProvider` the same way `PaymentProvider` is bound.
@@ -96,13 +96,13 @@ Chat/Messaging, Voice/Video (LiveKit), Moderation/Trust & Safety, Creator Econom
 
 ## Current Priority
 
-Start **Sprint 14 — Hardening pass** (`docs/implementation/IMPLEMENTATION_ORDER.md`), the final sprint in the 14-sprint plan:
+Start **Sprint 14 — Hardening pass** (`docs/implementation/IMPLEMENTATION_ORDER.md`), the final sprint in the 14-sprint plan. All technical dependencies are in place (the full Sprint 1–13 surface); none of the four sub-objectives below has a confirmed target yet — see `.claude/NEXT_TASK.md`'s "If Ambiguous" section — so implementation is gated on confirming scope with the user before coding, not on anything technical:
 
-1. Expand test coverage toward the now-larger surface (Sprints 9–13 added real coverage but the plan calls for a dedicated pass).
-2. Tune rate limits for the new write-heavy endpoints (purchases, joins, friend requests).
-3. Run a first security review against `docs/architecture/06`/`52`.
-4. Stand up backup/DR basics proportionate to actual current infra (not the full enterprise DR plan in doc 33/58).
-5. **Risk:** low — this sprint produces no new user-facing behavior, only confidence in what exists.
+1. Expand test coverage toward the now-larger surface (Sprints 9–13 added real coverage but the plan calls for a dedicated pass) — needs a confirmed target (which modules/edge cases).
+2. Tune rate limits for the new write-heavy endpoints (purchases, joins, friend requests) — needs confirmed limits; this is user-facing (it changes what request volume succeeds vs. gets throttled), not purely internal.
+3. Run a first security review against `docs/architecture/06`/`52` — needs confirmed scope.
+4. Stand up backup/DR basics proportionate to actual current infra (not the full enterprise DR plan in doc 33/58) — needs a confirmed definition of "basic."
+5. **Risk:** low — this sprint introduces no new product features or routes, only confidence in and tuning of what exists.
 
 Outstanding, unscheduled (needs a design decision before it can be assigned to a sprint):
 - Reward granting on round/game completion (amount, trigger, recipients) — explicitly out of Sprint 7 per the user; no sprint in the current 14-sprint plan owns it.
