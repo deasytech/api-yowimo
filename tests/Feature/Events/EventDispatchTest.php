@@ -9,6 +9,7 @@ use App\Events\FriendRequestSent;
 use App\Events\GameCompleted;
 use App\Events\PartyCreated;
 use App\Events\PartyMemberJoined;
+use App\Events\PartyMemberLeft;
 use App\Events\PartyStarted;
 use App\Events\PurchaseCompleted;
 use App\Events\RoundCompleted;
@@ -61,6 +62,24 @@ it('fires PartyMemberJoined when a user joins, but not on an idempotent re-join'
     app(PartyMembershipService::class)->join($joiner, $party->fresh());
 
     Event::assertNotDispatched(PartyMemberJoined::class);
+});
+
+it('fires PartyMemberLeft when a member leaves, but not on an idempotent re-leave', function () {
+    Event::fake([PartyMemberLeft::class]);
+
+    $party = Party::factory()->create(['status' => PartyStatus::Live, 'max_players' => 8, 'players_count' => 2]);
+    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $party->host_id]);
+    $member = User::factory()->create();
+    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $member->id]);
+
+    app(PartyMembershipService::class)->leave($member, $party);
+
+    Event::assertDispatched(PartyMemberLeft::class, fn ($event) => $event->partyId === $party->id && $event->userId === $member->id);
+
+    Event::fake([PartyMemberLeft::class]);
+    app(PartyMembershipService::class)->leave($member, $party->fresh());
+
+    Event::assertNotDispatched(PartyMemberLeft::class);
 });
 
 it('fires PartyStarted when a draft/scheduled party is started', function () {
@@ -219,9 +238,17 @@ it('fires FriendRequestAccepted when a pending request is accepted', function ()
         && $event->receiverId === $receiver->id);
 });
 
-it('broadcasts PartyMemberJoined and PartyStarted on the party presence channel', function () {
+it('broadcasts PartyMemberJoined, PartyMemberLeft, and PartyStarted on the party presence channel', function () {
     expect((new PartyMemberJoined(1, 2))->broadcastOn())->toEqual([new PresenceChannel('party.1')]);
+    expect((new PartyMemberLeft(1, 2))->broadcastOn())->toEqual([new PresenceChannel('party.1')]);
     expect((new PartyStarted(1))->broadcastOn())->toEqual([new PresenceChannel('party.1')]);
+});
+
+it('broadcasts PartyCreated, WalletCredited, WalletDebited, and PurchaseCompleted on the relevant user\'s private channel', function () {
+    expect((new PartyCreated(1, 2))->broadcastOn())->toEqual([new PrivateChannel('App.Models.User.2')]);
+    expect((new WalletCredited(1, 2))->broadcastOn())->toEqual([new PrivateChannel('App.Models.User.2')]);
+    expect((new WalletDebited(1, 2))->broadcastOn())->toEqual([new PrivateChannel('App.Models.User.2')]);
+    expect((new PurchaseCompleted(2, 'pack', 1, 3))->broadcastOn())->toEqual([new PrivateChannel('App.Models.User.2')]);
 });
 
 it('broadcasts TurnStarted and RoundCompleted on the game session private channel', function () {

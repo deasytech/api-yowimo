@@ -4,6 +4,7 @@ namespace App\Services\Parties;
 
 use App\Enums\PartyStatus;
 use App\Events\PartyMemberJoined;
+use App\Events\PartyMemberLeft;
 use App\Events\PartyStarted;
 use App\Exceptions\Api\InvalidPartyTransitionException;
 use App\Exceptions\Api\PartyFullException;
@@ -73,8 +74,12 @@ class PartyMembershipService
                 ->where('user_id', $user->id)
                 ->delete();
 
-            if ($deleted > 0 && $party->players_count > 0) {
-                $party->decrement('players_count');
+            if ($deleted > 0) {
+                if ($party->players_count > 0) {
+                    $party->decrement('players_count');
+                }
+
+                PartyMemberLeft::dispatch($party->id, $user->id);
             }
         });
 
