@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Models\User;
+use App\Services\AI\AIProvider;
+use App\Services\AI\OpenAiProvider;
 use App\Services\Clerk\ClerkJwtVerifier;
 use App\Services\Clerk\ClerkUserProvisioner;
 use App\Services\Purchase\ManualPaymentProvider;
@@ -21,6 +23,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(PaymentProvider::class, ManualPaymentProvider::class);
+        $this->app->bind(AIProvider::class, OpenAiProvider::class);
     }
 
     /**
