@@ -3,6 +3,7 @@
 namespace App\Services\Health;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Redis;
 use Throwable;
@@ -32,7 +33,9 @@ class HealthCheckService
 
             return ['status' => 'ok'];
         } catch (Throwable $e) {
-            return ['status' => 'down', 'message' => $e->getMessage()];
+            Log::error('health_check.database_failed', ['exception' => $e->getMessage()]);
+
+            return ['status' => 'down', 'message' => 'unavailable'];
         }
     }
 
@@ -46,7 +49,9 @@ class HealthCheckService
 
             return ['status' => 'ok'];
         } catch (Throwable $e) {
-            return ['status' => 'down', 'message' => $e->getMessage()];
+            Log::error('health_check.redis_failed', ['exception' => $e->getMessage()]);
+
+            return ['status' => 'down', 'message' => 'unavailable'];
         }
     }
 
@@ -60,7 +65,9 @@ class HealthCheckService
 
             return ['status' => 'ok'];
         } catch (Throwable $e) {
-            return ['status' => 'down', 'message' => $e->getMessage()];
+            Log::error('health_check.queue_failed', ['exception' => $e->getMessage()]);
+
+            return ['status' => 'down', 'message' => 'unavailable'];
         }
     }
 

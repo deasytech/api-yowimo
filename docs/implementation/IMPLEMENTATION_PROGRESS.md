@@ -86,7 +86,7 @@ Illustrative only — assumes ~1 engineer-week per sprint per `IMPLEMENTATION_OR
 | Reference frame | Progress |
 |---|---|
 | Pre-roadmap foundation (Auth, Catalog, Party create/like, Wallet engine) | **~100%** of its own scope — done |
-| `IMPLEMENTATION_ORDER.md` 14-sprint plan | **11 of 14 sprints complete (~79%)** — Sprint 12 (Analytics baseline) is next; reward granting from Sprint 7's original scope is descoped and unscheduled |
+| `IMPLEMENTATION_ORDER.md` 14-sprint plan | **12 of 14 sprints complete (~86%)** — Sprint 13 (AI Host v0) is next; reward granting from Sprint 7's original scope is descoped and unscheduled |
 | Full documented platform vision (`docs/architecture/`) | **~35%** — 9 modules complete, 6 in progress (incl. Game Engine, Realtime, and Notifications), the rest (~11) not started/blocked/deferred |
 
 `docs/architecture/60_PLATFORM_ROADMAP.md` claims Phase 1 is fully complete including Friends, Marketplace, Notifications, Realtime, and Voice — the code does not support that claim (see `docs/audit/ARCHITECTURE_GAP_ANALYSIS.md`). The figures above are the code-verified numbers.

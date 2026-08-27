@@ -61,5 +61,5 @@ Route::prefix('v1')->group(function () {
 
     Route::post('/webhooks/clerk', ClerkWebhookController::class)->middleware('throttle:webhooks');
 
-    Route::get('/health', [HealthController::class, 'show']);
+    Route::get('/health', [HealthController::class, 'show'])->middleware('throttle:api');
 });

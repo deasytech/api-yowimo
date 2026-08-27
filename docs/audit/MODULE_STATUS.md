@@ -1,8 +1,8 @@
 # Module Status — Yowimo Backend
 
-**Audit date:** 2026-08-26
+**Audit date:** 2026-08-27
 
-Status of every module named in `docs/architecture/` against what actually exists in code, as of `dev` after Sprint 11 — Admin panel v0. Modules are grouped the way the architecture docs group them (see `02_SYSTEM_ARCHITECTURE.md`, `22_BACKEND_SERVICE_CATALOG.md`, `60_PLATFORM_ROADMAP.md`).
+Status of every module named in `docs/architecture/` against what actually exists in code, as of `dev` after Sprint 12 — Analytics & observability baseline. Modules are grouped the way the architecture docs group them (see `02_SYSTEM_ARCHITECTURE.md`, `22_BACKEND_SERVICE_CATALOG.md`, `60_PLATFORM_ROADMAP.md`).
 
 **Status key**
 
@@ -51,6 +51,6 @@ Status of every module named in `docs/architecture/` against what actually exist
 
 ## Roll-up
 
-Of the 28 modules listed above, **4 are fully built and exposed** (Auth, Party lifecycle, Party Likes, Game Catalog), **1 substantial engine is built but only partially exposed** via a separate API layer (Wallet ledger — see Wallet API), **9 are partial slices** (User Profiles, Party create/discover, Game Engine, Wallet API, Token Bundles, Marketplace, Realtime, Notifications, Sponsorship schema hint), and **the remaining 14 do not exist in any form** — no migration, no model, no route, no config.
+Of the 28 modules listed above, **7 are fully built and exposed** (Auth, Friends/Social Graph, Party lifecycle, Party Likes, Game Catalog, Admin Panel, Analytics & Observability), **1 substantial engine is built but only partially exposed** via a separate API layer (Wallet ledger — see Wallet API), **9 are partial slices** (User Profiles, Party create/discover, Game Engine, Wallet API, Token Bundles, Marketplace, Realtime, Notifications, Sponsorship schema hint), and **the remaining 11 do not exist in any form** — no migration, no model, no route, no config.
 
 This directly contradicts `docs/architecture/60_PLATFORM_ROADMAP.md`, which marks "Phase 1: Foundation" as **Status: Completed** and lists Authentication, Profiles, Friends, Party System, Wallet, Marketplace, Notifications, Realtime, Voice, and Infrastructure as done. Per the code: Authentication is genuinely done; Profiles, Party System, Wallet, Marketplace, Notifications, and Realtime are each only partial slices of their claimed scope (see the rows above); Friends and Voice have zero code. See `ARCHITECTURE_GAP_ANALYSIS.md` for detail.
