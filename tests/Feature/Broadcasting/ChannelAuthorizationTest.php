@@ -26,7 +26,14 @@ beforeEach(function () {
         'broadcasting.connections.reverb.secret' => 'test-secret',
         'broadcasting.connections.reverb.app_id' => 'test-app-id',
     ]);
-    require_once base_path('routes/channels.php');
+    // Must be `require`, not `require_once`: the file already ran once during
+    // normal app boot (registering against the `null` driver from
+    // BROADCAST_CONNECTION in phpunit.xml), and `require_once` is a no-op on
+    // an already-included path — it would silently skip re-registering the
+    // channel closures against the `reverb` driver instance above, leaving it
+    // with zero channels and making every subscription 403 regardless of the
+    // closures' actual logic.
+    require base_path('routes/channels.php');
 });
 
 function authenticateAsClerkUser(string $sub): User
@@ -88,4 +95,17 @@ it('rejects subscribing to a game session channel that does not exist', function
     authenticateAsClerkUser('user_channel_session_missing');
 
     subscribeToChannel('user_channel_session_missing', 'private-game-session.999999')->assertForbidden();
+});
+
+it('lets a user subscribe to their own private notification channel', function () {
+    $user = authenticateAsClerkUser('user_channel_own_private');
+
+    subscribeToChannel('user_channel_own_private', "private-App.Models.User.{$user->id}")->assertOk();
+});
+
+it('rejects a user from subscribing to another user\'s private notification channel', function () {
+    authenticateAsClerkUser('user_channel_other_private');
+    $otherUser = User::factory()->create();
+
+    subscribeToChannel('user_channel_other_private', "private-App.Models.User.{$otherUser->id}")->assertForbidden();
 });

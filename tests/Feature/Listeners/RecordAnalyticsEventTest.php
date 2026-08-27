@@ -36,8 +36,12 @@ it('actually persists an analytics_events row through a real queue worker', func
         'visibility' => 'public',
     ]);
 
-    expect(DB::table('jobs')->count())->toBe(1);
+    // PartyCreated now also implements ShouldBroadcast (see EventDispatchTest),
+    // so the framework queues a second, separate BroadcastEvent job alongside
+    // RecordAnalyticsEvent's CallQueuedListener job.
+    expect(DB::table('jobs')->count())->toBe(2);
 
+    $this->artisan('queue:work', ['--once' => true])->run();
     $this->artisan('queue:work', ['--once' => true])->run();
 
     expect(DB::table('jobs')->count())->toBe(0);

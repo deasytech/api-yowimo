@@ -2,30 +2,30 @@
 
 namespace App\Events;
 
-use Illuminate\Broadcasting\PrivateChannel;
+use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Foundation\Events\Dispatchable;
 
-class PartyCreated implements ShouldBroadcast, ShouldDispatchAfterCommit
+class PartyMemberLeft implements ShouldBroadcast, ShouldDispatchAfterCommit
 {
     use Dispatchable;
 
     public function __construct(
         public readonly int $partyId,
-        public readonly int $hostId,
+        public readonly int $userId,
     ) {}
 
     /**
-     * @return array<int, PrivateChannel>
+     * @return array<int, PresenceChannel>
      */
     public function broadcastOn(): array
     {
-        return [new PrivateChannel("App.Models.User.{$this->hostId}")];
+        return [new PresenceChannel("party.{$this->partyId}")];
     }
 
     public function broadcastAs(): string
     {
-        return 'party.created';
+        return 'party.member.left';
     }
 }

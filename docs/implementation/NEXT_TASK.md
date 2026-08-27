@@ -1,48 +1,23 @@
 # Current Task
 
-Hardening pass: expand test coverage, tune rate limits on write-heavy endpoints, run a first security review, stand up basic backup/DR.
+None confirmed. Sprint 14 (Hardening pass) was the last sprint in the 14-sprint plan in `docs/implementation/IMPLEMENTATION_ORDER.md`; there is no Sprint 15 defined. The "consume friend-request events" and "broadcast Wallet/Purchase events and `PartyMemberLeft`" candidates that used to be listed here have since been picked up by user decision and shipped (see `.claude/CURRENT_PHASE.md`'s Current Sprint section) — both are removed from the list below.
 
-# Why This Task
+# Why There's No Task Here
 
-Per `docs/implementation/IMPLEMENTATION_ORDER.md` Sprint 14, this is the last sprint in the 14-sprint plan, now that Sprint 13 (AI Host v0) has landed. It deliberately introduces no new product features — only confidence in, and tuning of, what already exists (rate limits on existing endpoints may change; no route, payload, or business logic does).
+`IMPLEMENTATION_ORDER.md:205` is explicit: "If/when any of these [deferred items] gets prioritized, treat it as its own multi-sprint plan appended after Sprint 14, re-running the same dependency analysis against the codebase's state at that time — rather than assuming this document's Tier 1–3 assumptions still hold." Picking one of the candidates below and building it without that confirmation would be inventing scope, which `CLAUDE.md` prohibits.
 
-# Objectives
+# Candidates (need a decision, not a guess)
 
-- [ ] Expand test coverage toward the now-larger surface (Sprints 9–13 each shipped tests, but the plan calls for a dedicated coverage pass — confirm with the user which modules/edge cases to prioritize, don't invent a coverage target).
-- [ ] Tune rate limits for the new write-heavy endpoints added since Sprint 1 (purchases, party join/leave, friend requests, push-token registration) — confirm target limits with the user; the current `api` limiter (`60/min` by user or IP) and `webhooks` limiter (`120/min` by IP) were set before most of these endpoints existed.
-- [ ] Run a first security review against `docs/architecture/06` (auth) and `docs/architecture/52` (security) — likely best done via the `/security-review` skill against the current `dev` branch; confirm scope with the user before starting.
-- [ ] Stand up backup/DR basics proportionate to actual current infra — confirm with the user what "basic" means here (e.g. documented DB backup cadence/restore procedure) versus the full enterprise DR plan in docs 33/58, which is explicitly out of scope.
+Unscheduled items carried over from `docs/implementation/CURRENT_PHASE.md`'s "Outstanding, unscheduled" list, roughly in order of how self-contained they are:
 
-# Dependencies
-
-Must already exist before starting (all confirmed present):
-
-- The full Sprint 1–13 surface (Auth, Catalog, Party, Wallet, Marketplace, Domain Events, Game Engine, Realtime, Notifications, Friends, Admin, Analytics, AI Host) — this sprint hardens what exists, it doesn't add new domains.
-
-# Files Likely to Change
-
-Impossible to scope precisely without the objective-by-objective decisions above (per `CLAUDE.md`, don't invent scope), but plausible candidates:
-
-- `app/Providers/AppServiceProvider.php` (rate limiter definitions) if limits are retuned.
-- New or expanded `tests/Feature/*` files across existing modules.
-- Non-code: backup/DR documentation, a security review write-up.
-
-Explicitly not expected to change:
-
-- Any existing API contract (routes, request/response shapes, status codes) — this sprint is about confidence and limits, not behavior.
-- Any domain event, listener, or service's business logic.
-
-# Definition of Done
-
-- Whatever coverage/rate-limit/security/DR scope is confirmed with the user is delivered.
-- `vendor/bin/pint --dirty --format agent` is clean.
-- Full test suite passes (`php artisan test --compact`), including all existing Sprint 1–13 tests unchanged.
-
-# Testing Requirements
-
-- New tests per whatever coverage gaps are confirmed with the user.
-- Full regression: `php artisan test --compact` must remain green.
+- **Reward granting on round/game completion** — amount, trigger, recipients all undecided; explicitly descoped from Sprint 7.
+- **Notifications beyond v0** — the remaining 4 of 9 fired events (5 now wired), in-app (Reverb) delivery, and a real Firebase project per environment.
+- **In-panel admin password management** — Sprint 11 set passwords via `tinker`/seeder only.
+- **Filament Analytics resource/dashboard** — plus populating `analytics_events`' `ip`/`device`/`country` columns.
+- **AI Host beyond v0** — full "Yowi" persona (voice, moderation, translation, recommendations), `RoundCompleted` trigger, retry/backoff.
+- **Lower priority, not blocking:** schedule `clerk:sync-users` hourly; add a GitHub Actions Pint+Pest workflow (carried over from Sprint 1).
+- **Tier 4 (`IMPLEMENTATION_ORDER.md` §G)** — Chat, Voice/Video, Moderation, Creator Economy, Corporate/Enterprise, i18n — explicitly deferred pending a business trigger (a signed customer, measured demand); do not schedule speculatively.
 
 # If Ambiguous
 
-`IMPLEMENTATION_ORDER.md`'s Sprint 14 entry is intentionally broad ("expand test coverage," "tune rate limits," "run a first security review," "stand up backup/DR basics") without specifying targets. Confirm with the user which of the four sub-objectives to tackle first and what "done" looks like for each, per `CLAUDE.md` — do not invent coverage targets, rate-limit numbers, or a DR policy.
+Ask the user which candidate to build next, and get its objectives/acceptance criteria confirmed the same way each prior sprint's scope was confirmed — do not default to the top of this list without asking.
