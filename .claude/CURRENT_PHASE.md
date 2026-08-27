@@ -1,21 +1,23 @@
 # Current Phase — Yowimo Backend
 
-**Assessed:** 2026-08-26, against `dev` after Sprint 11 landed, by direct code inspection.
+**Assessed:** 2026-08-27, against `dev` after Sprint 12 landed, by direct code inspection.
 **Basis:** `docs/audit/*`, `docs/implementation/IMPLEMENTATION_ORDER.md`, `.claude/PROJECT_CONTEXT.md`.
 
 ---
 
 ## Current Sprint
 
-**Sprint 11 — Admin panel v0** (`docs/implementation/IMPLEMENTATION_ORDER.md`), **done, with three design gaps confirmed with the user up front.** Nothing blocks starting Sprint 12.
+**Sprint 12 — Analytics & observability baseline** (`docs/implementation/IMPLEMENTATION_ORDER.md`), **done, with four scope calls confirmed with the user up front.** Nothing blocks starting Sprint 13.
 
-- ✅ `filament/filament` (v5) installed; `App\Providers\Filament\AdminPanelProvider` registered in `bootstrap/providers.php`, default `/admin` path, default `web` session guard (untouched — `config/auth.php` already had it, unrelated to the API's `clerk` guard).
-- ✅ **Scope calls made with the user up front, confirmed before coding (not guessed):** (1) admin status is a new `is_admin` boolean column on `users` (not a role/permission package, not an email allowlist); (2) panel login is a **separate password-based login** on the existing `web` guard, independent of Clerk — `users` gained nullable `password`/`remember_token` columns via migration, since neither existed before; (3) Users are **view/edit, not full CRUD** — no create or delete action is registered anywhere in `UserResource` (`canCreate()`/`canDelete()`/`canDeleteAny()` all hard-return `false`, in addition to the routes simply not existing).
-- ✅ `App\Models\User` implements `Filament\Models\Contracts\FilamentUser` (`canAccessPanel()` gates on `is_admin`) and `Filament\Models\Contracts\HasName` (`getFilamentName()` — the model has no `name` column, only `display_name`/`username`/`email`).
-- ✅ Filament resources in `app/Filament/Resources/`: `UserResource` (view/edit, no create/delete, `is_admin` toggle is the only in-panel way to promote further admins), `PartyResource` (view/audit only — no create/edit/delete registered), `WalletTransactionResource` (view/audit only — the ledger's `LogicException` guard on `updating`/`deleting` was already there, but the panel doesn't expose the actions in the first place either), `GameTypeResource`/`PackResource`/`PackCardResource`/`TokenBundleResource` (full CRUD — the intended write path for catalog content, replacing seed-only data).
-- ✅ `viewHorizon` gate (`app/Providers/HorizonServiceProvider.php`) extended to `$user->is_admin`, additive — the existing `local`-only bypass is untouched.
-- ✅ Tests: `tests/Feature/Admin/` — panel access (admin/non-admin/guest), wallet-transaction read-only enforcement (both the resource's `can*()` methods and the actual routes), full create/edit/delete round-trip on a catalog resource (`GameType`), user edit + `is_admin` toggle, and the Horizon gate extension.
-- ⚠️ Not built (deliberately, per the plan's own scope note about a much larger documented admin surface): moderation tools, analytics dashboards, enterprise/multi-tenant admin. An admin's own password is set via `tinker`/seeder for now — no in-panel password-management UI (out of scope for v0).
+- ✅ **Scope calls made with the user up front, confirmed before coding (not guessed):** (1) `RecordAnalyticsEvent` was extended to all six Sprint 5 backbone events (`PartyCreated`, `PartyMemberJoined`, `PartyStarted`, `WalletCredited`, `WalletDebited`, `PurchaseCompleted`), not just `PartyCreated`; (2) it now persists a row and no longer also logs via `Log::info()`; (3) the documented `tenant_id` column was omitted from `analytics_events` — no multi-tenant concept exists anywhere in this codebase; (4) Sentry was the confirmed error-tracking provider and `/health` is public/unauthenticated.
+- ✅ `analytics_events` table (`id`, `user_id` nullable, `event`, `payload` json, `ip`/`device`/`country` nullable — present per the doc's column list but never populated this sprint, since no domain event carries request context to plumb through; append-only, no `updated_at`) + `AnalyticsEvent` model.
+- ✅ `App\Listeners\RecordAnalyticsEvent::handle()` takes a PHP union type over all six event classes (Laravel's listener auto-discovery registers a union-typed `handle()` for every type in the union — verified via `php artisan event:list`), persists `user_id` + a per-event `payload` shape; `PartyStarted` has no user in its payload so `user_id` is `null` for that event.
+- ✅ `GET /api/v1/health` (public, unauthenticated, alongside the existing `/webhooks/clerk` route outside the `auth:clerk` group) — `App\Services\Health\HealthCheckService` checks DB (`DB::connection()->getPdo()`), Redis (`Redis::connection()->ping()`), Queue (`Queue::connection()->size()`), and Broadcast (a raw TCP probe of the configured Reverb host:port, only when `broadcasting.default` is `reverb` — reports `skipped` otherwise). Returns the existing `ApiResponse::success`/`error` envelope, 200 when every check is ok/skipped, 503 if any is down. Laravel's built-in `/up` (registered in `bootstrap/app.php`) was left untouched — it's a liveness probe, not a dependency-status endpoint, so this is additive, not a replacement.
+- ✅ `sentry/sentry-laravel` (`^4.27`) installed; `config/sentry.php` published (unedited from package defaults — reads `SENTRY_LARAVEL_DSN`); `Sentry\Laravel\Integration::handles($exceptions)` wired into `bootstrap/app.php`'s existing `withExceptions()` closure, after `ApiExceptionRegistrar::register()`. No DSN configured in any environment yet — same "wired but inert" pattern as Sprint 9's Firebase credentials.
+- ✅ Tests: `tests/Feature/Listeners/RecordAnalyticsEventTest.php` (rewritten — queue-push assertion kept, the real-queue-worker test now asserts a persisted row instead of a log line, plus one test per newly-wired event type calling the listener directly); `tests/Feature/Health/HealthCheckServiceTest.php` (ok path + simulated-down path per dependency, including a real ephemeral TCP listener for the broadcast-ok case); `tests/Feature/Health/HealthControllerTest.php` (public access, 200 healthy / 503 unhealthy via a mocked `HealthCheckService`).
+- ⚠️ Not built (deliberately, out of this sprint's read-side/observational scope): a Filament Analytics resource/dashboard, Prometheus/Grafana, request-level IP/device capture for `analytics_events` (would require threading request context through every service call site — a separate, larger change).
+
+Sprint 11 (done previously): `filament/filament` v5; `is_admin`-gated `/admin` panel with a separate password-based login on the `web` guard (independent of Clerk); `UserResource` (view/edit, no create/delete), `PartyResource`/`WalletTransactionResource` (view/audit only), `GameTypeResource`/`PackResource`/`PackCardResource`/`TokenBundleResource` (full CRUD, the write path for catalog content). `viewHorizon` gate extended to admins. No in-panel admin password-management UI (unscheduled).
 
 Sprint 10 (done previously): `friendships` table (`sender_id`/`receiver_id`/`status`/`accepted_at`) + `Friendship` model; `App\Services\Friends\FriendshipService` + `FriendshipController` — send/accept/reject/cancel/unfriend, list friends and pending requests both directions, `FriendshipPolicy`-guarded; `blocked` stays out of scope for v0; unfriending is a soft `removed` status, not a hard delete; `FriendRequestSent`/`FriendRequestAccepted` domain events dispatch, unconsumed for now.
 
@@ -59,6 +61,7 @@ Built, exposed via API, and tested:
 | **Push token registration** | `POST`/`DELETE /push-tokens` over `PushTokenService`; one token per user, replace-on-register. |
 | **Friends / social graph** | `friendships` table + `FriendshipService`; send/accept/reject/cancel/unfriend + list friends/pending requests, `FriendshipPolicy`-guarded. `FriendRequestSent`/`FriendRequestAccepted` domain events dispatch, unconsumed for now. |
 | **Admin Panel v0** | `filament/filament`; `is_admin`-gated `/admin` panel with a separate password-based login; Users (view/edit), Parties (view/audit), Wallet transactions (view/audit, no write actions registered), GameTypes/Packs/PackCards/TokenBundles (full CRUD). `viewHorizon` gate extended to admins. |
+| **Analytics & Observability baseline** | `analytics_events` table + `AnalyticsEvent` model; `RecordAnalyticsEvent` persists a row for all six Sprint 5 backbone events; `GET /api/v1/health` (public) checks DB/Redis/Queue/Broadcast(Reverb); `sentry/sentry-laravel` installed and wired, inert until `SENTRY_LARAVEL_DSN` is set. |
 
 ---
 
@@ -83,20 +86,19 @@ Real code exists but the module is narrower than its documented scope, or is unr
 
 No migration, model, route, or config exists for any of these:
 
-Chat/Messaging, AI Host, Voice/Video (LiveKit), Moderation/Trust & Safety, Analytics/Observability infrastructure, Creator Economy, Corporate/Multi-Tenant/Enterprise, Internationalization, CI/CD pipeline.
+Chat/Messaging, AI Host, Voice/Video (LiveKit), Moderation/Trust & Safety, Creator Economy, Corporate/Multi-Tenant/Enterprise, Internationalization, CI/CD pipeline.
 
-(Marketplace purchase flow/inventory/ownership moved to Partially Complete above — token bundle and pack purchase both now exist; only a real payment gateway is missing. Notifications, Friends/social graph, and Admin Panel v0 moved to Completed above.)
+(Marketplace purchase flow/inventory/ownership moved to Partially Complete above — token bundle and pack purchase both now exist; only a real payment gateway is missing. Notifications, Friends/social graph, Admin Panel v0, and Analytics & Observability baseline moved to Completed above.)
 
 ---
 
 ## Current Priority
 
-Start **Sprint 12 — Analytics & observability baseline** (`docs/implementation/IMPLEMENTATION_ORDER.md`):
+Start **Sprint 13 — AI Host v0 (narrow scope)** (`docs/implementation/IMPLEMENTATION_ORDER.md`):
 
-1. Persist an `analytics_events` feed off the Sprint 5 event backbone.
-2. Add `/health` checks for DB/Redis/Queue/Broadcast.
-3. Wire error tracking (Sentry or equivalent).
-4. **Risk:** low — read-side/observational work, no changes to write paths.
+1. A single `AIProvider` interface with one concrete OpenAI implementation (no multi-provider fallback chain — premature for v0).
+2. One prompt, triggered by `RoundCompleted`/`GameCompleted` (Sprint 5/7 events), delivered as a message into the game's realtime channel (Sprint 8).
+3. **Risk:** low-medium — scoped narrowly on purpose; the doc's full "Yowi" persona (voice, moderation, translation, recommendations) is out of scope.
 
 Outstanding, unscheduled (needs a design decision before it can be assigned to a sprint):
 - Reward granting on round/game completion (amount, trigger, recipients) — explicitly out of Sprint 7 per the user; no sprint in the current 14-sprint plan owns it.
@@ -104,6 +106,7 @@ Outstanding, unscheduled (needs a design decision before it can be assigned to a
 - Notifications beyond v0: the remaining 6 fired events, in-app (Reverb) delivery, and configuring a real Firebase project per environment — none scheduled.
 - Consuming `FriendRequestSent`/`FriendRequestAccepted` for Notifications/Realtime — the events exist (Sprint 10) but nothing listens yet.
 - In-panel password management for admins (Sprint 11 set an admin's password via `tinker`/seeder only — no self-service UI) — no sprint owns this.
+- A Filament Analytics resource/dashboard, and populating `analytics_events`' `ip`/`device`/`country` columns (would need request context threaded through every service call site) — surfaced by Sprint 12, neither scheduled.
 
 Lower-priority, not blocking, carried over from Sprint 1:
 - Schedule `clerk:sync-users` as an hourly self-heal job.
@@ -113,7 +116,7 @@ Lower-priority, not blocking, carried over from Sprint 1:
 
 ## Next Recommended Sprint
 
-**Sprint 13 — AI Host v0 (narrow scope)**, once Sprint 12 lands: a single `AIProvider` interface with one concrete OpenAI implementation, one prompt triggered by `RoundCompleted`/`GameCompleted`, delivered into the game's realtime channel. Risk: low-medium — scoped narrowly on purpose; the doc's full "Yowi" persona is out of scope.
+**Sprint 14 — Hardening pass**, once Sprint 13 lands: expand test coverage toward the now-larger surface; tune rate limits for the new write-heavy endpoints (purchases, joins); run a first security review against `docs/architecture/06`/`52`; stand up backup/DR basics proportionate to actual current infra. Risk: low — this sprint produces no new user-facing behavior, only confidence in what exists.
 
 ---
 
@@ -124,7 +127,7 @@ A single number is misleading given the scope gap between the documented vision 
 | Reference frame | Completion | Basis |
 |---|---|---|
 | **Pre-roadmap foundation** (Clerk auth, catalog, party create/like, wallet engine) | **~100%** of its own scope | This slice is finished, tested, and stable — no further work planned against it except the Sprint 1 exposure fix. |
-| **`docs/implementation/IMPLEMENTATION_ORDER.md`** (14-sprint actionable plan to a complete, playable core product) | **11 of 14 sprints executed (~79%)** | Sprints 1–11 done (Sprint 7 minus reward-granting, descoped per the user); Sprint 12 (Analytics & observability baseline) is next. |
-| **Full documented platform vision** (`docs/architecture/`, ~26 modules incl. Marketplace, Realtime, AI, Admin, Enterprise, Creator Economy) | **~35%** | 9 of ~26 modules fully built+exposed (Auth, Game Catalog, Party Likes, Wallet, Marketplace-purchase, Domain Events, Push token registration, Friends/social graph, Admin Panel v0), 6 partial (incl. Game Engine, Realtime, and Notifications), ~11 with zero code. Weighted toward "exists and works," not toward doc page count. |
+| **`docs/implementation/IMPLEMENTATION_ORDER.md`** (14-sprint actionable plan to a complete, playable core product) | **12 of 14 sprints executed (~86%)** | Sprints 1–12 done (Sprint 7 minus reward-granting, descoped per the user); Sprint 13 (AI Host v0) is next. |
+| **Full documented platform vision** (`docs/architecture/`, ~26 modules incl. Marketplace, Realtime, AI, Admin, Enterprise, Creator Economy) | **~38%** | 10 of ~26 modules fully built+exposed (Auth, Game Catalog, Party Likes, Wallet, Marketplace-purchase, Domain Events, Push token registration, Friends/social graph, Admin Panel v0, Analytics & Observability baseline), 6 partial (incl. Game Engine, Realtime, and Notifications), ~10 with zero code. Weighted toward "exists and works," not toward doc page count. |
 
 For context: `docs/architecture/60_PLATFORM_ROADMAP.md` claims "Phase 1: Foundation" is `Status: Completed` including Friends, Marketplace, Notifications, Realtime, and Voice — that claim does not hold against the code (see `docs/audit/ARCHITECTURE_GAP_ANALYSIS.md`). The figures above are the code-verified numbers; treat any completion claim inside `docs/architecture/` as aspirational framing, not status.

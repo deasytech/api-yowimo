@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\ClerkWebhookController;
 use App\Http\Controllers\Api\V1\FriendshipController;
 use App\Http\Controllers\Api\V1\GameSessionController;
 use App\Http\Controllers\Api\V1\GameTypeController;
+use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\PackController;
 use App\Http\Controllers\Api\V1\PackPurchaseController;
@@ -59,4 +60,6 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::post('/webhooks/clerk', ClerkWebhookController::class)->middleware('throttle:webhooks');
+
+    Route::get('/health', [HealthController::class, 'show']);
 });
