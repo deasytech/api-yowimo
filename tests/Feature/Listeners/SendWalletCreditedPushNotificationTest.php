@@ -3,8 +3,11 @@
 use App\Enums\WalletTransactionType;
 use App\Listeners\SendWalletCreditedPushNotification;
 use App\Models\PushToken;
+use App\Models\TokenBundle;
 use App\Models\User;
+use App\Notifications\PurchaseCompletedNotification;
 use App\Notifications\WalletCreditedNotification;
+use App\Services\Purchase\PurchaseService;
 use App\Services\Wallet\WalletService;
 use Illuminate\Events\CallQueuedListener;
 use Illuminate\Support\Facades\DB;
@@ -50,6 +53,18 @@ it('actually delivers the wallet-credited push notification through a real queue
     $this->artisan('queue:work', ['--stop-when-empty' => true])->run();
 
     expect(DB::table('jobs')->count())->toBe(0);
+});
+
+it('does not send the generic wallet-credited notification for a purchase-linked credit, since PurchaseCompleted already covers it', function () {
+    Notification::fake();
+
+    $user = User::factory()->create();
+    $bundle = TokenBundle::factory()->create();
+
+    app(PurchaseService::class)->purchase($user, $bundle, 'suppression_test_1');
+
+    Notification::assertSentTo($user, PurchaseCompletedNotification::class);
+    Notification::assertNotSentTo($user, WalletCreditedNotification::class);
 });
 
 it('does not call FCM when the credited user has no push token registered', function () {
