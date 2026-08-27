@@ -50,5 +50,13 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('api', fn (Request $request) => Limit::perMinute(60)->by($request->user()?->id ?: $request->ip()));
 
         RateLimiter::for('webhooks', fn (Request $request) => Limit::perMinute(120)->by($request->ip()));
+
+        RateLimiter::for('purchases', fn (Request $request) => Limit::perMinute(10)->by($request->user()?->id ?: $request->ip()));
+
+        RateLimiter::for('friend-requests', fn (Request $request) => Limit::perMinute(20)->by($request->user()?->id ?: $request->ip()));
+
+        RateLimiter::for('party-actions', fn (Request $request) => Limit::perMinute(30)->by($request->user()?->id ?: $request->ip()));
+
+        RateLimiter::for('push-tokens', fn (Request $request) => Limit::perMinute(10)->by($request->user()?->id ?: $request->ip()));
     }
 }
