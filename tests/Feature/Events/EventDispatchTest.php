@@ -235,3 +235,8 @@ it('broadcasts GameCompleted on both the game session and the party channel', fu
         new PresenceChannel('party.2'),
     ]);
 });
+
+it('broadcasts FriendRequestSent on the receiver\'s private channel and FriendRequestAccepted on the sender\'s', function () {
+    expect((new FriendRequestSent(1, 2, 3))->broadcastOn())->toEqual([new PrivateChannel('App.Models.User.3')]);
+    expect((new FriendRequestAccepted(1, 2, 3))->broadcastOn())->toEqual([new PrivateChannel('App.Models.User.2')]);
+});

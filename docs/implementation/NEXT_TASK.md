@@ -1,6 +1,6 @@
 # Current Task
 
-None confirmed. Sprint 14 (Hardening pass) was the last sprint in the 14-sprint plan in `docs/implementation/IMPLEMENTATION_ORDER.md`; there is no Sprint 15 defined.
+None confirmed. Sprint 14 (Hardening pass) was the last sprint in the 14-sprint plan in `docs/implementation/IMPLEMENTATION_ORDER.md`; there is no Sprint 15 defined. The "consume friend-request events" candidate that used to be listed here has since been picked up by user decision and shipped (push + realtime; see `.claude/CURRENT_PHASE.md`'s Current Sprint section) — it's removed from the list below.
 
 # Why There's No Task Here
 
@@ -11,9 +11,8 @@ None confirmed. Sprint 14 (Hardening pass) was the last sprint in the 14-sprint 
 Unscheduled items carried over from `docs/implementation/CURRENT_PHASE.md`'s "Outstanding, unscheduled" list, roughly in order of how self-contained they are:
 
 - **Reward granting on round/game completion** — amount, trigger, recipients all undecided; explicitly descoped from Sprint 7.
-- **Broadcasting Wallet/Purchase events and `PartyMemberLeft`** — needs a new per-user private channel plus (for leave) a domain event that doesn't exist yet.
-- **Notifications beyond v0** — the remaining 6 of 9 fired events, in-app (Reverb) delivery, and a real Firebase project per environment.
-- **Consuming `FriendRequestSent`/`FriendRequestAccepted`** — events exist (Sprint 10), nothing listens yet; smallest of the candidates.
+- **Broadcasting Wallet/Purchase events and `PartyMemberLeft`** — a per-user private channel (`App.Models.User.{id}`) now exists and is used by the friend-request events, but Wallet/Purchase/`PartyCreated` don't broadcast on it yet, and `PartyMemberLeft` doesn't exist as an event at all.
+- **Notifications beyond v0** — the remaining 4 of 9 fired events (5 now wired), in-app (Reverb) delivery, and a real Firebase project per environment.
 - **In-panel admin password management** — Sprint 11 set passwords via `tinker`/seeder only.
 - **Filament Analytics resource/dashboard** — plus populating `analytics_events`' `ip`/`device`/`country` columns.
 - **AI Host beyond v0** — full "Yowi" persona (voice, moderation, translation, recommendations), `RoundCompleted` trigger, retry/backoff.

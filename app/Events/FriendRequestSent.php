@@ -2,10 +2,12 @@
 
 namespace App\Events;
 
+use Illuminate\Broadcasting\PrivateChannel;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Foundation\Events\Dispatchable;
 
-class FriendRequestSent implements ShouldDispatchAfterCommit
+class FriendRequestSent implements ShouldBroadcast, ShouldDispatchAfterCommit
 {
     use Dispatchable;
 
@@ -14,4 +16,17 @@ class FriendRequestSent implements ShouldDispatchAfterCommit
         public readonly int $senderId,
         public readonly int $receiverId,
     ) {}
+
+    /**
+     * @return array<int, PrivateChannel>
+     */
+    public function broadcastOn(): array
+    {
+        return [new PrivateChannel("App.Models.User.{$this->receiverId}")];
+    }
+
+    public function broadcastAs(): string
+    {
+        return 'friend.request.sent';
+    }
 }
