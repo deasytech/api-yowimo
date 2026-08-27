@@ -27,10 +27,10 @@ Route::prefix('v1')->group(function () {
         Route::get('/packs/featured', [PackController::class, 'featured']);
         Route::get('/packs/{id}', [PackController::class, 'show'])->whereNumber('id');
         Route::get('/packs', [PackController::class, 'index']);
-        Route::post('/packs/{id}/purchase', [PackPurchaseController::class, 'store'])->whereNumber('id');
+        Route::post('/packs/{id}/purchase', [PackPurchaseController::class, 'store'])->whereNumber('id')->middleware('throttle:purchases');
 
         Route::get('/token-bundles', [TokenBundleController::class, 'index']);
-        Route::post('/token-bundles/{id}/purchase', [TokenBundlePurchaseController::class, 'store'])->whereNumber('id');
+        Route::post('/token-bundles/{id}/purchase', [TokenBundlePurchaseController::class, 'store'])->whereNumber('id')->middleware('throttle:purchases');
 
         Route::get('/wallet', [WalletController::class, 'show']);
         Route::get('/wallet/transactions', [WalletController::class, 'transactions']);
@@ -38,25 +38,25 @@ Route::prefix('v1')->group(function () {
         Route::get('/parties', [PartyController::class, 'index']);
         Route::post('/parties', [PartyController::class, 'store']);
         Route::get('/parties/{id}', [PartyController::class, 'show'])->whereNumber('id');
-        Route::post('/parties/{party}/like', [PartyLikeController::class, 'store']);
-        Route::delete('/parties/{party}/like', [PartyLikeController::class, 'destroy']);
-        Route::post('/parties/{party}/join', [PartyMembershipController::class, 'join']);
-        Route::delete('/parties/{party}/leave', [PartyMembershipController::class, 'leave']);
-        Route::post('/parties/{party}/start', [PartyMembershipController::class, 'start']);
-        Route::post('/parties/{party}/end', [PartyMembershipController::class, 'end']);
-        Route::post('/parties/{party}/game/start', [GameSessionController::class, 'start']);
-        Route::post('/game/{gameSession}/next-turn', [GameSessionController::class, 'nextTurn']);
+        Route::post('/parties/{party}/like', [PartyLikeController::class, 'store'])->middleware('throttle:party-actions');
+        Route::delete('/parties/{party}/like', [PartyLikeController::class, 'destroy'])->middleware('throttle:party-actions');
+        Route::post('/parties/{party}/join', [PartyMembershipController::class, 'join'])->middleware('throttle:party-actions');
+        Route::delete('/parties/{party}/leave', [PartyMembershipController::class, 'leave'])->middleware('throttle:party-actions');
+        Route::post('/parties/{party}/start', [PartyMembershipController::class, 'start'])->middleware('throttle:party-actions');
+        Route::post('/parties/{party}/end', [PartyMembershipController::class, 'end'])->middleware('throttle:party-actions');
+        Route::post('/parties/{party}/game/start', [GameSessionController::class, 'start'])->middleware('throttle:party-actions');
+        Route::post('/game/{gameSession}/next-turn', [GameSessionController::class, 'nextTurn'])->middleware('throttle:party-actions');
 
-        Route::post('/push-tokens', [PushTokenController::class, 'store']);
-        Route::delete('/push-tokens', [PushTokenController::class, 'destroy']);
+        Route::post('/push-tokens', [PushTokenController::class, 'store'])->middleware('throttle:push-tokens');
+        Route::delete('/push-tokens', [PushTokenController::class, 'destroy'])->middleware('throttle:push-tokens');
 
         Route::get('/friends', [FriendshipController::class, 'index']);
-        Route::delete('/friends/{friendship}', [FriendshipController::class, 'destroy']);
+        Route::delete('/friends/{friendship}', [FriendshipController::class, 'destroy'])->middleware('throttle:friend-requests');
         Route::get('/friend-requests', [FriendshipController::class, 'pending']);
-        Route::post('/friend-requests', [FriendshipController::class, 'store']);
-        Route::post('/friend-requests/{friendship}/accept', [FriendshipController::class, 'accept']);
-        Route::post('/friend-requests/{friendship}/reject', [FriendshipController::class, 'reject']);
-        Route::delete('/friend-requests/{friendship}', [FriendshipController::class, 'cancel']);
+        Route::post('/friend-requests', [FriendshipController::class, 'store'])->middleware('throttle:friend-requests');
+        Route::post('/friend-requests/{friendship}/accept', [FriendshipController::class, 'accept'])->middleware('throttle:friend-requests');
+        Route::post('/friend-requests/{friendship}/reject', [FriendshipController::class, 'reject'])->middleware('throttle:friend-requests');
+        Route::delete('/friend-requests/{friendship}', [FriendshipController::class, 'cancel'])->middleware('throttle:friend-requests');
     });
 
     Route::post('/webhooks/clerk', ClerkWebhookController::class)->middleware('throttle:webhooks');
