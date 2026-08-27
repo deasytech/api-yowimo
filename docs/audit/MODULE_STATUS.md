@@ -2,7 +2,7 @@
 
 **Audit date:** 2026-08-27
 
-Status of every module named in `docs/architecture/` against what actually exists in code, as of `dev` after Sprint 13 — AI Host v0. Modules are grouped the way the architecture docs group them (see `02_SYSTEM_ARCHITECTURE.md`, `22_BACKEND_SERVICE_CATALOG.md`, `60_PLATFORM_ROADMAP.md`).
+Status of every module named in `docs/architecture/` against what actually exists in code, as of `dev` after Sprint 14 — Hardening pass (rate limits, security review, test coverage, backup/DR docs; no module's scope changed). Modules are grouped the way the architecture docs group them (see `02_SYSTEM_ARCHITECTURE.md`, `22_BACKEND_SERVICE_CATALOG.md`, `60_PLATFORM_ROADMAP.md`).
 
 **Status key**
 

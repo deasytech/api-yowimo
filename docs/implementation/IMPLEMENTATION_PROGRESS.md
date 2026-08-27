@@ -1,6 +1,6 @@
 # Implementation Progress — Yowimo Backend
 
-**Assessed:** 2026-08-27, after Sprint 13 (AI Host v0) landed, by direct code inspection.
+**Assessed:** 2026-08-27, after Sprint 14 (Hardening pass) landed, by direct code inspection.
 **Sources:** `docs/audit/*`, `docs/implementation/IMPLEMENTATION_ORDER.md`, `.claude/CURRENT_PHASE.md`, `.claude/IMPLEMENTATION_STATUS.md`.
 
 "Blocked" below means zero code exists **and** an upstream dependency isn't finished yet. "Not Started" means zero code exists but nothing is stopping work from beginning today.
@@ -25,6 +25,7 @@ Built, exposed, tested — no further work planned:
 - **Admin Panel v0** — `filament/filament` v5 panel at `/admin`, gated on a new `is_admin` boolean on `users`, separate password-based login on the `web` guard. `UserResource` (view/edit, no delete), `PartyResource`/`WalletTransactionResource` (view/audit only), `GameTypeResource`/`PackResource`/`PackCardResource`/`TokenBundleResource` (full CRUD — the real write path for catalog content). `viewHorizon` gate extended to admins.
 - **Analytics & Observability baseline** — `analytics_events` table + `AnalyticsEvent` model; `RecordAnalyticsEvent` now persists a row (all six Sprint 5 backbone events) instead of only logging. `GET /api/v1/health` (public) checks DB/Redis/Queue/Broadcast(Reverb). `sentry/sentry-laravel` installed and wired, inert until `SENTRY_LARAVEL_DSN` is set.
 - **AI Host v0** — `App\Services\AI\AIProvider`/`OpenAiProvider` (a lean `Http`-facade call to OpenAI, no SDK package); `SendAiHostMessage` listener off `GameCompleted` (queued, auto-discovered) builds a playful-host prompt from the completed session and, on success, broadcasts the new `AiHostMessageSent` event onto the existing `game-session.{id}` private channel. Fails silently and logs a warning if OpenAI errors/times out or no key is configured.
+- **Hardening pass (Sprint 14)** — manual security review of auth/authorization code (no findings); four new per-user rate limiters (`purchases`, `friend-requests`, `party-actions`, `push-tokens`) stacked on the existing global `api` limiter; `docs/implementation/BACKUP_AND_DR_BASICS.md` documenting the backup policy to adopt at first production deploy; new rate-limit regression tests. No route, payload, or business logic changed.
 
 ## In progress modules
 
@@ -82,7 +83,7 @@ Illustrative only — assumes ~1 engineer-week per sprint per `IMPLEMENTATION_OR
 | Reference frame | Progress |
 |---|---|
 | Pre-roadmap foundation (Auth, Catalog, Party create/like, Wallet engine) | **~100%** of its own scope — done |
-| `IMPLEMENTATION_ORDER.md` 14-sprint plan | **13 of 14 sprints complete (~93%)** — Sprint 14 (Hardening pass) is next and last; reward granting from Sprint 7's original scope is descoped and unscheduled |
+| `IMPLEMENTATION_ORDER.md` 14-sprint plan | **14 of 14 sprints complete (100%)** — the plan is finished; reward granting from Sprint 7's original scope remains descoped and unscheduled; remaining work is unscheduled candidates (see `.claude/NEXT_TASK.md`) |
 | Full documented platform vision (`docs/architecture/`) | **~38%** — 10 modules complete, 6 in progress (incl. Game Engine, Realtime, and Notifications), the rest (~10) not started/deferred |
 
 `docs/architecture/60_PLATFORM_ROADMAP.md` claims Phase 1 is fully complete including Friends, Marketplace, Notifications, Realtime, and Voice — the code does not support that claim (see `docs/audit/ARCHITECTURE_GAP_ANALYSIS.md`). The figures above are the code-verified numbers.

@@ -1,6 +1,6 @@
 # Implementation Status — Yowimo Backend
 
-**Assessed:** 2026-08-27, after Sprint 13 (AI Host v0) landed, by direct code inspection against `docs/architecture/`.
+**Assessed:** 2026-08-27, after Sprint 14 (Hardening pass) landed, by direct code inspection against `docs/architecture/`. Sprint 14 hardened existing endpoints (rate limits, security review, tests, backup/DR docs) without changing any module's status/scope below.
 **Sources:** `docs/audit/*`, `docs/implementation/IMPLEMENTATION_ORDER.md`, `.claude/CURRENT_PHASE.md`.
 
 **Status legend:** ✅ Complete · 🟡 Partial · 🔵 Built, unexposed · ⬜ Missing

@@ -1,20 +1,20 @@
 # Current Phase — Yowimo Backend
 
-**Assessed:** 2026-08-27, against `dev` after Sprint 13 landed, by direct code inspection.
+**Assessed:** 2026-08-27, against `dev` after Sprint 14 landed, by direct code inspection.
 **Basis:** `docs/audit/*`, `docs/implementation/IMPLEMENTATION_ORDER.md`, `.claude/PROJECT_CONTEXT.md`.
 
 ---
 
 ## Current Sprint
 
-**Sprint 13 — AI Host v0 (narrow scope)** (`docs/implementation/IMPLEMENTATION_ORDER.md`), **done, with four scope calls confirmed with the user up front.** Nothing technically blocks starting Sprint 14, but its four sub-objectives still need scope confirmed with the user before coding — see Current Priority below.
+**Sprint 14 — Hardening pass** (`docs/implementation/IMPLEMENTATION_ORDER.md`), **done — the last sprint in the 14-sprint plan.** All four sub-objectives had scope confirmed with the user before coding. No route, request/response shape, or business logic changed; the only user-facing effect is stricter rate limits on write-heavy endpoints. See Current Priority below for what's next (nothing is scheduled).
 
-- ✅ **Scope calls made with the user up front, confirmed before coding (not guessed):** (1) trigger is `GameCompleted` only, not `RoundCompleted` — one message per finished game, not per round; (2) tone is a playful in-character host reaction, not a neutral recap or pure hype; (3) failure policy is skip-silently-and-log (matches the Sprint 9 no-token no-op pattern) — no retry, no fallback broadcast message; (4) model is `gpt-4o-mini`, configurable via `OPENAI_MODEL`.
-- ✅ `App\Services\AI\AIProvider` interface (`respond(string $prompt): string`) + `App\Services\AI\OpenAiProvider` — a lean `Illuminate\Support\Facades\Http` call to the OpenAI chat-completions endpoint (no SDK package added, consistent with keeping a one-method interface simple); bound in `AppServiceProvider` the same way `PaymentProvider` is bound.
-- ✅ `App\Listeners\SendAiHostMessage` (`ShouldQueue`, auto-discovered off `GameCompleted`) builds a prompt from the completed session's pack/party/round-count, calls `AIProvider::respond()`, and on success dispatches the new `App\Events\AiHostMessageSent` broadcast event onto the existing `game-session.{id}` private channel (`ai-host.message`). On any `Throwable` from the provider (missing API key, HTTP failure, timeout) it logs a warning and returns — no broadcast, no game-flow impact.
-- ✅ `config/services.php` gained an `openai` block (`api_key`, `model`) read from `OPENAI_API_KEY`/`OPENAI_MODEL`; `.env.example` documents both, unset by default — same "wired but inert" pattern as Sprint 9's Firebase credentials and Sprint 12's Sentry DSN.
-- ✅ Tests: `tests/Feature/Listeners/SendAiHostMessageTest.php` — listener is queued when `GameCompleted` fires (driven through a real one-round, one-member `GameSessionService::start`/`nextTurn` game to completion, not a bare event dispatch), `AiHostMessageSent` broadcasts with the mocked provider's response, and no broadcast occurs when the provider throws.
-- ⚠️ Not built (deliberately, out of this sprint's narrow scope): the full "Yowi" persona (voice, moderation, translation, recommendations), a `RoundCompleted` trigger, retry/backoff on OpenAI failure, and any real OpenAI project/credentials configured in any environment (inert until `OPENAI_API_KEY` is set).
+- ✅ **Security review:** manual audit of Clerk JWT verification, JWKS caching, webhook signature verification (`svix/svix`), authorization policies, mass-assignment, and wallet idempotency scoping against `docs/architecture/06_SECURITY_STANDARDS.md`/`52_SECURITY_PLAYBOOK.md`. No high-confidence vulnerabilities found.
+- ✅ **Rate limits:** four new per-user `RateLimiter` definitions in `AppServiceProvider` — `purchases` (10/min), `friend-requests` (20/min), `party-actions` (30/min), `push-tokens` (10/min) — stacked via `throttle:` middleware on the relevant routes in `routes/api.php`, on top of the pre-existing global `api` limiter (60/min, unchanged).
+- ✅ **Backup/DR basics:** `docs/implementation/BACKUP_AND_DR_BASICS.md` — since no production infra is provisioned yet (no Docker/IaC/CI, local-only `.env`), it documents the policy to adopt at first deploy (automated daily backups, PITR, 7-day retention, quarterly restore drill) rather than describing infra that doesn't exist.
+- ✅ **Test coverage:** `tests/Feature/Api/V1/RateLimitingTest.php` — 4 new tests proving each new limiter throttles at its threshold and is scoped per-user, not global. AI Host and party/game-session modules were checked and already had solid dedicated coverage (including confirming the AFK-skip completion path shares the same `GameCompleted` dispatch as the manual next-turn path), so no additional tests were added there.
+
+Sprint 13 (done previously): `App\Services\AI\AIProvider`/`OpenAiProvider` (lean `Http`-facade call to OpenAI, no SDK package); `App\Listeners\SendAiHostMessage` (`ShouldQueue`, off `GameCompleted` only) builds a prompt from the completed session and broadcasts the new `AiHostMessageSent` event onto `game-session.{id}` (`ai-host.message`); playful in-character tone; skip-silently-and-log on any provider failure; `gpt-4o-mini` via `OPENAI_MODEL`; inert until `OPENAI_API_KEY` is set. Full "Yowi" persona, `RoundCompleted` trigger, and retry/backoff remain unscheduled.
 
 Sprint 12 (done previously): `analytics_events` table + `AnalyticsEvent` model; `RecordAnalyticsEvent` persists a row for all six Sprint 5 backbone events (`PartyCreated`, `PartyMemberJoined`, `PartyStarted`, `WalletCredited`, `WalletDebited`, `PurchaseCompleted`), replacing its prior log-only behavior; `GET /api/v1/health` (public) checks DB/Redis/Queue/Broadcast(Reverb); `sentry/sentry-laravel` installed and wired, inert until `SENTRY_LARAVEL_DSN` is set.
 
@@ -96,13 +96,7 @@ Chat/Messaging, Voice/Video (LiveKit), Moderation/Trust & Safety, Creator Econom
 
 ## Current Priority
 
-Start **Sprint 14 — Hardening pass** (`docs/implementation/IMPLEMENTATION_ORDER.md`), the final sprint in the 14-sprint plan. All technical dependencies are in place (the full Sprint 1–13 surface); none of the four sub-objectives below has a confirmed target yet — see `.claude/NEXT_TASK.md`'s "If Ambiguous" section — so implementation is gated on confirming scope with the user before coding, not on anything technical:
-
-1. Expand test coverage toward the now-larger surface (Sprints 9–13 added real coverage but the plan calls for a dedicated pass) — needs a confirmed target (which modules/edge cases).
-2. Tune rate limits for the new write-heavy endpoints (purchases, joins, friend requests) — needs confirmed limits; this is user-facing (it changes what request volume succeeds vs. gets throttled), not purely internal.
-3. Run a first security review against `docs/architecture/06`/`52` — needs confirmed scope.
-4. Stand up backup/DR basics proportionate to actual current infra (not the full enterprise DR plan in doc 33/58) — needs a confirmed definition of "basic."
-5. **Risk:** low — this sprint introduces no new product features or routes, only confidence in and tuning of what exists.
+**Nothing is scheduled.** Sprint 14 was explicitly the last sprint in `IMPLEMENTATION_ORDER.md`'s 14-sprint plan, and the doc (`IMPLEMENTATION_ORDER.md:205`) says any further work should be planned fresh with the user, not assumed from this document. See `.claude/NEXT_TASK.md` for the full candidate list and the "If Ambiguous" guidance — the short version: ask the user which of the outstanding items below to build next before writing any code.
 
 Outstanding, unscheduled (needs a design decision before it can be assigned to a sprint):
 - Reward granting on round/game completion (amount, trigger, recipients) — explicitly out of Sprint 7 per the user; no sprint in the current 14-sprint plan owns it.
@@ -121,7 +115,7 @@ Lower-priority, not blocking, carried over from Sprint 1:
 
 ## Next Recommended Sprint
 
-None scheduled — Sprint 14 is the last sprint in `IMPLEMENTATION_ORDER.md`. Once it lands, remaining work is the unscheduled items above (needs product/design decisions) and Tier 4 (`§G`, deferred pending a business trigger).
+None scheduled — Sprint 14 was the last sprint in `IMPLEMENTATION_ORDER.md`, and it has landed. Remaining work is the unscheduled items above (needs product/design decisions) and Tier 4 (`§G`, deferred pending a business trigger).
 
 ---
 
@@ -132,7 +126,7 @@ A single number is misleading given the scope gap between the documented vision 
 | Reference frame | Completion | Basis |
 |---|---|---|
 | **Pre-roadmap foundation** (Clerk auth, catalog, party create/like, wallet engine) | **~100%** of its own scope | This slice is finished, tested, and stable — no further work planned against it except the Sprint 1 exposure fix. |
-| **`docs/implementation/IMPLEMENTATION_ORDER.md`** (14-sprint actionable plan to a complete, playable core product) | **13 of 14 sprints executed (~93%)** | Sprints 1–13 done (Sprint 7 minus reward-granting, descoped per the user); Sprint 14 (Hardening pass) is next and last. |
+| **`docs/implementation/IMPLEMENTATION_ORDER.md`** (14-sprint actionable plan to a complete, playable core product) | **14 of 14 sprints executed (100%)** | Sprints 1–14 done (Sprint 7 minus reward-granting, descoped per the user). The plan itself is complete; remaining work is unscheduled (see Current Priority). |
 | **Full documented platform vision** (`docs/architecture/`, ~26 modules incl. Marketplace, Realtime, AI, Admin, Enterprise, Creator Economy) | **~42%** | 11 of ~26 modules fully built+exposed (Auth, Game Catalog, Party Likes, Wallet, Marketplace-purchase, Domain Events, Push token registration, Friends/social graph, Admin Panel v0, Analytics & Observability baseline, AI Host v0), 6 partial (incl. Game Engine, Realtime, and Notifications), ~9 with zero code. Weighted toward "exists and works," not toward doc page count. |
 
 For context: `docs/architecture/60_PLATFORM_ROADMAP.md` claims "Phase 1: Foundation" is `Status: Completed` including Friends, Marketplace, Notifications, Realtime, and Voice — that claim does not hold against the code (see `docs/audit/ARCHITECTURE_GAP_ANALYSIS.md`). The figures above are the code-verified numbers; treat any completion claim inside `docs/architecture/` as aspirational framing, not status.
