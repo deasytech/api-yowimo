@@ -1,57 +1,58 @@
 # Current Task
 
-Analytics & observability baseline: persist an `analytics_events` feed off the existing domain-event backbone, add `/health` checks for DB/Redis/Queue/Broadcast, and wire error tracking (Sentry or equivalent).
+AI Host v0 (narrow scope): a single `AIProvider` interface with one concrete OpenAI implementation, one prompt triggered by `RoundCompleted`/`GameCompleted`, delivered as a message into the game's realtime channel.
 
 # Why This Task
 
-Per `docs/implementation/IMPLEMENTATION_ORDER.md` Sprint 12, this is the next item now that Sprint 11 (Admin panel v0) has landed. It's read-side/observational work with no changes to any write path, which is why the plan rates it low risk.
+Per `docs/implementation/IMPLEMENTATION_ORDER.md` Sprint 13, this is the next item now that Sprint 12 (Analytics & observability baseline) has landed. It's deliberately narrow — the doc's full "Yowi" persona (voice, moderation, translation, recommendations) is explicitly out of scope for this sprint.
 
 # Objectives
 
-- [ ] Create an `analytics_events` table (see `docs/architecture/38_DATABASE_SCHEMA_REFERENCE.md`'s `analytics_events` section for the documented column list — `id`, `user_id`, `event`, `payload`, `ip`, `device`, `country`, `created_at`; the doc also lists `tenant_id`, but there is no multi-tenant concept anywhere in this codebase yet, so confirm with the user whether to include that column now or omit it — see "If Ambiguous") + an `AnalyticsEvent` model.
-- [ ] Change `App\Listeners\RecordAnalyticsEvent` (`app/Listeners/RecordAnalyticsEvent.php`) to persist a row instead of (or in addition to — confirm with the user) just logging via `Log::info()`. It currently only listens to `PartyCreated`; decide with the user whether this sprint also wires it to the other five events already dispatched by the Sprint 5 backbone (`PartyMemberJoined`, `PartyStarted`, `WalletCredited`, `WalletDebited`, `PurchaseCompleted`) or stays scoped to what already fires.
-- [ ] Add health check endpoint(s) covering DB, Redis, Queue, and Broadcast (Reverb) connectivity — Laravel's built-in health check (`php artisan health` / the `health` route added by recent Laravel versions) may already cover some of this; check `routes/` and `config/` before adding a new implementation.
-- [ ] Wire error tracking (Sentry or equivalent) — no APM/error-tracking package is installed today; confirm which provider with the user before adding a new external dependency and credentials.
+- [ ] Add an `App\Services\AI\AIProvider` interface (one method, e.g. `respond(string $prompt): string`, exact signature TBD with the user) + one concrete `OpenAiProvider` implementation. No multi-provider fallback chain, no provider registry — that's premature for v0.
+- [ ] Trigger one prompt off `RoundCompleted` and/or `GameCompleted` (both already dispatch fire-after-commit, from Sprint 5/7) — confirm with the user which of the two (or both) should trigger the AI host this sprint, and what the prompt should actually ask for (a recap? a reaction? a taunt/encouragement? — the doc's "Yowi" persona isn't scoped here, so the prompt content/tone needs a decision, not an invention).
+- [ ] Deliver the AI response into the game's existing realtime channel (`game-session.{id}`, private, Sprint 8) as a new broadcast event — confirm the event name/shape and whether it needs its own listener class (mirroring the `Send*PushNotification` listener pattern) or can broadcast directly from the event that already fires.
+- [ ] Handle the OpenAI call being slow/unreliable: confirm with the user whether this call happens synchronously in a queued listener (consistent with every other Sprint 5+ consumer being `ShouldQueue`) and what happens if OpenAI errors or times out (skip silently vs. retry vs. surface an error state) — do not invent retry/backoff policy without confirming.
+- [ ] Confirm which OpenAI model and API key configuration approach to use — no AI/LLM package or credentials are installed today, same "confirm before adding a new external dependency and credentials" rule as Sprint 12's Sentry decision.
 
 # Dependencies
 
 Must already exist before starting (all confirmed present):
 
-- `app/Events`/`app/Listeners` domain-event backbone (Sprint 5) — this sprint is a consumer of it, not a rework.
-- `App\Listeners\RecordAnalyticsEvent` — already queued (`ShouldQueue`), already proven against a real queue worker.
+- `RoundCompleted`/`GameCompleted` events (`app/Events/`, Sprint 5/7) — this sprint is a consumer of them, not a rework.
+- `game-session.{id}` private channel (Sprint 8, `App\Events\RoundCompleted`/`GameCompleted` already broadcast on it) — the AI response rides the same channel.
+- Domain-event backbone's queued-listener pattern (Sprint 5+) — precedent for how a new consumer should be wired (`ShouldQueue`, auto-discovered `handle()`).
 
 # Files Likely to Change
 
 New:
 
-- `database/migrations/*_create_analytics_events_table.php`, `app/Models/AnalyticsEvent.php`.
-- A health-check route/controller (or config for Laravel's built-in one) under `routes/` or `config/`.
-- Sentry (or equivalent) config + `.env.example` entries, if a provider is confirmed.
+- `app/Services/AI/AIProvider.php` (interface), `app/Services/AI/OpenAiProvider.php` (implementation).
+- A new listener (e.g. `app/Listeners/SendAiHostMessage.php`) off `RoundCompleted`/`GameCompleted`, following the existing `Send*PushNotification` listener pattern.
+- A new broadcast event carrying the AI response into `game-session.{id}`, if the response isn't piggybacked onto an existing event.
+- OpenAI config (`config/services.php` entry or a new `config/ai.php`) + `.env.example` entry for the API key, credentials left blank (same "wired but inert" pattern as Sprint 9/12).
 
 Edited:
 
-- `app/Listeners/RecordAnalyticsEvent.php` — persist instead of/alongside logging.
-- Possibly `app/Providers/EventServiceProvider.php` (or wherever listeners are registered) if additional events get wired to analytics recording.
+- Possibly `app/Providers/AppServiceProvider.php`, if `AIProvider` needs an explicit interface binding (mirroring the existing `PaymentProvider` binding).
 
 Explicitly not expected to change:
 
-- Any existing API controller, service, or the Filament admin panel added in Sprint 11 — this sprint is observability infrastructure, not a new admin surface (though a future sprint may add an Analytics resource to the panel — not this one, unless asked).
-- Any existing event's dispatch call or payload shape.
+- Any existing API controller, service, the Filament admin panel, or the analytics/health infrastructure from Sprint 12.
+- Any existing event's dispatch call or payload shape; `RoundCompleted`/`GameCompleted` keep firing exactly as they do today.
+- The Game Engine's actual game-state logic (scoring, turn advancement) — this sprint only reacts to completion events, it doesn't change what completes them.
 
 # Definition of Done
 
-- `analytics_events` rows are persisted for at least the events this sprint scopes in.
-- Health check endpoint(s) report DB/Redis/Queue/Broadcast status.
-- Error tracking is wired and confirmed to capture a test exception, if a provider was confirmed with the user.
+- An AI-generated message is broadcast into `game-session.{id}` after the confirmed trigger event(s) fire, in at least one environment with a real OpenAI key configured.
 - `vendor/bin/pint --dirty --format agent` is clean.
-- Full test suite passes (`php artisan test --compact`), including all existing Sprint 1–11 tests unchanged.
+- Full test suite passes (`php artisan test --compact`), including all existing Sprint 1–12 tests unchanged.
 
 # Testing Requirements
 
-- New tests asserting `RecordAnalyticsEvent` (and any newly wired listeners) persist the expected row.
-- New tests for the health check endpoint(s), covering both healthy and simulated-unhealthy states where feasible.
+- New tests asserting the new listener is queued and, given a faked/mocked `AIProvider`, broadcasts the expected event/payload.
+- A test covering the OpenAI-failure path per whatever policy is confirmed with the user (skip/retry/error).
 - Full regression: `php artisan test --compact` must remain green.
 
 # If Ambiguous
 
-`IMPLEMENTATION_ORDER.md`'s Sprint 12 entry doesn't specify: whether to include the doc's `tenant_id` column on `analytics_events` given no multi-tenant concept exists yet, which events beyond `PartyCreated` should start recording analytics this sprint, which error-tracking provider to wire (Sentry is named as an example, not a requirement), and what health-check response shape/auth model to use (public vs. admin-gated, given the Sprint 11 admin panel now exists). Confirm these with the user before inventing any of them, per `CLAUDE.md`.
+`IMPLEMENTATION_ORDER.md`'s Sprint 13 entry doesn't specify: the exact `AIProvider` interface signature, which of `RoundCompleted`/`GameCompleted` triggers the prompt (or both), what the prompt should actually ask the model for (the "Yowi" persona/tone isn't scoped), the broadcast event name/shape for the AI response, whether the OpenAI call is synchronous-in-a-queued-listener or needs different handling, the failure/timeout policy, which OpenAI model to target, and how the API key is configured. Confirm these with the user before inventing any of them, per `CLAUDE.md`.

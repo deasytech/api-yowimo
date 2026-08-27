@@ -1,6 +1,6 @@
 # Implementation Status — Yowimo Backend
 
-**Assessed:** 2026-08-26, after Sprint 11 (Admin panel v0) landed, by direct code inspection against `docs/architecture/`.
+**Assessed:** 2026-08-27, after Sprint 12 (Analytics & observability baseline) landed, by direct code inspection against `docs/architecture/`.
 **Sources:** `docs/audit/*`, `docs/implementation/IMPLEMENTATION_ORDER.md`, `.claude/CURRENT_PHASE.md`.
 
 **Status legend:** ✅ Complete · 🟡 Partial · 🔵 Built, unexposed · ⬜ Missing
@@ -26,8 +26,8 @@
 | Notifications | 🟡 Partial | ~40% (push-token registration, FCM channel, 3 of 9 fired events wired; no real Firebase project configured yet, no in-app delivery) | No — extend only | Maintain (remaining scope unscheduled) | Domain Events, Queue activation |
 | Friends / Social Graph | ✅ Complete | 100% (v0 scope: send/accept/reject/cancel/unfriend, list friends/pending) | No | Maintain | Auth (Users) |
 | Admin Panel | ✅ Complete | 100% (v0 scope: Filament panel, `is_admin`-gated, separate password login; Users view/edit, Parties/Wallet view-only, catalog full CRUD) | No | Maintain (no in-panel password management yet — unscheduled) | Users, Parties, Wallet, Catalog (data to administer) |
-| Analytics / Observability | ⬜ Missing | 0% | N/A — net new | **High (Sprint 12, next)** | Domain Events |
-| AI Host ("Yowi") | ⬜ Missing | 0% | N/A — net new | Medium (Sprint 13, narrow scope) | Domain Events, Realtime |
+| Analytics / Observability | ✅ Complete | 100% (v0 scope: `analytics_events` persistence for all 6 backbone events, `/health` for DB/Redis/Queue/Broadcast, Sentry wired but inert) | No | Maintain (no Analytics admin resource yet — unscheduled) | Domain Events |
+| AI Host ("Yowi") | ⬜ Missing | 0% | N/A — net new | **High (Sprint 13, next)** | Domain Events, Realtime |
 | Chat / Messaging | ⬜ Missing | 0% | N/A — net new | Deferred | Friends, Realtime |
 | Voice/Video (LiveKit) | ⬜ Missing | 0% | N/A — net new | Deferred | Realtime |
 | Moderation / Trust & Safety | ⬜ Missing | 0% | N/A — net new | Deferred | Chat, Friends |

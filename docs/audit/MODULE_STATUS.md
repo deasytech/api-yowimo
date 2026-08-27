@@ -1,8 +1,8 @@
 # Module Status — Yowimo Backend
 
-**Audit date:** 2026-08-26
+**Audit date:** 2026-08-27
 
-Status of every module named in `docs/architecture/` against what actually exists in code, as of `dev` after Sprint 11 — Admin panel v0. Modules are grouped the way the architecture docs group them (see `02_SYSTEM_ARCHITECTURE.md`, `22_BACKEND_SERVICE_CATALOG.md`, `60_PLATFORM_ROADMAP.md`).
+Status of every module named in `docs/architecture/` against what actually exists in code, as of `dev` after Sprint 12 — Analytics & observability baseline. Modules are grouped the way the architecture docs group them (see `02_SYSTEM_ARCHITECTURE.md`, `22_BACKEND_SERVICE_CATALOG.md`, `60_PLATFORM_ROADMAP.md`).
 
 **Status key**
 
@@ -40,7 +40,7 @@ Status of every module named in `docs/architecture/` against what actually exist
 | **Referrals** | ⬜ Not started | No tables, no code. |
 | **Admin Panel** | ✅ Built (Sprint 11, 2026-08-26) | `filament/filament` v5 panel at `/admin`, gated on a new `is_admin` boolean on `users`, separate password-based login on the existing `web` guard (independent of the API's `clerk` guard). `UserResource` (view/edit, no create/delete), `PartyResource`/`WalletTransactionResource` (view/audit only — no create/edit/delete registered), `GameTypeResource`/`PackResource`/`PackCardResource`/`TokenBundleResource` (full CRUD, the real write path for catalog content). `HorizonServiceProvider`'s `viewHorizon` gate now also allows `is_admin` users, additive to its existing `local`-only bypass. No in-panel password-management UI, no moderation/analytics/enterprise admin surface — deliberately out of v0 scope. |
 | **Moderation / Trust & Safety** | ⬜ Not started | No reports table, no moderation pipeline, no trust score. |
-| **Analytics / Observability** | ⬜ Not started | No analytics-events table, no `/health` beyond Laravel's default `/up`, no Sentry/Prometheus/Grafana wiring. |
+| **Analytics / Observability** | ✅ Built (Sprint 12, 2026-08-27) | `analytics_events` table + `AnalyticsEvent` model; `RecordAnalyticsEvent` persists a row (replacing its prior `Log::info()`-only behavior) for all six Sprint 5 backbone events (`PartyCreated`, `PartyMemberJoined`, `PartyStarted`, `WalletCredited`, `WalletDebited`, `PurchaseCompleted`). `GET /api/v1/health` (public, unauthenticated) checks DB/Redis/Queue/Broadcast(Reverb) connectivity, 503 if any is down. `sentry/sentry-laravel` installed and wired via `Integration::handles()` in `bootstrap/app.php` — inert until `SENTRY_LARAVEL_DSN` is set (no project configured in any environment yet, same pattern as Firebase). No Analytics resource in the Filament admin panel (out of scope for this sprint), no Prometheus/Grafana. |
 | **Creator Economy** | ⬜ Not started | No creator entity, payout, or revenue-share logic anywhere. |
 | **Corporate / Enterprise / Multi-Tenant** | ⬜ Not started | No `tenant_id`/`organization_id` on any table. No org/workspace/department entities. |
 | **Internationalization / Localization** | ⬜ Not started | `APP_LOCALE`/`APP_FALLBACK_LOCALE` are Laravel defaults; no translation tables, no locale-aware content pipeline. |
@@ -51,6 +51,6 @@ Status of every module named in `docs/architecture/` against what actually exist
 
 ## Roll-up
 
-Of the 28 modules listed above, **4 are fully built and exposed** (Auth, Party lifecycle, Party Likes, Game Catalog), **1 substantial engine is built but only partially exposed** via a separate API layer (Wallet ledger — see Wallet API), **9 are partial slices** (User Profiles, Party create/discover, Game Engine, Wallet API, Token Bundles, Marketplace, Realtime, Notifications, Sponsorship schema hint), and **the remaining 14 do not exist in any form** — no migration, no model, no route, no config.
+Of the 28 modules listed above, **7 are fully built and exposed** (Auth, Friends/Social Graph, Party lifecycle, Party Likes, Game Catalog, Admin Panel, Analytics & Observability), **1 substantial engine is built but only partially exposed** via a separate API layer (Wallet ledger — see Wallet API), **9 are partial slices** (User Profiles, Party create/discover, Game Engine, Wallet API, Token Bundles, Marketplace, Realtime, Notifications, Sponsorship schema hint), and **the remaining 11 do not exist in any form** — no migration, no model, no route, no config.
 
 This directly contradicts `docs/architecture/60_PLATFORM_ROADMAP.md`, which marks "Phase 1: Foundation" as **Status: Completed** and lists Authentication, Profiles, Friends, Party System, Wallet, Marketplace, Notifications, Realtime, Voice, and Infrastructure as done. Per the code: Authentication is genuinely done; Profiles, Party System, Wallet, Marketplace, Notifications, and Realtime are each only partial slices of their claimed scope (see the rows above); Friends and Voice have zero code. See `ARCHITECTURE_GAP_ANALYSIS.md` for detail.

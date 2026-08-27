@@ -1,6 +1,6 @@
 # Implementation Progress — Yowimo Backend
 
-**Assessed:** 2026-08-26, after Sprint 11 (Admin panel v0) landed, by direct code inspection.
+**Assessed:** 2026-08-27, after Sprint 12 (Analytics & observability baseline) landed, by direct code inspection.
 **Sources:** `docs/audit/*`, `docs/implementation/IMPLEMENTATION_ORDER.md`, `.claude/CURRENT_PHASE.md`, `.claude/IMPLEMENTATION_STATUS.md`.
 
 "Blocked" below means zero code exists **and** an upstream dependency isn't finished yet. "Not Started" means zero code exists but nothing is stopping work from beginning today.
@@ -23,6 +23,7 @@ Built, exposed, tested — no further work planned:
 - **Push token registration** — `POST`/`DELETE /push-tokens` over `PushTokenService`; one token per user, replace-on-register.
 - **Friends / Social Graph** — `friendships` table + `FriendshipService`; send/accept/reject/cancel a pending request, unfriend (soft `removed` status), list friends/pending requests either direction. `FriendRequestSent`/`FriendRequestAccepted` domain events dispatch for future consumers; nothing listens yet.
 - **Admin Panel v0** — `filament/filament` v5 panel at `/admin`, gated on a new `is_admin` boolean on `users`, separate password-based login on the `web` guard. `UserResource` (view/edit, no delete), `PartyResource`/`WalletTransactionResource` (view/audit only), `GameTypeResource`/`PackResource`/`PackCardResource`/`TokenBundleResource` (full CRUD — the real write path for catalog content). `viewHorizon` gate extended to admins.
+- **Analytics & Observability baseline** — `analytics_events` table + `AnalyticsEvent` model; `RecordAnalyticsEvent` now persists a row (all six Sprint 5 backbone events) instead of only logging. `GET /api/v1/health` (public) checks DB/Redis/Queue/Broadcast(Reverb). `sentry/sentry-laravel` installed and wired, inert until `SENTRY_LARAVEL_DSN` is set.
 
 ## In progress modules
 
@@ -52,7 +53,7 @@ Zero code, and an upstream dependency must land first:
 Zero code, nothing blocking — ready to schedule:
 
 - CI/CD Pipeline
-- Analytics / Observability — next up, Sprint 12
+- AI Host v0 — next up, Sprint 13
 
 **Deferred** (zero code, intentionally not scheduled pending a business trigger — see `IMPLEMENTATION_ORDER.md` §G): Chat/Messaging, Voice/Video (LiveKit), Moderation/Trust & Safety, Creator Economy, Corporate/Multi-Tenant/Enterprise, Internationalization.
 
@@ -85,7 +86,7 @@ Illustrative only — assumes ~1 engineer-week per sprint per `IMPLEMENTATION_OR
 | Reference frame | Progress |
 |---|---|
 | Pre-roadmap foundation (Auth, Catalog, Party create/like, Wallet engine) | **~100%** of its own scope — done |
-| `IMPLEMENTATION_ORDER.md` 14-sprint plan | **11 of 14 sprints complete (~79%)** — Sprint 12 (Analytics baseline) is next; reward granting from Sprint 7's original scope is descoped and unscheduled |
+| `IMPLEMENTATION_ORDER.md` 14-sprint plan | **12 of 14 sprints complete (~86%)** — Sprint 13 (AI Host v0) is next; reward granting from Sprint 7's original scope is descoped and unscheduled |
 | Full documented platform vision (`docs/architecture/`) | **~35%** — 9 modules complete, 6 in progress (incl. Game Engine, Realtime, and Notifications), the rest (~11) not started/blocked/deferred |
 
 `docs/architecture/60_PLATFORM_ROADMAP.md` claims Phase 1 is fully complete including Friends, Marketplace, Notifications, Realtime, and Voice — the code does not support that claim (see `docs/audit/ARCHITECTURE_GAP_ANALYSIS.md`). The figures above are the code-verified numbers.
