@@ -1,6 +1,6 @@
 # Implementation Status — Yowimo Backend
 
-**Assessed:** 2026-08-27, after Sprint 12 (Analytics & observability baseline) landed, by direct code inspection against `docs/architecture/`.
+**Assessed:** 2026-08-27, after Sprint 13 (AI Host v0) landed, by direct code inspection against `docs/architecture/`.
 **Sources:** `docs/audit/*`, `docs/implementation/IMPLEMENTATION_ORDER.md`, `.claude/CURRENT_PHASE.md`.
 
 **Status legend:** ✅ Complete · 🟡 Partial · 🔵 Built, unexposed · ⬜ Missing
@@ -27,7 +27,7 @@
 | Friends / Social Graph | ✅ Complete | 100% (v0 scope: send/accept/reject/cancel/unfriend, list friends/pending) | No | Maintain | Auth (Users) |
 | Admin Panel | ✅ Complete | 100% (v0 scope: Filament panel, `is_admin`-gated, separate password login; Users view/edit, Parties/Wallet view-only, catalog full CRUD) | No | Maintain (no in-panel password management yet — unscheduled) | Users, Parties, Wallet, Catalog (data to administer) |
 | Analytics / Observability | ✅ Complete | 100% (v0 scope: `analytics_events` persistence for all 6 backbone events, `/health` for DB/Redis/Queue/Broadcast, Sentry wired but inert) | No | Maintain (no Analytics admin resource yet — unscheduled) | Domain Events |
-| AI Host ("Yowi") | ⬜ Missing | 0% | N/A — net new | **High (Sprint 13, next)** | Domain Events, Realtime |
+| AI Host ("Yowi") | ✅ Complete | 100% (v0 scope: `AIProvider`/`OpenAiProvider`, `GameCompleted`-triggered playful message broadcast via `AiHostMessageSent`) | No | Maintain (remaining "Yowi" persona scope unscheduled) | Domain Events, Realtime |
 | Chat / Messaging | ⬜ Missing | 0% | N/A — net new | Deferred | Friends, Realtime |
 | Voice/Video (LiveKit) | ⬜ Missing | 0% | N/A — net new | Deferred | Realtime |
 | Moderation / Trust & Safety | ⬜ Missing | 0% | N/A — net new | Deferred | Chat, Friends |

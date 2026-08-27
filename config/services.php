@@ -43,4 +43,9 @@ return [
         'secret_key' => env('CLERK_SECRET_KEY'),
     ],
 
+    'openai' => [
+        'api_key' => env('OPENAI_API_KEY'),
+        'model' => env('OPENAI_MODEL', 'gpt-4o-mini'),
+    ],
+
 ];
