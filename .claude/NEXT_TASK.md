@@ -1,58 +1,48 @@
 # Current Task
 
-AI Host v0 (narrow scope): a single `AIProvider` interface with one concrete OpenAI implementation, one prompt triggered by `RoundCompleted`/`GameCompleted`, delivered as a message into the game's realtime channel.
+Hardening pass: expand test coverage, tune rate limits on write-heavy endpoints, run a first security review, stand up basic backup/DR.
 
 # Why This Task
 
-Per `docs/implementation/IMPLEMENTATION_ORDER.md` Sprint 13, this is the next item now that Sprint 12 (Analytics & observability baseline) has landed. It's deliberately narrow — the doc's full "Yowi" persona (voice, moderation, translation, recommendations) is explicitly out of scope for this sprint.
+Per `docs/implementation/IMPLEMENTATION_ORDER.md` Sprint 14, this is the last sprint in the 14-sprint plan, now that Sprint 13 (AI Host v0) has landed. It deliberately produces no new user-facing behavior — only confidence in what already exists.
 
 # Objectives
 
-- [ ] Add an `App\Services\AI\AIProvider` interface (one method, e.g. `respond(string $prompt): string`, exact signature TBD with the user) + one concrete `OpenAiProvider` implementation. No multi-provider fallback chain, no provider registry — that's premature for v0.
-- [ ] Trigger one prompt off `RoundCompleted` and/or `GameCompleted` (both already dispatch fire-after-commit, from Sprint 5/7) — confirm with the user which of the two (or both) should trigger the AI host this sprint, and what the prompt should actually ask for (a recap? a reaction? a taunt/encouragement? — the doc's "Yowi" persona isn't scoped here, so the prompt content/tone needs a decision, not an invention).
-- [ ] Deliver the AI response into the game's existing realtime channel (`game-session.{id}`, private, Sprint 8) as a new broadcast event — confirm the event name/shape and whether it needs its own listener class (mirroring the `Send*PushNotification` listener pattern) or can broadcast directly from the event that already fires.
-- [ ] Handle the OpenAI call being slow/unreliable: confirm with the user whether this call happens synchronously in a queued listener (consistent with every other Sprint 5+ consumer being `ShouldQueue`) and what happens if OpenAI errors or times out (skip silently vs. retry vs. surface an error state) — do not invent retry/backoff policy without confirming.
-- [ ] Confirm which OpenAI model and API key configuration approach to use — no AI/LLM package or credentials are installed today, same "confirm before adding a new external dependency and credentials" rule as Sprint 12's Sentry decision.
+- [ ] Expand test coverage toward the now-larger surface (Sprints 9–13 each shipped tests, but the plan calls for a dedicated coverage pass — confirm with the user which modules/edge cases to prioritize, don't invent a coverage target).
+- [ ] Tune rate limits for the new write-heavy endpoints added since Sprint 1 (purchases, party join/leave, friend requests, push-token registration) — confirm target limits with the user; the current `api` limiter (`60/min` by user or IP) and `webhooks` limiter (`120/min` by IP) were set before most of these endpoints existed.
+- [ ] Run a first security review against `docs/architecture/06` (auth) and `docs/architecture/52` (security) — likely best done via the `/security-review` skill against the current `dev` branch; confirm scope with the user before starting.
+- [ ] Stand up backup/DR basics proportionate to actual current infra — confirm with the user what "basic" means here (e.g. documented DB backup cadence/restore procedure) versus the full enterprise DR plan in docs 33/58, which is explicitly out of scope.
 
 # Dependencies
 
 Must already exist before starting (all confirmed present):
 
-- `RoundCompleted`/`GameCompleted` events (`app/Events/`, Sprint 5/7) — this sprint is a consumer of them, not a rework.
-- `game-session.{id}` private channel (Sprint 8, `App\Events\RoundCompleted`/`GameCompleted` already broadcast on it) — the AI response rides the same channel.
-- Domain-event backbone's queued-listener pattern (Sprint 5+) — precedent for how a new consumer should be wired (`ShouldQueue`, auto-discovered `handle()`).
+- The full Sprint 1–13 surface (Auth, Catalog, Party, Wallet, Marketplace, Domain Events, Game Engine, Realtime, Notifications, Friends, Admin, Analytics, AI Host) — this sprint hardens what exists, it doesn't add new domains.
 
 # Files Likely to Change
 
-New:
+Impossible to scope precisely without the objective-by-objective decisions above (per `CLAUDE.md`, don't invent scope), but plausible candidates:
 
-- `app/Services/AI/AIProvider.php` (interface), `app/Services/AI/OpenAiProvider.php` (implementation).
-- A new listener (e.g. `app/Listeners/SendAiHostMessage.php`) off `RoundCompleted`/`GameCompleted`, following the existing `Send*PushNotification` listener pattern.
-- A new broadcast event carrying the AI response into `game-session.{id}`, if the response isn't piggybacked onto an existing event.
-- OpenAI config (`config/services.php` entry or a new `config/ai.php`) + `.env.example` entry for the API key, credentials left blank (same "wired but inert" pattern as Sprint 9/12).
-
-Edited:
-
-- Possibly `app/Providers/AppServiceProvider.php`, if `AIProvider` needs an explicit interface binding (mirroring the existing `PaymentProvider` binding).
+- `app/Providers/AppServiceProvider.php` (rate limiter definitions) if limits are retuned.
+- New or expanded `tests/Feature/*` files across existing modules.
+- Non-code: backup/DR documentation, a security review write-up.
 
 Explicitly not expected to change:
 
-- Any existing API controller, service, the Filament admin panel, or the analytics/health infrastructure from Sprint 12.
-- Any existing event's dispatch call or payload shape; `RoundCompleted`/`GameCompleted` keep firing exactly as they do today.
-- The Game Engine's actual game-state logic (scoring, turn advancement) — this sprint only reacts to completion events, it doesn't change what completes them.
+- Any existing API contract (routes, request/response shapes, status codes) — this sprint is about confidence and limits, not behavior.
+- Any domain event, listener, or service's business logic.
 
 # Definition of Done
 
-- An AI-generated message is broadcast into `game-session.{id}` after the confirmed trigger event(s) fire, in at least one environment with a real OpenAI key configured.
+- Whatever coverage/rate-limit/security/DR scope is confirmed with the user is delivered.
 - `vendor/bin/pint --dirty --format agent` is clean.
-- Full test suite passes (`php artisan test --compact`), including all existing Sprint 1–12 tests unchanged.
+- Full test suite passes (`php artisan test --compact`), including all existing Sprint 1–13 tests unchanged.
 
 # Testing Requirements
 
-- New tests asserting the new listener is queued and, given a faked/mocked `AIProvider`, broadcasts the expected event/payload.
-- A test covering the OpenAI-failure path per whatever policy is confirmed with the user (skip/retry/error).
+- New tests per whatever coverage gaps are confirmed with the user.
 - Full regression: `php artisan test --compact` must remain green.
 
 # If Ambiguous
 
-`IMPLEMENTATION_ORDER.md`'s Sprint 13 entry doesn't specify: the exact `AIProvider` interface signature, which of `RoundCompleted`/`GameCompleted` triggers the prompt (or both), what the prompt should actually ask the model for (the "Yowi" persona/tone isn't scoped), the broadcast event name/shape for the AI response, whether the OpenAI call is synchronous-in-a-queued-listener or needs different handling, the failure/timeout policy, which OpenAI model to target, and how the API key is configured. Confirm these with the user before inventing any of them, per `CLAUDE.md`.
+`IMPLEMENTATION_ORDER.md`'s Sprint 14 entry is intentionally broad ("expand test coverage," "tune rate limits," "run a first security review," "stand up backup/DR basics") without specifying targets. Confirm with the user which of the four sub-objectives to tackle first and what "done" looks like for each, per `CLAUDE.md` — do not invent coverage targets, rate-limit numbers, or a DR policy.

@@ -1,21 +1,22 @@
 # Current Phase — Yowimo Backend
 
-**Assessed:** 2026-08-27, against `dev` after Sprint 12 landed, by direct code inspection.
+**Assessed:** 2026-08-27, against `dev` after Sprint 13 landed, by direct code inspection.
 **Basis:** `docs/audit/*`, `docs/implementation/IMPLEMENTATION_ORDER.md`, `.claude/PROJECT_CONTEXT.md`.
 
 ---
 
 ## Current Sprint
 
-**Sprint 12 — Analytics & observability baseline** (`docs/implementation/IMPLEMENTATION_ORDER.md`), **done, with four scope calls confirmed with the user up front.** Nothing blocks starting Sprint 13.
+**Sprint 13 — AI Host v0 (narrow scope)** (`docs/implementation/IMPLEMENTATION_ORDER.md`), **done, with four scope calls confirmed with the user up front.** Nothing blocks starting Sprint 14.
 
-- ✅ **Scope calls made with the user up front, confirmed before coding (not guessed):** (1) `RecordAnalyticsEvent` was extended to all six Sprint 5 backbone events (`PartyCreated`, `PartyMemberJoined`, `PartyStarted`, `WalletCredited`, `WalletDebited`, `PurchaseCompleted`), not just `PartyCreated`; (2) it now persists a row and no longer also logs via `Log::info()`; (3) the documented `tenant_id` column was omitted from `analytics_events` — no multi-tenant concept exists anywhere in this codebase; (4) Sentry was the confirmed error-tracking provider and `/health` is public/unauthenticated.
-- ✅ `analytics_events` table (`id`, `user_id` nullable, `event`, `payload` json, `ip`/`device`/`country` nullable — present per the doc's column list but never populated this sprint, since no domain event carries request context to plumb through; append-only, no `updated_at`) + `AnalyticsEvent` model.
-- ✅ `App\Listeners\RecordAnalyticsEvent::handle()` takes a PHP union type over all six event classes (Laravel's listener auto-discovery registers a union-typed `handle()` for every type in the union — verified via `php artisan event:list`), persists `user_id` + a per-event `payload` shape; `PartyStarted` has no user in its payload so `user_id` is `null` for that event.
-- ✅ `GET /api/v1/health` (public, unauthenticated, alongside the existing `/webhooks/clerk` route outside the `auth:clerk` group) — `App\Services\Health\HealthCheckService` checks DB (`DB::connection()->getPdo()`), Redis (`Redis::connection()->ping()`), Queue (`Queue::connection()->size()`), and Broadcast (a raw TCP probe of the configured Reverb host:port, only when `broadcasting.default` is `reverb` — reports `skipped` otherwise). Returns the existing `ApiResponse::success`/`error` envelope, 200 when every check is ok/skipped, 503 if any is down. Laravel's built-in `/up` (registered in `bootstrap/app.php`) was left untouched — it's a liveness probe, not a dependency-status endpoint, so this is additive, not a replacement.
-- ✅ `sentry/sentry-laravel` (`^4.27`) installed; `config/sentry.php` published (unedited from package defaults — reads `SENTRY_LARAVEL_DSN`); `Sentry\Laravel\Integration::handles($exceptions)` wired into `bootstrap/app.php`'s existing `withExceptions()` closure, after `ApiExceptionRegistrar::register()`. No DSN configured in any environment yet — same "wired but inert" pattern as Sprint 9's Firebase credentials.
-- ✅ Tests: `tests/Feature/Listeners/RecordAnalyticsEventTest.php` (rewritten — queue-push assertion kept, the real-queue-worker test now asserts a persisted row instead of a log line, plus one test per newly-wired event type calling the listener directly); `tests/Feature/Health/HealthCheckServiceTest.php` (ok path + simulated-down path per dependency, including a real ephemeral TCP listener for the broadcast-ok case); `tests/Feature/Health/HealthControllerTest.php` (public access, 200 healthy / 503 unhealthy via a mocked `HealthCheckService`).
-- ⚠️ Not built (deliberately, out of this sprint's read-side/observational scope): a Filament Analytics resource/dashboard, Prometheus/Grafana, request-level IP/device capture for `analytics_events` (would require threading request context through every service call site — a separate, larger change).
+- ✅ **Scope calls made with the user up front, confirmed before coding (not guessed):** (1) trigger is `GameCompleted` only, not `RoundCompleted` — one message per finished game, not per round; (2) tone is a playful in-character host reaction, not a neutral recap or pure hype; (3) failure policy is skip-silently-and-log (matches the Sprint 9 no-token no-op pattern) — no retry, no fallback broadcast message; (4) model is `gpt-4o-mini`, configurable via `OPENAI_MODEL`.
+- ✅ `App\Services\AI\AIProvider` interface (`respond(string $prompt): string`) + `App\Services\AI\OpenAiProvider` — a lean `Illuminate\Support\Facades\Http` call to the OpenAI chat-completions endpoint (no SDK package added, consistent with keeping a one-method interface simple); bound in `AppServiceProvider` the same way `PaymentProvider` is bound.
+- ✅ `App\Listeners\SendAiHostMessage` (`ShouldQueue`, auto-discovered off `GameCompleted`) builds a prompt from the completed session's pack/party/round-count, calls `AIProvider::respond()`, and on success dispatches the new `App\Events\AiHostMessageSent` broadcast event onto the existing `game-session.{id}` private channel (`ai-host.message`). On any `Throwable` from the provider (missing API key, HTTP failure, timeout) it logs a warning and returns — no broadcast, no game-flow impact.
+- ✅ `config/services.php` gained an `openai` block (`api_key`, `model`) read from `OPENAI_API_KEY`/`OPENAI_MODEL`; `.env.example` documents both, unset by default — same "wired but inert" pattern as Sprint 9's Firebase credentials and Sprint 12's Sentry DSN.
+- ✅ Tests: `tests/Feature/Listeners/SendAiHostMessageTest.php` — listener is queued when `GameCompleted` fires (driven through a real one-round, one-member `GameSessionService::start`/`nextTurn` game to completion, not a bare event dispatch), `AiHostMessageSent` broadcasts with the mocked provider's response, and no broadcast occurs when the provider throws.
+- ⚠️ Not built (deliberately, out of this sprint's narrow scope): the full "Yowi" persona (voice, moderation, translation, recommendations), a `RoundCompleted` trigger, retry/backoff on OpenAI failure, and any real OpenAI project/credentials configured in any environment (inert until `OPENAI_API_KEY` is set).
+
+Sprint 12 (done previously): `analytics_events` table + `AnalyticsEvent` model; `RecordAnalyticsEvent` persists a row for all six Sprint 5 backbone events (`PartyCreated`, `PartyMemberJoined`, `PartyStarted`, `WalletCredited`, `WalletDebited`, `PurchaseCompleted`), replacing its prior log-only behavior; `GET /api/v1/health` (public) checks DB/Redis/Queue/Broadcast(Reverb); `sentry/sentry-laravel` installed and wired, inert until `SENTRY_LARAVEL_DSN` is set.
 
 Sprint 11 (done previously): `filament/filament` v5; `is_admin`-gated `/admin` panel with a separate password-based login on the `web` guard (independent of Clerk); `UserResource` (view/edit, no create/delete), `PartyResource`/`WalletTransactionResource` (view/audit only), `GameTypeResource`/`PackResource`/`PackCardResource`/`TokenBundleResource` (full CRUD, the write path for catalog content). `viewHorizon` gate extended to admins. No in-panel admin password-management UI (unscheduled).
 
@@ -62,6 +63,7 @@ Built, exposed via API, and tested:
 | **Friends / social graph** | `friendships` table + `FriendshipService`; send/accept/reject/cancel/unfriend + list friends/pending requests, `FriendshipPolicy`-guarded. `FriendRequestSent`/`FriendRequestAccepted` domain events dispatch, unconsumed for now. |
 | **Admin Panel v0** | `filament/filament`; `is_admin`-gated `/admin` panel with a separate password-based login; Users (view/edit), Parties (view/audit), Wallet transactions (view/audit, no write actions registered), GameTypes/Packs/PackCards/TokenBundles (full CRUD). `viewHorizon` gate extended to admins. |
 | **Analytics & Observability baseline** | `analytics_events` table + `AnalyticsEvent` model; `RecordAnalyticsEvent` persists a row for all six Sprint 5 backbone events; `GET /api/v1/health` (public) checks DB/Redis/Queue/Broadcast(Reverb); `sentry/sentry-laravel` installed and wired, inert until `SENTRY_LARAVEL_DSN` is set. |
+| **AI Host v0** | `App\Services\AI\AIProvider`/`OpenAiProvider`; `SendAiHostMessage` listener off `GameCompleted` broadcasts a playful AI-generated message via the new `AiHostMessageSent` event onto `game-session.{id}`; skip-silently-and-log on OpenAI failure; inert until `OPENAI_API_KEY` is set. |
 
 ---
 
@@ -86,19 +88,21 @@ Real code exists but the module is narrower than its documented scope, or is unr
 
 No migration, model, route, or config exists for any of these:
 
-Chat/Messaging, AI Host, Voice/Video (LiveKit), Moderation/Trust & Safety, Creator Economy, Corporate/Multi-Tenant/Enterprise, Internationalization, CI/CD pipeline.
+Chat/Messaging, Voice/Video (LiveKit), Moderation/Trust & Safety, Creator Economy, Corporate/Multi-Tenant/Enterprise, Internationalization, CI/CD pipeline.
 
-(Marketplace purchase flow/inventory/ownership moved to Partially Complete above — token bundle and pack purchase both now exist; only a real payment gateway is missing. Notifications, Friends/social graph, Admin Panel v0, and Analytics & Observability baseline moved to Completed above.)
+(Marketplace purchase flow/inventory/ownership moved to Partially Complete above — token bundle and pack purchase both now exist; only a real payment gateway is missing. Notifications, Friends/social graph, Admin Panel v0, Analytics & Observability baseline, and AI Host v0 moved to Completed above.)
 
 ---
 
 ## Current Priority
 
-Start **Sprint 13 — AI Host v0 (narrow scope)** (`docs/implementation/IMPLEMENTATION_ORDER.md`):
+Start **Sprint 14 — Hardening pass** (`docs/implementation/IMPLEMENTATION_ORDER.md`), the final sprint in the 14-sprint plan:
 
-1. A single `AIProvider` interface with one concrete OpenAI implementation (no multi-provider fallback chain — premature for v0).
-2. One prompt, triggered by `RoundCompleted`/`GameCompleted` (Sprint 5/7 events), delivered as a message into the game's realtime channel (Sprint 8).
-3. **Risk:** low-medium — scoped narrowly on purpose; the doc's full "Yowi" persona (voice, moderation, translation, recommendations) is out of scope.
+1. Expand test coverage toward the now-larger surface (Sprints 9–13 added real coverage but the plan calls for a dedicated pass).
+2. Tune rate limits for the new write-heavy endpoints (purchases, joins, friend requests).
+3. Run a first security review against `docs/architecture/06`/`52`.
+4. Stand up backup/DR basics proportionate to actual current infra (not the full enterprise DR plan in doc 33/58).
+5. **Risk:** low — this sprint produces no new user-facing behavior, only confidence in what exists.
 
 Outstanding, unscheduled (needs a design decision before it can be assigned to a sprint):
 - Reward granting on round/game completion (amount, trigger, recipients) — explicitly out of Sprint 7 per the user; no sprint in the current 14-sprint plan owns it.
@@ -107,6 +111,7 @@ Outstanding, unscheduled (needs a design decision before it can be assigned to a
 - Consuming `FriendRequestSent`/`FriendRequestAccepted` for Notifications/Realtime — the events exist (Sprint 10) but nothing listens yet.
 - In-panel password management for admins (Sprint 11 set an admin's password via `tinker`/seeder only — no self-service UI) — no sprint owns this.
 - A Filament Analytics resource/dashboard, and populating `analytics_events`' `ip`/`device`/`country` columns (would need request context threaded through every service call site) — surfaced by Sprint 12, neither scheduled.
+- AI Host beyond v0: the full "Yowi" persona (voice, moderation, translation, recommendations), a `RoundCompleted` trigger, retry/backoff on failure, and configuring a real OpenAI project per environment — surfaced by Sprint 13, none scheduled.
 
 Lower-priority, not blocking, carried over from Sprint 1:
 - Schedule `clerk:sync-users` as an hourly self-heal job.
@@ -116,7 +121,7 @@ Lower-priority, not blocking, carried over from Sprint 1:
 
 ## Next Recommended Sprint
 
-**Sprint 14 — Hardening pass**, once Sprint 13 lands: expand test coverage toward the now-larger surface; tune rate limits for the new write-heavy endpoints (purchases, joins); run a first security review against `docs/architecture/06`/`52`; stand up backup/DR basics proportionate to actual current infra. Risk: low — this sprint produces no new user-facing behavior, only confidence in what exists.
+None scheduled — Sprint 14 is the last sprint in `IMPLEMENTATION_ORDER.md`. Once it lands, remaining work is the unscheduled items above (needs product/design decisions) and Tier 4 (`§G`, deferred pending a business trigger).
 
 ---
 
@@ -127,7 +132,7 @@ A single number is misleading given the scope gap between the documented vision 
 | Reference frame | Completion | Basis |
 |---|---|---|
 | **Pre-roadmap foundation** (Clerk auth, catalog, party create/like, wallet engine) | **~100%** of its own scope | This slice is finished, tested, and stable — no further work planned against it except the Sprint 1 exposure fix. |
-| **`docs/implementation/IMPLEMENTATION_ORDER.md`** (14-sprint actionable plan to a complete, playable core product) | **12 of 14 sprints executed (~86%)** | Sprints 1–12 done (Sprint 7 minus reward-granting, descoped per the user); Sprint 13 (AI Host v0) is next. |
-| **Full documented platform vision** (`docs/architecture/`, ~26 modules incl. Marketplace, Realtime, AI, Admin, Enterprise, Creator Economy) | **~38%** | 10 of ~26 modules fully built+exposed (Auth, Game Catalog, Party Likes, Wallet, Marketplace-purchase, Domain Events, Push token registration, Friends/social graph, Admin Panel v0, Analytics & Observability baseline), 6 partial (incl. Game Engine, Realtime, and Notifications), ~10 with zero code. Weighted toward "exists and works," not toward doc page count. |
+| **`docs/implementation/IMPLEMENTATION_ORDER.md`** (14-sprint actionable plan to a complete, playable core product) | **13 of 14 sprints executed (~93%)** | Sprints 1–13 done (Sprint 7 minus reward-granting, descoped per the user); Sprint 14 (Hardening pass) is next and last. |
+| **Full documented platform vision** (`docs/architecture/`, ~26 modules incl. Marketplace, Realtime, AI, Admin, Enterprise, Creator Economy) | **~42%** | 11 of ~26 modules fully built+exposed (Auth, Game Catalog, Party Likes, Wallet, Marketplace-purchase, Domain Events, Push token registration, Friends/social graph, Admin Panel v0, Analytics & Observability baseline, AI Host v0), 6 partial (incl. Game Engine, Realtime, and Notifications), ~9 with zero code. Weighted toward "exists and works," not toward doc page count. |
 
 For context: `docs/architecture/60_PLATFORM_ROADMAP.md` claims "Phase 1: Foundation" is `Status: Completed` including Friends, Marketplace, Notifications, Realtime, and Voice — that claim does not hold against the code (see `docs/audit/ARCHITECTURE_GAP_ANALYSIS.md`). The figures above are the code-verified numbers; treat any completion claim inside `docs/architecture/` as aspirational framing, not status.
