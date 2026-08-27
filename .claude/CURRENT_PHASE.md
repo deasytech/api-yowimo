@@ -1,13 +1,20 @@
 # Current Phase — Yowimo Backend
 
-**Assessed:** 2026-08-27, against `dev` after the post-Sprint-14 "consume friend-request events" work landed, by direct code inspection.
+**Assessed:** 2026-08-27, against `dev` after the "broadcast Wallet/Purchase events and PartyMemberLeft" work landed, by direct code inspection.
 **Basis:** `docs/audit/*`, `docs/implementation/IMPLEMENTATION_ORDER.md`, `.claude/PROJECT_CONTEXT.md`.
 
 ---
 
 ## Current Sprint
 
-**Post-Sprint-14 — Consume `FriendRequestSent`/`FriendRequestAccepted`** (unscheduled item from Sprint 10, picked up by user decision — not a numbered sprint in `IMPLEMENTATION_ORDER.md`, which ends at Sprint 14), **done.** Push notification + push (delivery channel confirmed with the user as "push + realtime", the latter also confirmed with the user up front). No route, request/response shape, or existing business logic changed.
+**Post-Sprint-14 — Broadcast Wallet/Purchase events and `PartyMemberLeft`** (unscheduled item surfaced by Sprint 8, picked up by user decision from a set of candidates — not a numbered sprint in `IMPLEMENTATION_ORDER.md`, which ends at Sprint 14), **done.** No route, request/response shape, or existing business logic changed.
+
+- ✅ `WalletCredited`, `WalletDebited`, `PurchaseCompleted`, and `PartyCreated` now also implement `ShouldBroadcast`, each broadcasting onto the relevant user's own `App.Models.User.{id}` private channel (the same channel `FriendRequestSent`/`FriendRequestAccepted` started using post-Sprint-14) as `wallet.credited`, `wallet.debited`, `purchase.completed`, and `party.created` respectively. `WalletCredited`/`WalletDebited`/`PurchaseCompleted` broadcast to the transacting user; `PartyCreated` broadcasts to the host (for multi-device sync).
+- ✅ New `App\Events\PartyMemberLeft` event, dispatched from `PartyMembershipService::leave()` only when a membership row was actually deleted (mirrors `join()`'s idempotent-dispatch guard), broadcasting onto the existing `party.{id}` presence channel as `party.member.left` — the same channel `PartyMemberJoined` already uses.
+- ✅ No new push notifications added — this sprint was scoped to realtime broadcasting only, not the notification system (`RecordAnalyticsEvent`, the FCM notification classes, and rate limiters are all unchanged).
+- ✅ Tests: `EventDispatchTest.php` (new `PartyMemberLeft` dispatch/idempotency case, `broadcastOn()` assertions for all five events). No new channel-authorization tests needed — `App.Models.User.{id}` and `party.{id}` access rules were already covered by existing `ChannelAuthorizationTest.php` cases. Updated `RecordAnalyticsEventTest.php`'s real-queue-worker test: `PartyCreated` becoming broadcastable means the framework now queues a second `BroadcastEvent` job alongside `RecordAnalyticsEvent`'s listener job, so the test now expects/drains 2 queued jobs instead of 1 (an intentional behavior change, not a pre-existing bug).
+
+**Post-Sprint-14 — Consume `FriendRequestSent`/`FriendRequestAccepted`** (unscheduled item from Sprint 10, picked up by user decision), done. Push notification + push (delivery channel confirmed with the user as "push + realtime", the latter also confirmed with the user up front). No route, request/response shape, or existing business logic changed.
 
 - ✅ `App\Events\FriendRequestSent`/`FriendRequestAccepted` now also implement `ShouldBroadcast`, each broadcasting onto the *other* party's private notification channel (`App.Models.User.{id}`, already authorized in `routes/channels.php` but unused until now) as `friend.request.sent`/`friend.request.accepted`.
 - ✅ Two new queued listeners (`SendFriendRequestSentPushNotification`, `SendFriendRequestAcceptedPushNotification`) + two new `Notification` classes (`FriendRequestSentNotification`, `FriendRequestAcceptedNotification`) over the existing `FcmChannel`, mirroring the exact Sprint 9 pattern (`Send*PushNotification` listener → `*Notification` class).
@@ -87,7 +94,7 @@ Real code exists but the module is narrower than its documented scope, or is unr
 | **Packs (catalog + purchase)** | List/discover/show, `POST /packs/{id}/purchase` (debits wallet, grants ownership, full content unlocked). | Nothing planned — scope complete for the current roadmap. |
 | **Sponsorship** | `parties.is_sponsored` / `sponsor_name` columns exist. | No sponsor entity, no sponsor-facing flow of any kind — schema hint only. |
 | **Game Engine (rounds/turns/timers)** | `game_sessions`/`rounds`/`turns` tables + `GameSessionService`; host-only start/next-turn, randomized turn order, host-configurable rounds, Truth/Dare card dealing with no-repeat-until-exhausted, auto-completion; 30s server-authoritative turn timer with AFK-skip (tracked per turn), crash-recovery sweep, and `RoundCompleted`/`GameCompleted` events. | Votes, scoring, and reward granting — none of these were built; rewards were explicitly descoped from Sprint 7 by the user and have no owning sprint in the current plan (see Current Priority). |
-| **Realtime (Reverb)** | `laravel/reverb` installed; `party.{id}` presence channel + `game-session.{id}` private channel, both membership-gated; a per-user `App.Models.User.{id}` private channel (now used by `FriendRequestSent`/`FriendRequestAccepted`); `PartyMemberJoined`/`PartyStarted`/`TurnStarted`/`RoundCompleted`/`GameCompleted`/`FriendRequestSent`/`FriendRequestAccepted` broadcast. | Wallet/Purchase/`PartyCreated` events still aren't broadcast; `PartyMembershipService::leave()` doesn't dispatch any event to broadcast (pre-existing Sprint 5 gap); no live client (React Native) has verified the integration end-to-end. |
+| **Realtime (Reverb)** | `laravel/reverb` installed; `party.{id}` presence channel + `game-session.{id}` private channel, both membership-gated; a per-user `App.Models.User.{id}` private channel (used by `FriendRequestSent`/`FriendRequestAccepted`/`WalletCredited`/`WalletDebited`/`PurchaseCompleted`/`PartyCreated`); `PartyMemberJoined`/`PartyMemberLeft`/`PartyStarted`/`TurnStarted`/`RoundCompleted`/`GameCompleted`/`FriendRequestSent`/`FriendRequestAccepted`/`WalletCredited`/`WalletDebited`/`PurchaseCompleted`/`PartyCreated` all broadcast. | No live client (React Native) has verified the integration end-to-end. |
 | **Notifications** | `push_tokens` table/API; FCM channel; `PartyMemberJoinedNotification`/`RoundCompletedNotification`/`WalletCreditedNotification`/`FriendRequestSentNotification`/`FriendRequestAcceptedNotification`, each queued off a new listener. | No real Firebase project/credentials configured in any environment yet (push is wired but inert until `FIREBASE_CREDENTIALS` is set); 5 of 9 fired events notify; no in-app delivery; no client (React Native) has verified receiving a real push. |
 
 ---
@@ -108,7 +115,6 @@ Chat/Messaging, Voice/Video (LiveKit), Moderation/Trust & Safety, Creator Econom
 
 Outstanding, unscheduled (needs a design decision before it can be assigned to a sprint):
 - Reward granting on round/game completion (amount, trigger, recipients) — explicitly out of Sprint 7 per the user; no sprint in the current 14-sprint plan owns it.
-- Broadcasting Wallet/Purchase events and `PartyMemberLeft` — surfaced by Sprint 8; a per-user private channel now exists (`App.Models.User.{id}`, used by the friend-request events) but Wallet/Purchase/`PartyCreated` don't broadcast on it yet, and `PartyMemberLeft` doesn't exist as an event at all.
 - Notifications beyond v0: the remaining 4 fired events (of 9; 5 now wired), in-app (Reverb) delivery, and configuring a real Firebase project per environment — none scheduled.
 - In-panel password management for admins (Sprint 11 set an admin's password via `tinker`/seeder only — no self-service UI) — no sprint owns this.
 - A Filament Analytics resource/dashboard, and populating `analytics_events`' `ip`/`device`/`country` columns (would need request context threaded through every service call site) — surfaced by Sprint 12, neither scheduled.
