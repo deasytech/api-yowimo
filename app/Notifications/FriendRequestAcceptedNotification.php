@@ -31,24 +31,29 @@ class FriendRequestAcceptedNotification extends Notification implements ShouldQu
 
     public function toFcm(object $notifiable): CloudMessage
     {
-        $accepterName = $this->accepter->display_name ?: $this->accepter->username;
+        $payload = $this->payload();
 
         return CloudMessage::new()
-            ->withNotification(FcmNotification::create(
-                'Friend request accepted',
-                "{$accepterName} accepted your friend request.",
-            ))
-            ->withData([
-                'type' => 'friend.request.accepted',
-                'friendship_id' => (string) $this->friendship->id,
-                'accepter_id' => (string) $this->accepter->id,
-            ]);
+            ->withNotification(FcmNotification::create($payload['title'], $payload['body']))
+            ->withData(['type' => $payload['type'], ...array_map('strval', $payload['metadata'])]);
     }
 
     /**
      * @return array<string, mixed>
      */
     public function toInApp(object $notifiable): array
+    {
+        return $this->payload();
+    }
+
+    /**
+     * Shared title/body/type/metadata for both the FCM and in-app channels —
+     * kept in one place so the two deliveries can't drift on content, only on
+     * how each channel formats/casts it (FCM's `withData()` requires strings).
+     *
+     * @return array<string, mixed>
+     */
+    private function payload(): array
     {
         $accepterName = $this->accepter->display_name ?: $this->accepter->username;
 

@@ -33,6 +33,7 @@ it('lists the authenticated user\'s notifications newest first with pagination m
         ->getJson(API_V1_NOTIFICATIONS_ENDPOINT.'?per_page=1')
         ->assertStatus(200);
 
+    expect($response->headers->get('Cache-Control'))->toContain('no-store');
     expect($response->json('data'))->toHaveCount(1);
     $response->assertJsonPath('data.0.id', $newer->id);
     $response->assertJsonPath('meta.per_page', 1);

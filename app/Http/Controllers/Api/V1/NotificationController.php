@@ -27,7 +27,7 @@ class NotificationController extends Controller
             NotificationResource::collection($notifications),
             $notifications,
             'Notifications retrieved successfully.'
-        );
+        )->header('Cache-Control', 'no-store');
     }
 
     public function markRead(MarkNotificationReadRequest $request): JsonResponse

@@ -7,7 +7,7 @@
 
 ## Current Sprint
 
-**Post-Sprint-14 — In-app notifications** (recommendation written up in `.claude/NEXT_TASK.md` after re-running the dependency analysis against `docs/architecture/00`–`60` directly, confirmed by the user, then implemented), **done.** No route, request/response shape, or existing business logic changed — this is new, additive scope only.
+**Post-Sprint-14 — In-app notifications** (recommendation written up in `.claude/NEXT_TASK.md` after re-running the dependency analysis against `docs/architecture/00`–`60` directly, confirmed by the user, then implemented), **done.** Adds three new routes (`GET /notifications`, `PATCH /notifications/read`, `PATCH /notifications/read-all`); no existing route, request/response shape, or business logic changed — everything else here is new, additive scope only.
 
 - ✅ `notifications` table + `App\Models\Notification` (`id, user_id, title, body, type, read_at, metadata, created_at`), matching the exact schema in `docs/architecture/38_DATABASE_SCHEMA_REFERENCE.md` — a plain `user_id`-keyed table, not Laravel's default polymorphic notifications package table (same "bespoke table over generic package one" pattern as `analytics_events` from Sprint 12).
 - ✅ `App\Notifications\Channels\InAppChannel`, a new custom notification channel (alongside the existing `FcmChannel`) that persists a row when a notification implements `toInApp()`. All 10 existing `*Notification` classes (the same ones wired to push across Sprint 9 and the two most recent post-Sprint-14 items) now also implement `toInApp()` and list `InAppChannel::class` in `via()` — same title/body/type content already generated for FCM, so the two channels can't drift on *whether* something fires, only on delivery mechanism. The WalletCredited/WalletDebited double-notification suppression added earlier this session (skip when `reference_type` is set) lives in the listener, before `notify()` is called — so it suppresses both channels together, not just push.
@@ -123,7 +123,7 @@ No migration, model, route, or config exists for any of these:
 
 Chat/Messaging, Voice/Video (LiveKit), Moderation/Trust & Safety, Creator Economy, Corporate/Multi-Tenant/Enterprise, Internationalization, CI/CD pipeline.
 
-(Marketplace purchase flow/inventory/ownership moved to Partially Complete above — token bundle and pack purchase both now exist; only a real payment gateway is missing. Notifications, Friends/social graph, Admin Panel v0, Analytics & Observability baseline, and AI Host v0 moved to Completed above.)
+(Marketplace purchase flow/inventory/ownership and Notifications moved to Partially Complete above — token bundle and pack purchase both now exist, only a real payment gateway is missing; Notifications now covers push and in-app delivery, only a real Firebase project and `notification_preferences` are missing. Friends/social graph, Admin Panel v0, Analytics & Observability baseline, and AI Host v0 moved to Completed above.)
 
 ---
 
