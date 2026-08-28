@@ -1,0 +1,1755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yowimo API Reference</title>
+<meta name="description" content="Reference documentation for every frontend-facing Yowimo API v1 endpoint.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAF8F3; --surface:#FFFFFF; --sidebar:#F5F1E8;
+    --text:#1E1A2B; --text-muted:#6B6478; --text-faint:#9C96A8;
+    --border:#E6E0D3; --border-strong:#D8D0BE;
+    --accent:#A6701F; --accent-soft:#F3E4C8; --accent-ink:#3A2708;
+    --code-bg:#1E1A2B; --code-text:#EDE9F5; --code-muted:#8B84A0; --code-border:#33304A;
+    --m-get:#0E6E7E; --m-get-bg:#E2F1F2;
+    --m-post:#1E8A4C; --m-post-bg:#E1F4E7;
+    --m-patch:#B5760E; --m-patch-bg:#FBEBCF;
+    --m-delete:#B23A34; --m-delete-bg:#FBE6E4;
+    --note-bg:#FBF1DC; --note-border:#E8CE94; --note-text:#5C4515;
+    --danger-bg:#FBE6E4; --danger-border:#EBB5AE; --danger-text:#7A2A25;
+    --radius:8px;
+    --shadow:0 1px 2px rgba(30,26,43,0.06), 0 8px 24px rgba(30,26,43,0.05);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#15121F; --surface:#1B1830; --sidebar:#181428;
+      --text:#EDE9F5; --text-muted:#A79FBE; --text-faint:#726A8A;
+      --border:#2C2640; --border-strong:#3A3352;
+      --accent:#F0A83C; --accent-soft:#3A2E10; --accent-ink:#FCE7BC;
+      --code-bg:#0F0D18; --code-text:#EDE9F5; --code-muted:#8B84A0; --code-border:#2C2640;
+      --m-get:#4FC4D6; --m-get-bg:#12313A;
+      --m-post:#4FCB80; --m-post-bg:#123A24;
+      --m-patch:#F0B24E; --m-patch-bg:#3D2E0E;
+      --m-delete:#F0827A; --m-delete-bg:#3D1D1A;
+      --note-bg:#2E2610; --note-border:#4E3F17; --note-text:#F0D48C;
+      --danger-bg:#3D1D1A; --danger-border:#5C2B26; --danger-text:#F0B0A9;
+      --shadow:0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#15121F; --surface:#1B1830; --sidebar:#181428;
+    --text:#EDE9F5; --text-muted:#A79FBE; --text-faint:#726A8A;
+    --border:#2C2640; --border-strong:#3A3352;
+    --accent:#F0A83C; --accent-soft:#3A2E10; --accent-ink:#FCE7BC;
+    --code-bg:#0F0D18; --code-text:#EDE9F5; --code-muted:#8B84A0; --code-border:#2C2640;
+    --m-get:#4FC4D6; --m-get-bg:#12313A;
+    --m-post:#4FCB80; --m-post-bg:#123A24;
+    --m-patch:#F0B24E; --m-patch-bg:#3D2E0E;
+    --m-delete:#F0827A; --m-delete-bg:#3D1D1A;
+    --note-bg:#2E2610; --note-border:#4E3F17; --note-text:#F0D48C;
+    --danger-bg:#3D1D1A; --danger-border:#5C2B26; --danger-text:#F0B0A9;
+    --shadow:0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+  }
+
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:'Manrope',ui-sans-serif,system-ui,sans-serif;
+    font-size:15.5px; line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-reduced-motion: reduce){ *{ animation-duration:0.001ms !important; transition-duration:0.001ms !important; } }
+
+  h1,h2,h3,h4{ font-family:'Sora',ui-sans-serif,system-ui,sans-serif; text-wrap:balance; color:var(--text); margin:0; }
+  a{ color:inherit; }
+  code, .mono{ font-family:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace; }
+
+  /* ---------- App shell ---------- */
+  .shell{ display:grid; grid-template-columns:280px minmax(0,1fr); min-height:100vh; }
+  .topbar{
+    position:sticky; top:0; z-index:40; grid-column:1/-1;
+    display:flex; align-items:center; gap:.75rem;
+    height:56px; padding:0 1.25rem;
+    background:var(--surface); border-bottom:1px solid var(--border);
+  }
+  .topbar .mark{
+    width:26px; height:26px; border-radius:7px;
+    background:linear-gradient(135deg, var(--accent), var(--m-post));
+    flex:none;
+  }
+  .topbar .name{ font-family:'Sora'; font-weight:700; font-size:.98rem; letter-spacing:.01em; }
+  .topbar .tag{ font-size:.72rem; color:var(--text-muted); border:1px solid var(--border); padding:.15rem .5rem; border-radius:99px; font-family:'IBM Plex Mono'; }
+  .topbar .spacer{ flex:1; }
+  .topbar .base-url{ font-size:.78rem; color:var(--text-muted); font-family:'IBM Plex Mono'; display:none; }
+  @media (min-width:760px){ .topbar .base-url{ display:inline-flex; align-items:center; gap:.4rem; } }
+  .nav-toggle{
+    display:none; align-items:center; justify-content:center;
+    width:34px; height:34px; border-radius:7px; border:1px solid var(--border);
+    background:var(--surface); color:var(--text); cursor:pointer;
+  }
+  @media (max-width:900px){ .nav-toggle{ display:inline-flex; } }
+
+  /* ---------- Sidebar ---------- */
+  .sidenav{
+    grid-column:1; background:var(--sidebar); border-right:1px solid var(--border);
+    position:sticky; top:56px; height:calc(100vh - 56px); overflow-y:auto;
+    padding:1rem .9rem 3rem;
+  }
+  .sidenav::-webkit-scrollbar{ width:8px; }
+  .sidenav::-webkit-scrollbar-thumb{ background:var(--border-strong); border-radius:8px; }
+  .search-wrap{ position:relative; margin-bottom:1rem; }
+  .search-wrap input{
+    width:100%; padding:.55rem .7rem .55rem 2rem; border-radius:7px;
+    border:1px solid var(--border); background:var(--surface); color:var(--text);
+    font-family:'Manrope'; font-size:.85rem; outline:none;
+  }
+  .search-wrap input:focus{ border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+  .search-wrap svg{ position:absolute; left:.6rem; top:50%; transform:translateY(-50%); opacity:.5; }
+  .nav-group{ margin-bottom:.35rem; }
+  .nav-group-title{
+    font-size:.68rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--text-faint); padding:.65rem .5rem .3rem;
+  }
+  .nav-link{
+    display:flex; align-items:center; gap:.5rem; padding:.4rem .5rem; border-radius:6px;
+    font-size:.83rem; color:var(--text-muted); text-decoration:none; cursor:pointer;
+  }
+  .nav-link:hover{ background:var(--surface); color:var(--text); }
+  .nav-link.active{ background:var(--accent-soft); color:var(--accent-ink); font-weight:600; }
+  .nav-link .m{ font-family:'IBM Plex Mono'; font-size:.62rem; font-weight:600; width:38px; flex:none; }
+  .nav-link .m.get{ color:var(--m-get); } .nav-link .m.post{ color:var(--m-post); }
+  .nav-link .m.patch{ color:var(--m-patch); } .nav-link .m.delete{ color:var(--m-delete); }
+  .nav-link .p{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .nav-empty{ padding:.5rem; font-size:.8rem; color:var(--text-faint); display:none; }
+
+  @media (max-width:900px){
+    .shell{ grid-template-columns:1fr; }
+    .sidenav{
+      position:fixed; left:0; top:56px; bottom:0; width:280px; z-index:30;
+      transform:translateX(-100%); transition:transform .2s ease;
+      box-shadow:var(--shadow);
+    }
+    .sidenav.open{ transform:translateX(0); }
+    .scrim{ display:none; position:fixed; inset:56px 0 0 0; background:rgba(0,0,0,.35); z-index:25; }
+    .scrim.open{ display:block; }
+  }
+
+  /* ---------- Content ---------- */
+  main{ grid-column:2; min-width:0; padding:0 1.5rem 6rem; }
+  @media (max-width:900px){ main{ grid-column:1; } }
+  .content-inner{ max-width:1180px; margin:0 auto; }
+
+  .hero{ padding:3rem 0 2rem; max-width:640px; }
+  .hero .eyebrow{ font-family:'IBM Plex Mono'; font-size:.75rem; color:var(--accent); letter-spacing:.06em; margin-bottom:.7rem; }
+  .hero h1{ font-size:2.1rem; font-weight:800; margin-bottom:.85rem; }
+  .hero p{ color:var(--text-muted); font-size:1.02rem; }
+
+  .intro-grid{ display:grid; grid-template-columns:1fr; gap:2.5rem; padding:1rem 0 2.5rem; border-bottom:1px solid var(--border); margin-bottom:2.5rem; }
+  .intro-block h3{ font-size:1.02rem; font-weight:700; margin-bottom:.6rem; }
+  .intro-block p, .intro-block li{ color:var(--text-muted); font-size:.93rem; }
+  .intro-block ul{ margin:.4rem 0 0; padding-left:1.1rem; }
+  .intro-block li{ margin-bottom:.3rem; }
+
+  table.kv{ width:100%; border-collapse:collapse; font-size:.86rem; margin-top:.6rem; }
+  table.kv th, table.kv td{ text-align:left; padding:.5rem .6rem; border-bottom:1px solid var(--border); }
+  table.kv th{ color:var(--text-faint); font-weight:600; font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; }
+  table.kv td.mono{ color:var(--text); }
+  table.kv td.num{ font-variant-numeric:tabular-nums; }
+
+  section.group-head{ padding:2.2rem 0 .6rem; scroll-margin-top:70px; }
+  section.group-head h2{ font-size:1.5rem; font-weight:700; }
+  section.group-head p{ color:var(--text-muted); margin-top:.4rem; font-size:.92rem; max-width:640px; }
+
+  .endpoint{
+    border-top:1px solid var(--border);
+    padding:2.2rem 0; scroll-margin-top:70px;
+  }
+  .endpoint-head{ display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; margin-bottom:.6rem; }
+  .method{
+    font-family:'IBM Plex Mono'; font-weight:600; font-size:.72rem; letter-spacing:.03em;
+    padding:.22rem .5rem; border-radius:5px; flex:none;
+  }
+  .method.get{ color:var(--m-get); background:var(--m-get-bg); }
+  .method.post{ color:var(--m-post); background:var(--m-post-bg); }
+  .method.patch{ color:var(--m-patch); background:var(--m-patch-bg); }
+  .method.delete{ color:var(--m-delete); background:var(--m-delete-bg); }
+  .endpoint-head code.path{ font-size:.95rem; font-weight:500; }
+  .endpoint-head .noauth{ font-size:.68rem; color:var(--text-faint); border:1px solid var(--border); padding:.15rem .45rem; border-radius:99px; }
+  .endpoint > .desc{ color:var(--text-muted); font-size:.94rem; max-width:640px; margin-bottom:.3rem; }
+  .meta-line{ display:flex; gap:1rem; flex-wrap:wrap; font-size:.78rem; color:var(--text-faint); margin-bottom:1.3rem; font-family:'IBM Plex Mono'; }
+  .meta-line b{ color:var(--text-muted); font-weight:600; }
+
+  .endpoint-grid{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,420px); gap:2.2rem; align-items:start; }
+  @media (max-width:980px){ .endpoint-grid{ grid-template-columns:1fr; } }
+  .endpoint-docs h4{ font-size:.78rem; text-transform:uppercase; letter-spacing:.06em; color:var(--text-faint); margin:1.1rem 0 .5rem; }
+  .endpoint-docs h4:first-child{ margin-top:0; }
+  .endpoint-docs p{ font-size:.9rem; color:var(--text-muted); margin:.3rem 0; }
+
+  .params{ width:100%; border-collapse:collapse; font-size:.85rem; }
+  .params th{ text-align:left; font-size:.7rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-faint); padding:.4rem .55rem; border-bottom:1px solid var(--border-strong); }
+  .params td{ padding:.55rem .55rem; border-bottom:1px solid var(--border); vertical-align:top; }
+  .params td.field{ font-family:'IBM Plex Mono'; font-size:.82rem; color:var(--text); white-space:nowrap; }
+  .params td.rule{ color:var(--text-muted); }
+  .params .req{ color:var(--m-delete); font-size:.68rem; font-weight:600; margin-left:.35rem; }
+  .params .opt{ color:var(--text-faint); font-size:.68rem; margin-left:.35rem; }
+
+  .note{ background:var(--note-bg); border:1px solid var(--note-border); color:var(--note-text); border-radius:var(--radius); padding:.8rem .95rem; font-size:.85rem; margin:.9rem 0; }
+  .note b{ display:block; font-size:.68rem; text-transform:uppercase; letter-spacing:.06em; margin-bottom:.3rem; opacity:.85; }
+  .note code{ background:rgba(0,0,0,.08); padding:.05rem .3rem; border-radius:4px; }
+  :root[data-theme="dark"] .note code, @media (prefers-color-scheme:dark){ .note code{ background:rgba(255,255,255,.08); } }
+
+  .status-row{ display:flex; flex-wrap:wrap; gap:.4rem; margin-top:1rem; }
+  .status-pill{
+    font-family:'IBM Plex Mono'; font-size:.72rem; padding:.22rem .55rem; border-radius:99px;
+    border:1px solid var(--border); color:var(--text-muted); background:var(--surface);
+  }
+  .status-pill.ok{ color:var(--m-post); border-color:var(--m-post-bg); background:var(--m-post-bg); }
+  .status-pill.err{ color:var(--m-delete); border-color:var(--m-delete-bg); background:var(--m-delete-bg); }
+
+  .endpoint-code{ position:sticky; top:72px; display:flex; flex-direction:column; gap:.9rem; }
+  @media (max-width:980px){ .endpoint-code{ position:static; } }
+
+  .code-block{
+    background:var(--code-bg); border:1px solid var(--code-border); border-radius:var(--radius);
+    overflow:hidden; box-shadow:var(--shadow);
+  }
+  .code-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:.5rem .7rem; border-bottom:1px solid var(--code-border);
+  }
+  .code-head span{ font-family:'IBM Plex Mono'; font-size:.7rem; color:var(--code-muted); letter-spacing:.03em; text-transform:uppercase; }
+  .copy-btn{
+    display:inline-flex; align-items:center; gap:.3rem; background:transparent; border:1px solid var(--code-border);
+    color:var(--code-muted); font-family:'IBM Plex Mono'; font-size:.68rem; padding:.25rem .5rem; border-radius:5px; cursor:pointer;
+  }
+  .copy-btn:hover{ color:var(--code-text); border-color:var(--code-muted); }
+  .copy-btn:focus-visible, a:focus-visible, .nav-link:focus-visible, input:focus-visible, .nav-toggle:focus-visible{
+    outline:2px solid var(--accent); outline-offset:2px;
+  }
+  pre{ margin:0; padding:.85rem .9rem; overflow-x:auto; font-family:'IBM Plex Mono'; font-size:.78rem; line-height:1.6; color:var(--code-text); }
+  pre::-webkit-scrollbar{ height:8px; } pre::-webkit-scrollbar-thumb{ background:var(--code-border); border-radius:8px; }
+  .tok-key{ color:#8FD3FF; } .tok-str{ color:#B9E88F; } .tok-num{ color:#F0C674; } .tok-bool{ color:#F0A8D0; } .tok-null{ color:var(--code-muted); }
+  .tok-verb{ color:#F0A83C; font-weight:600; } .tok-path{ color:#8FD3FF; } .tok-flag{ color:var(--code-muted); }
+
+  footer{ border-top:1px solid var(--border); padding:2.5rem 0; text-align:center; color:var(--text-faint); font-size:.82rem; }
+
+  .skip-link{ position:absolute; left:-999px; top:0; background:var(--accent); color:var(--accent-ink); padding:.5rem 1rem; border-radius:6px; z-index:100; }
+  .skip-link:focus{ left:1rem; top:1rem; }
+</style>
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="shell">
+  <header class="topbar">
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" aria-expanded="false">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 4.5h14M2 9h14M2 13.5h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
+    <div class="mark" aria-hidden="true"></div>
+    <span class="name">Yowimo API</span>
+    <span class="tag">v1</span>
+    <div class="spacer"></div>
+    <span class="base-url"><svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="1" opacity="0"/></svg>https://api.yowimo.com/api/v1</span>
+  </header>
+
+  <div class="scrim" id="scrim"></div>
+
+  <nav class="sidenav" id="sidenav" aria-label="API sections">
+    <div class="search-wrap">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true"><circle cx="6.3" cy="6.3" r="4.5" stroke="currentColor" stroke-width="1.4"/><path d="M9.7 9.7 13 13" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      <input id="navSearch" type="search" placeholder="Find an endpoint…" aria-label="Filter endpoints">
+    </div>
+    <div id="navList">
+      <div class="nav-group" data-group="intro">
+        <div class="nav-group-title">Getting Started</div>
+        <a class="nav-link" data-search="introduction overview" href="#intro"><span class="m"></span><span class="p">Introduction</span></a>
+        <a class="nav-link" data-search="authentication bearer token clerk" href="#auth"><span class="m"></span><span class="p">Authentication</span></a>
+        <a class="nav-link" data-search="response envelope format success error" href="#envelope"><span class="m"></span><span class="p">Response format</span></a>
+        <a class="nav-link" data-search="pagination cursor per_page" href="#pagination"><span class="m"></span><span class="p">Pagination</span></a>
+        <a class="nav-link" data-search="rate limits throttle 429" href="#ratelimits"><span class="m"></span><span class="p">Rate limits</span></a>
+        <a class="nav-link" data-search="errors status codes exceptions" href="#errors"><span class="m"></span><span class="p">Errors</span></a>
+      </div>
+      <div class="nav-group" data-group="profile">
+        <div class="nav-group-title">Profile</div>
+        <a class="nav-link" data-search="get users me profile" href="#get-users-me"><span class="m get">GET</span><span class="p">/users/me</span></a>
+        <a class="nav-link" data-search="patch users me update profile" href="#patch-users-me"><span class="m patch">PATCH</span><span class="p">/users/me</span></a>
+      </div>
+      <div class="nav-group" data-group="gametypes">
+        <div class="nav-group-title">Game Types</div>
+        <a class="nav-link" data-search="get game-types list" href="#get-game-types"><span class="m get">GET</span><span class="p">/game-types</span></a>
+      </div>
+      <div class="nav-group" data-group="packs">
+        <div class="nav-group-title">Packs</div>
+        <a class="nav-link" data-search="get packs list catalog" href="#get-packs"><span class="m get">GET</span><span class="p">/packs</span></a>
+        <a class="nav-link" data-search="get packs featured" href="#get-packs-featured"><span class="m get">GET</span><span class="p">/packs/featured</span></a>
+        <a class="nav-link" data-search="get packs id show detail" href="#get-packs-id"><span class="m get">GET</span><span class="p">/packs/{id}</span></a>
+        <a class="nav-link" data-search="post packs purchase buy" href="#post-packs-purchase"><span class="m post">POST</span><span class="p">/packs/{id}/purchase</span></a>
+      </div>
+      <div class="nav-group" data-group="tokenbundles">
+        <div class="nav-group-title">Token Bundles</div>
+        <a class="nav-link" data-search="get token-bundles list" href="#get-token-bundles"><span class="m get">GET</span><span class="p">/token-bundles</span></a>
+        <a class="nav-link" data-search="post token-bundles purchase top up" href="#post-token-bundles-purchase"><span class="m post">POST</span><span class="p">/token-bundles/{id}/purchase</span></a>
+      </div>
+      <div class="nav-group" data-group="wallet">
+        <div class="nav-group-title">Wallet</div>
+        <a class="nav-link" data-search="get wallet balance" href="#get-wallet"><span class="m get">GET</span><span class="p">/wallet</span></a>
+        <a class="nav-link" data-search="get wallet transactions ledger history" href="#get-wallet-transactions"><span class="m get">GET</span><span class="p">/wallet/transactions</span></a>
+      </div>
+      <div class="nav-group" data-group="parties">
+        <div class="nav-group-title">Parties</div>
+        <a class="nav-link" data-search="get parties discover feed list" href="#get-parties"><span class="m get">GET</span><span class="p">/parties</span></a>
+        <a class="nav-link" data-search="post parties create" href="#post-parties"><span class="m post">POST</span><span class="p">/parties</span></a>
+        <a class="nav-link" data-search="get parties id show detail" href="#get-parties-id"><span class="m get">GET</span><span class="p">/parties/{id}</span></a>
+        <a class="nav-link" data-search="post parties like" href="#post-parties-like"><span class="m post">POST</span><span class="p">/parties/{party}/like</span></a>
+        <a class="nav-link" data-search="delete parties unlike" href="#delete-parties-like"><span class="m delete">DEL</span><span class="p">/parties/{party}/like</span></a>
+        <a class="nav-link" data-search="post parties join" href="#post-parties-join"><span class="m post">POST</span><span class="p">/parties/{party}/join</span></a>
+        <a class="nav-link" data-search="delete parties leave" href="#delete-parties-leave"><span class="m delete">DEL</span><span class="p">/parties/{party}/leave</span></a>
+        <a class="nav-link" data-search="post parties start host" href="#post-parties-start"><span class="m post">POST</span><span class="p">/parties/{party}/start</span></a>
+        <a class="nav-link" data-search="post parties end host" href="#post-parties-end"><span class="m post">POST</span><span class="p">/parties/{party}/end</span></a>
+      </div>
+      <div class="nav-group" data-group="gamesessions">
+        <div class="nav-group-title">Game Sessions</div>
+        <a class="nav-link" data-search="post game start session" href="#post-game-start"><span class="m post">POST</span><span class="p">/parties/{party}/game/start</span></a>
+        <a class="nav-link" data-search="post game next-turn advance" href="#post-game-next-turn"><span class="m post">POST</span><span class="p">/game/{id}/next-turn</span></a>
+      </div>
+      <div class="nav-group" data-group="pushtokens">
+        <div class="nav-group-title">Push Tokens</div>
+        <a class="nav-link" data-search="post push-tokens register device" href="#post-push-tokens"><span class="m post">POST</span><span class="p">/push-tokens</span></a>
+        <a class="nav-link" data-search="delete push-tokens unregister" href="#delete-push-tokens"><span class="m delete">DEL</span><span class="p">/push-tokens</span></a>
+      </div>
+      <div class="nav-group" data-group="notifications">
+        <div class="nav-group-title">Notifications</div>
+        <a class="nav-link" data-search="get notifications list feed" href="#get-notifications"><span class="m get">GET</span><span class="p">/notifications</span></a>
+        <a class="nav-link" data-search="patch notifications read mark" href="#patch-notifications-read"><span class="m patch">PATCH</span><span class="p">/notifications/read</span></a>
+        <a class="nav-link" data-search="patch notifications read all mark" href="#patch-notifications-read-all"><span class="m patch">PATCH</span><span class="p">/notifications/read-all</span></a>
+      </div>
+      <div class="nav-group" data-group="friends">
+        <div class="nav-group-title">Friends</div>
+        <a class="nav-link" data-search="get friends list" href="#get-friends"><span class="m get">GET</span><span class="p">/friends</span></a>
+        <a class="nav-link" data-search="delete friends unfriend remove" href="#delete-friends"><span class="m delete">DEL</span><span class="p">/friends/{id}</span></a>
+        <a class="nav-link" data-search="get friend-requests pending list" href="#get-friend-requests"><span class="m get">GET</span><span class="p">/friend-requests</span></a>
+        <a class="nav-link" data-search="post friend-requests send" href="#post-friend-requests"><span class="m post">POST</span><span class="p">/friend-requests</span></a>
+        <a class="nav-link" data-search="post friend-requests accept" href="#post-friend-requests-accept"><span class="m post">POST</span><span class="p">/friend-requests/{id}/accept</span></a>
+        <a class="nav-link" data-search="post friend-requests reject decline" href="#post-friend-requests-reject"><span class="m post">POST</span><span class="p">/friend-requests/{id}/reject</span></a>
+        <a class="nav-link" data-search="delete friend-requests cancel withdraw" href="#delete-friend-requests"><span class="m delete">DEL</span><span class="p">/friend-requests/{id}</span></a>
+      </div>
+      <div class="nav-group" data-group="system">
+        <div class="nav-group-title">System</div>
+        <a class="nav-link" data-search="get health status uptime" href="#get-health"><span class="m get">GET</span><span class="p">/health</span></a>
+      </div>
+    </div>
+    <p class="nav-empty" id="navEmpty">No endpoints match.</p>
+  </nav>
+
+  <main id="main-content">
+    <div class="content-inner">
+
+      <section class="hero" id="intro">
+        <div class="eyebrow">API REFERENCE &middot; V1</div>
+        <h1>Build on Yowimo</h1>
+        <p>Everything the client app needs to authenticate players, run the game engine, move tokens, and keep a party in sync &mdash; verified directly against the current backend, endpoint by endpoint.</p>
+      </section>
+
+      <div class="intro-grid">
+        <div class="intro-block" id="auth">
+          <h3>Authentication</h3>
+          <p>Every endpoint except <code>GET /health</code> requires a Clerk session JWT as a bearer token. There is no separate API key.</p>
+          <div class="code-block" style="margin-top:.7rem;">
+            <div class="code-head"><span>Header</span></div>
+            <pre><span class="tok-key">Authorization:</span> Bearer &lt;clerk_session_jwt&gt;</pre>
+          </div>
+          <p style="margin-top:.6rem;">Missing or invalid tokens return <code>401</code> before any route logic runs. There's no refresh endpoint in this API &mdash; token lifecycle is owned by Clerk on the client.</p>
+        </div>
+        <div class="intro-block" id="envelope">
+          <h3>Response format</h3>
+          <p>Every response, success or failure, is wrapped the same way:</p>
+          <div class="code-block" style="margin-top:.7rem;">
+            <div class="code-head"><span>Success</span></div>
+            <pre>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>,
+  <span class="tok-key">"message"</span>: <span class="tok-str">"..."</span>,
+  <span class="tok-key">"data"</span>: { ... }
+}</pre>
+          </div>
+          <div class="code-block" style="margin-top:.6rem;">
+            <div class="code-head"><span>Error</span></div>
+            <pre>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">false</span>,
+  <span class="tok-key">"message"</span>: <span class="tok-str">"..."</span>,
+  <span class="tok-key">"errors"</span>: { ... }
+}</pre>
+          </div>
+          <p style="margin-top:.6rem;">Always check <code>success</code>, not just the status code, when parsing a response body.</p>
+        </div>
+        <div class="intro-block" id="pagination">
+          <h3>Pagination</h3>
+          <p>List endpoints are <b style="color:var(--text)">cursor-paginated only</b> &mdash; there is no page-number parameter anywhere in this API.</p>
+          <table class="kv">
+            <tr><th>Param</th><th>Meaning</th></tr>
+            <tr><td class="mono">per_page</td><td>Page size. Default 20, max 50 (server clamps silently).</td></tr>
+            <tr><td class="mono">cursor</td><td>Opaque string from <code>meta.next_cursor</code> / <code>meta.prev_cursor</code>. Pass it back verbatim.</td></tr>
+          </table>
+          <div class="code-block" style="margin-top:.7rem;">
+            <div class="code-head"><span>meta on a paginated list</span></div>
+            <pre>{
+  <span class="tok-key">"per_page"</span>: <span class="tok-num">20</span>,
+  <span class="tok-key">"has_more_pages"</span>: <span class="tok-bool">true</span>,
+  <span class="tok-key">"next_cursor"</span>: <span class="tok-str">"eyJ...=="</span>,
+  <span class="tok-key">"prev_cursor"</span>: <span class="tok-null">null</span>
+}</pre>
+          </div>
+          <div class="note"><b>Exception</b><code>GET /friends</code> and <code>GET /friend-requests</code> return the <i>full</i> collection with no <code>meta</code> block at all &mdash; don't build cursor UI for those two.</div>
+        </div>
+        <div class="intro-block" id="ratelimits">
+          <h3>Rate limits</h3>
+          <p>A global limiter applies everywhere; some write actions stack a tighter, purpose-specific limiter on top. Exceeding either returns <code>429</code>.</p>
+          <table class="kv">
+            <tr><th>Limiter</th><th>Limit</th><th>Applies to</th></tr>
+            <tr><td class="mono">api</td><td class="num">60&nbsp;/&nbsp;min</td><td>Every request (default)</td></tr>
+            <tr><td class="mono">purchases</td><td class="num">10&nbsp;/&nbsp;min</td><td>Pack &amp; token-bundle purchase</td></tr>
+            <tr><td class="mono">party-actions</td><td class="num">30&nbsp;/&nbsp;min</td><td>Like, join, leave, start, end, game actions</td></tr>
+            <tr><td class="mono">friend-requests</td><td class="num">20&nbsp;/&nbsp;min</td><td>All friend-request &amp; friend mutations</td></tr>
+            <tr><td class="mono">push-tokens</td><td class="num">10&nbsp;/&nbsp;min</td><td>Register / unregister device</td></tr>
+          </table>
+          <p style="margin-top:.6rem;">All limiters key by authenticated user id (falling back to IP where unauthenticated).</p>
+        </div>
+      </div>
+
+      <div class="intro-grid" style="grid-template-columns:1fr; border-bottom:none; margin-bottom:1.5rem;" id="errors">
+        <div class="intro-block">
+          <h3>Errors</h3>
+          <p>Status codes are consistent across the whole API &mdash; the same exception type always produces the same code.</p>
+          <table class="kv">
+            <tr><th>Code</th><th>Meaning</th></tr>
+            <tr><td class="mono num">401</td><td>Missing, malformed, or expired bearer token.</td></tr>
+            <tr><td class="mono num">403</td><td>Authenticated, but not allowed to perform this action on this resource (e.g. non-host trying to start a party's game).</td></tr>
+            <tr><td class="mono num">404</td><td>Resource doesn't exist &mdash; or, for privacy, exists but isn't yours to see (used instead of 403 where existence itself shouldn't leak).</td></tr>
+            <tr><td class="mono num">409</td><td>Conflict with current state (already purchased, party full, duplicate friend request).</td></tr>
+            <tr><td class="mono num">422</td><td>Validation failed, or the action is invalid for the resource's current state (a Laravel-style state-machine violation, e.g. ending a party that isn't live).</td></tr>
+            <tr><td class="mono num">429</td><td>Rate limit exceeded.</td></tr>
+            <tr><td class="mono num">500</td><td>Unexpected server error.</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- ============ PROFILE ============ -->
+      <section class="group-head" id="profile"><h2>Profile</h2><p>The authenticated player's own account. There is no public profile endpoint &mdash; only self.</p></section>
+
+      <section class="endpoint" id="get-users-me">
+        <div class="endpoint-head"><span class="method get">GET</span><code class="path">/users/me</code></div>
+        <p class="desc">Returns the authenticated user's full profile, including their wallet snapshot.</p>
+        <div class="meta-line"><span><b>Rate limit</b> api</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <h4>Notes</h4>
+            <div class="note"><b>Lazy wallet</b>A brand-new user has no wallet row yet &mdash; the API synthesizes <code>{"balance":0,"currency":"tokens"}</code> rather than returning <code>null</code>.</div>
+            <div class="status-row">
+              <span class="status-pill ok">200 OK</span>
+              <span class="status-pill err">401 unauthenticated</span>
+            </div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw="curl https://api.yowimo.com/api/v1/users/me \
+  -H &quot;Authorization: Bearer $TOKEN&quot;"><span class="tok-flag">curl</span> https://api.yowimo.com/api/v1/users/me \
+  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span></pre>
+            </div>
+            <div class="code-block">
+              <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "id": 482,
+    "username": "maya",
+    "email": "maya@example.com",
+    "first_name": "Maya",
+    "last_name": "Chen",
+    "display_name": "Maya",
+    "avatar_url": "https://cdn.yowimo.com/avatars/482.png",
+    "bio": null,
+    "date_of_birth": "1998-04-12",
+    "country_code": "NG",
+    "interests": ["party", "trivia"],
+    "privacy_settings": {},
+    "status": "active",
+    "last_seen_at": "2026-08-28T10:02:31Z",
+    "created_at": "2026-03-01T09:00:00Z",
+    "updated_at": "2026-08-28T10:02:31Z",
+    "wallet": { "balance": 340, "currency": "tokens" }
+  }
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>,
+  <span class="tok-key">"message"</span>: <span class="tok-str">"OK"</span>,
+  <span class="tok-key">"data"</span>: {
+    <span class="tok-key">"id"</span>: <span class="tok-num">482</span>,
+    <span class="tok-key">"username"</span>: <span class="tok-str">"maya"</span>,
+    <span class="tok-key">"email"</span>: <span class="tok-str">"maya@example.com"</span>,
+    <span class="tok-key">"first_name"</span>: <span class="tok-str">"Maya"</span>,
+    <span class="tok-key">"last_name"</span>: <span class="tok-str">"Chen"</span>,
+    <span class="tok-key">"display_name"</span>: <span class="tok-str">"Maya"</span>,
+    <span class="tok-key">"avatar_url"</span>: <span class="tok-str">"https://cdn.yowimo.com/avatars/482.png"</span>,
+    <span class="tok-key">"bio"</span>: <span class="tok-null">null</span>,
+    <span class="tok-key">"date_of_birth"</span>: <span class="tok-str">"1998-04-12"</span>,
+    <span class="tok-key">"country_code"</span>: <span class="tok-str">"NG"</span>,
+    <span class="tok-key">"interests"</span>: [<span class="tok-str">"party"</span>, <span class="tok-str">"trivia"</span>],
+    <span class="tok-key">"privacy_settings"</span>: {},
+    <span class="tok-key">"status"</span>: <span class="tok-str">"active"</span>,
+    <span class="tok-key">"last_seen_at"</span>: <span class="tok-str">"2026-08-28T10:02:31Z"</span>,
+    <span class="tok-key">"created_at"</span>: <span class="tok-str">"2026-03-01T09:00:00Z"</span>,
+    <span class="tok-key">"updated_at"</span>: <span class="tok-str">"2026-08-28T10:02:31Z"</span>,
+    <span class="tok-key">"wallet"</span>: { <span class="tok-key">"balance"</span>: <span class="tok-num">340</span>, <span class="tok-key">"currency"</span>: <span class="tok-str">"tokens"</span> }
+  }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="patch-users-me">
+        <div class="endpoint-head"><span class="method patch">PATCH</span><code class="path">/users/me</code></div>
+        <p class="desc">Partially update the authenticated user's profile. All fields optional &mdash; send only what changed.</p>
+        <div class="meta-line"><span><b>Rate limit</b> api</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <h4>Body</h4>
+            <table class="params">
+              <tr><td class="field">username</td><td class="rule">string, 3&ndash;32 chars, <code>a-zA-Z0-9_.</code> only, unique</td></tr>
+              <tr><td class="field">avatar_url</td><td class="rule">nullable, url, max 2048</td></tr>
+              <tr><td class="field">first_name / last_name / display_name</td><td class="rule">nullable, string, max 100</td></tr>
+              <tr><td class="field">bio</td><td class="rule">nullable, string, max 1000</td></tr>
+              <tr><td class="field">date_of_birth</td><td class="rule">nullable, date, must be before today</td></tr>
+              <tr><td class="field">country_code</td><td class="rule">nullable, string, exactly 2 chars</td></tr>
+              <tr><td class="field">interests</td><td class="rule">nullable, array of strings (max 50 chars each)</td></tr>
+              <tr><td class="field">privacy_settings</td><td class="rule">nullable, object &mdash; shape not enforced server-side</td></tr>
+            </table>
+            <div class="status-row">
+              <span class="status-pill ok">200 OK</span>
+              <span class="status-pill err">401</span>
+              <span class="status-pill err">422 validation (incl. taken username)</span>
+            </div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='curl -X PATCH https://api.yowimo.com/api/v1/users/me \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '"'"'{"display_name":"Maya C.","bio":"host of chaos"}'"'"''><span class="tok-flag">curl -X PATCH</span> https://api.yowimo.com/api/v1/users/me \
+  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span> \
+  -H <span class="tok-str">"Content-Type: application/json"</span> \
+  -d <span class="tok-str">'{"display_name":"Maya C.","bio":"host of chaos"}'</span></pre>
+            </div>
+            <div class="code-block">
+              <div class="code-head"><span>422 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": false,
+  "message": "The given data was invalid.",
+  "errors": {
+    "username": ["The username has already been taken."]
+  }
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">false</span>,
+  <span class="tok-key">"message"</span>: <span class="tok-str">"The given data was invalid."</span>,
+  <span class="tok-key">"errors"</span>: {
+    <span class="tok-key">"username"</span>: [<span class="tok-str">"The username has already been taken."</span>]
+  }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ GAME TYPES ============ -->
+      <section class="group-head" id="gametypes"><h2>Game Types</h2><p>Top-level game modes shown on the home screen (e.g. Party, Couples, Corporate). Read-only.</p></section>
+
+      <section class="endpoint" id="get-game-types">
+        <div class="endpoint-head"><span class="method get">GET</span><code class="path">/game-types</code></div>
+        <p class="desc">List active game types, sorted for display.</p>
+        <div class="meta-line"><span><b>Rate limit</b> api</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <h4>Query</h4>
+            <table class="params">
+              <tr><td class="field">search</td><td class="rule">optional, string, max 100 &mdash; matches name or tagline</td></tr>
+              <tr><td class="field">per_page / cursor</td><td class="rule">pagination, see above</td></tr>
+            </table>
+            <h4>Fields</h4>
+            <table class="params">
+              <tr><td class="field">intensity</td><td class="rule"><code>chill</code> &middot; <code>medium</code> &middot; <code>wild</code></td></tr>
+              <tr><td class="field">cost</td><td class="rule">integer, tokens (not currency)</td></tr>
+            </table>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">422</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw="curl https://api.yowimo.com/api/v1/game-types?per_page=10 \
+  -H &quot;Authorization: Bearer $TOKEN&quot;"><span class="tok-flag">curl</span> https://api.yowimo.com/api/v1/game-types?per_page=10 \
+  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span></pre>
+            </div>
+            <div class="code-block">
+              <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": true,
+  "message": "OK",
+  "data": [
+    {
+      "id": 3,
+      "slug": "party",
+      "name": "Party",
+      "emoji": "🎉",
+      "tagline": "Truth or Dare, turned up",
+      "audience": "friends",
+      "intensity": "wild",
+      "cost": 0,
+      "image_url": "https://cdn.yowimo.com/gt/party.png",
+      "gradient": ["#F0A83C", "#B23A34"],
+      "created_at": "2026-01-10T00:00:00Z",
+      "updated_at": "2026-01-10T00:00:00Z"
+    }
+  ],
+  "meta": { "per_page": 10, "has_more_pages": false, "next_cursor": null, "prev_cursor": null }
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>,
+  <span class="tok-key">"message"</span>: <span class="tok-str">"OK"</span>,
+  <span class="tok-key">"data"</span>: [
+    {
+      <span class="tok-key">"id"</span>: <span class="tok-num">3</span>,
+      <span class="tok-key">"slug"</span>: <span class="tok-str">"party"</span>,
+      <span class="tok-key">"name"</span>: <span class="tok-str">"Party"</span>,
+      <span class="tok-key">"emoji"</span>: <span class="tok-str">"🎉"</span>,
+      <span class="tok-key">"tagline"</span>: <span class="tok-str">"Truth or Dare, turned up"</span>,
+      <span class="tok-key">"audience"</span>: <span class="tok-str">"friends"</span>,
+      <span class="tok-key">"intensity"</span>: <span class="tok-str">"wild"</span>,
+      <span class="tok-key">"cost"</span>: <span class="tok-num">0</span>,
+      <span class="tok-key">"image_url"</span>: <span class="tok-str">"https://cdn.yowimo.com/gt/party.png"</span>,
+      <span class="tok-key">"gradient"</span>: [<span class="tok-str">"#F0A83C"</span>, <span class="tok-str">"#B23A34"</span>],
+      <span class="tok-key">"created_at"</span>: <span class="tok-str">"2026-01-10T00:00:00Z"</span>,
+      <span class="tok-key">"updated_at"</span>: <span class="tok-str">"2026-01-10T00:00:00Z"</span>
+    }
+  ],
+  <span class="tok-key">"meta"</span>: { <span class="tok-key">"per_page"</span>: <span class="tok-num">10</span>, <span class="tok-key">"has_more_pages"</span>: <span class="tok-bool">false</span>, <span class="tok-key">"next_cursor"</span>: <span class="tok-null">null</span>, <span class="tok-key">"prev_cursor"</span>: <span class="tok-null">null</span> }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ PACKS ============ -->
+      <section class="group-head" id="packs"><h2>Packs</h2><p>Purchasable card packs (Truth/Dare content). Ownership gates full card text.</p></section>
+
+      <section class="endpoint" id="get-packs">
+        <div class="endpoint-head"><span class="method get">GET</span><code class="path">/packs</code></div>
+        <p class="desc">Browse the pack catalog.</p>
+        <div class="meta-line"><span><b>Rate limit</b> api</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <h4>Query</h4>
+            <table class="params">
+              <tr><td class="field">category</td><td class="rule">optional &mdash; <code>spicy</code> &middot; <code>couples</code> &middot; <code>family</code> &middot; <code>corporate</code> &middot; <code>limited</code></td></tr>
+              <tr><td class="field">game_type_id</td><td class="rule">optional, integer, must exist</td></tr>
+              <tr><td class="field">search</td><td class="rule">optional, string, max 100</td></tr>
+              <tr><td class="field">per_page / cursor</td><td class="rule">pagination</td></tr>
+            </table>
+            <div class="note"><b>owned_by_me is absent here</b>This list endpoint never sets <code>owned_by_me</code> &mdash; only the single-pack <code>GET /packs/{id}</code> does. Don't rely on it in a list view.</div>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">422</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw="curl &quot;https://api.yowimo.com/api/v1/packs?category=spicy&amp;per_page=12&quot; \
+  -H &quot;Authorization: Bearer $TOKEN&quot;"><span class="tok-flag">curl</span> <span class="tok-str">"https://api.yowimo.com/api/v1/packs?category=spicy&per_page=12"</span> \
+  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span></pre>
+            </div>
+            <div class="code-block">
+              <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": true,
+  "message": "OK",
+  "data": [
+    {
+      "id": 14,
+      "slug": "spicy-secrets",
+      "name": "Spicy Secrets",
+      "emoji": "🌶️",
+      "tag": "18+",
+      "category": "spicy",
+      "description": "Not for the faint of heart.",
+      "price": 250,
+      "truths_count": 40,
+      "dares_count": 40,
+      "cards_count": 80,
+      "cover_image_url": "https://cdn.yowimo.com/packs/14.png",
+      "gradient": ["#B23A34", "#1E1A2B"],
+      "is_featured": true,
+      "game_type": { "id": 3, "slug": "party" },
+      "preview_cards": [{ "id": 901, "kind": "truth", "text": "...", "position": 0 }],
+      "created_at": "2026-02-01T00:00:00Z",
+      "updated_at": "2026-02-01T00:00:00Z"
+    }
+  ],
+  "meta": { "per_page": 12, "has_more_pages": true, "next_cursor": "eyJ...==", "prev_cursor": null }
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>,
+  <span class="tok-key">"message"</span>: <span class="tok-str">"OK"</span>,
+  <span class="tok-key">"data"</span>: [
+    {
+      <span class="tok-key">"id"</span>: <span class="tok-num">14</span>,
+      <span class="tok-key">"slug"</span>: <span class="tok-str">"spicy-secrets"</span>,
+      <span class="tok-key">"name"</span>: <span class="tok-str">"Spicy Secrets"</span>,
+      <span class="tok-key">"emoji"</span>: <span class="tok-str">"🌶️"</span>,
+      <span class="tok-key">"tag"</span>: <span class="tok-str">"18+"</span>,
+      <span class="tok-key">"category"</span>: <span class="tok-str">"spicy"</span>,
+      <span class="tok-key">"description"</span>: <span class="tok-str">"Not for the faint of heart."</span>,
+      <span class="tok-key">"price"</span>: <span class="tok-num">250</span>,
+      <span class="tok-key">"truths_count"</span>: <span class="tok-num">40</span>,
+      <span class="tok-key">"dares_count"</span>: <span class="tok-num">40</span>,
+      <span class="tok-key">"cards_count"</span>: <span class="tok-num">80</span>,
+      <span class="tok-key">"cover_image_url"</span>: <span class="tok-str">"https://cdn.yowimo.com/packs/14.png"</span>,
+      <span class="tok-key">"gradient"</span>: [<span class="tok-str">"#B23A34"</span>, <span class="tok-str">"#1E1A2B"</span>],
+      <span class="tok-key">"is_featured"</span>: <span class="tok-bool">true</span>,
+      <span class="tok-key">"game_type"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">3</span>, <span class="tok-key">"slug"</span>: <span class="tok-str">"party"</span> },
+      <span class="tok-key">"preview_cards"</span>: [{ <span class="tok-key">"id"</span>: <span class="tok-num">901</span>, <span class="tok-key">"kind"</span>: <span class="tok-str">"truth"</span>, <span class="tok-key">"text"</span>: <span class="tok-str">"..."</span>, <span class="tok-key">"position"</span>: <span class="tok-num">0</span> }],
+      <span class="tok-key">"created_at"</span>: <span class="tok-str">"2026-02-01T00:00:00Z"</span>,
+      <span class="tok-key">"updated_at"</span>: <span class="tok-str">"2026-02-01T00:00:00Z"</span>
+    }
+  ],
+  <span class="tok-key">"meta"</span>: { <span class="tok-key">"per_page"</span>: <span class="tok-num">12</span>, <span class="tok-key">"has_more_pages"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"next_cursor"</span>: <span class="tok-str">"eyJ...=="</span>, <span class="tok-key">"prev_cursor"</span>: <span class="tok-null">null</span> }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="get-packs-featured">
+        <div class="endpoint-head"><span class="method get">GET</span><code class="path">/packs/featured</code></div>
+        <p class="desc">Curated packs for the home screen carousel.</p>
+        <div class="meta-line"><span><b>Rate limit</b> api</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <h4>Query</h4>
+            <p><code>per_page</code> / <code>cursor</code> only take effect here.</p>
+            <div class="note"><b>Filters are accepted but ignored</b>This endpoint validates <code>category</code>, <code>game_type_id</code>, and <code>search</code> the same as <code>GET /packs</code>, but silently ignores all three &mdash; it always returns active &amp; featured packs regardless of what you pass. Don't build a filtered "featured" view expecting these params to work.</div>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">422</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw="curl https://api.yowimo.com/api/v1/packs/featured \
+  -H &quot;Authorization: Bearer $TOKEN&quot;"><span class="tok-flag">curl</span> https://api.yowimo.com/api/v1/packs/featured \
+  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span></pre>
+            </div>
+            <div class="code-block">
+              <div class="code-head"><span>Shape</span></div>
+              <pre>Same as <span class="tok-str">GET /packs</span>, cursor-paginated <span class="tok-str">PackResource</span>.</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="get-packs-id">
+        <div class="endpoint-head"><span class="method get">GET</span><code class="path">/packs/{id}</code></div>
+        <p class="desc">Single pack detail, including card content.</p>
+        <div class="meta-line"><span><b>Rate limit</b> api</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <h4>Path</h4>
+            <table class="params"><tr><td class="field">id</td><td class="rule">integer, numeric route constraint</td></tr></table>
+            <div class="note"><b>preview_cards means two different things</b>If you own the pack, <code>preview_cards</code> silently contains the <i>full</i> card set instead of just the preview-flagged ones &mdash; same JSON key either way. Check <code>owned_by_me</code> to know which you got; the response shape alone doesn't tell you.</div>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">404 not found or inactive</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw="curl https://api.yowimo.com/api/v1/packs/14 \
+  -H &quot;Authorization: Bearer $TOKEN&quot;"><span class="tok-flag">curl</span> https://api.yowimo.com/api/v1/packs/14 \
+  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span></pre>
+            </div>
+            <div class="code-block">
+              <div class="code-head"><span>200 Response (owned)</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "id": 14,
+    "slug": "spicy-secrets",
+    "price": 250,
+    "owned_by_me": true,
+    "preview_cards": [
+      { "id": 901, "kind": "truth", "text": "Full card text …", "position": 0 },
+      { "id": 902, "kind": "dare", "text": "Full card text …", "position": 1 }
+    ]
+  }
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>,
+  <span class="tok-key">"message"</span>: <span class="tok-str">"OK"</span>,
+  <span class="tok-key">"data"</span>: {
+    <span class="tok-key">"id"</span>: <span class="tok-num">14</span>,
+    <span class="tok-key">"slug"</span>: <span class="tok-str">"spicy-secrets"</span>,
+    <span class="tok-key">"price"</span>: <span class="tok-num">250</span>,
+    <span class="tok-key">"owned_by_me"</span>: <span class="tok-bool">true</span>,
+    <span class="tok-key">"preview_cards"</span>: [
+      { <span class="tok-key">"id"</span>: <span class="tok-num">901</span>, <span class="tok-key">"kind"</span>: <span class="tok-str">"truth"</span>, <span class="tok-key">"text"</span>: <span class="tok-str">"Full card text …"</span>, <span class="tok-key">"position"</span>: <span class="tok-num">0</span> },
+      { <span class="tok-key">"id"</span>: <span class="tok-num">902</span>, <span class="tok-key">"kind"</span>: <span class="tok-str">"dare"</span>, <span class="tok-key">"text"</span>: <span class="tok-str">"Full card text …"</span>, <span class="tok-key">"position"</span>: <span class="tok-num">1</span> }
+    ]
+  }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="post-packs-purchase">
+        <div class="endpoint-head"><span class="method post">POST</span><code class="path">/packs/{id}/purchase</code></div>
+        <p class="desc">Debit tokens and unlock a pack's full content.</p>
+        <div class="meta-line"><span><b>Rate limit</b> purchases (10/min)</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <h4>Headers</h4>
+            <table class="params"><tr><td class="field">Idempotency-Key<span class="req">required</span></td><td class="rule">any string, max 255 &mdash; missing header &rarr; 422</td></tr></table>
+            <div class="note"><b>Idempotency-Key is mandatory</b>There is no non-idempotent fallback. Generate a UUID per purchase attempt and resend the <i>same</i> key on retry so a flaky connection can't double-charge the player.</div>
+            <h4>Business rules</h4>
+            <ul style="color:var(--text-muted); font-size:.9rem; padding-left:1.1rem; margin:.3rem 0;">
+              <li>Same key + same pack &rarr; returns the original 201 result again (safe retry).</li>
+              <li>Same key + different pack &rarr; <code>409</code> conflict.</li>
+              <li>Already own this pack &rarr; <code>409</code>.</li>
+              <li>Insufficient balance &rarr; <code>422</code>.</li>
+            </ul>
+            <div class="status-row">
+              <span class="status-pill ok">201 Created</span>
+              <span class="status-pill err">401</span><span class="status-pill err">404</span>
+              <span class="status-pill err">409 already owned / key conflict</span>
+              <span class="status-pill err">422 validation / insufficient balance</span>
+              <span class="status-pill err">429</span>
+            </div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='curl -X POST https://api.yowimo.com/api/v1/packs/14/purchase \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Idempotency-Key: 8f14e45f-...-c9a3"'><span class="tok-flag">curl -X POST</span> https://api.yowimo.com/api/v1/packs/14/purchase \
+  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span> \
+  -H <span class="tok-str">"Idempotency-Key: 8f14e45f-...-c9a3"</span></pre>
+            </div>
+            <div class="code-block">
+              <div class="code-head"><span>201 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": true,
+  "message": "Pack purchased successfully.",
+  "data": {
+    "id": 77,
+    "pack_id": 14,
+    "wallet_transaction": {
+      "id": 5510, "type": "purchase", "amount": -250,
+      "balance_after": 90, "description": "Pack purchase: Spicy Secrets",
+      "created_at": "2026-08-28T10:12:00Z"
+    },
+    "purchased_at": "2026-08-28T10:12:00Z"
+  }
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>,
+  <span class="tok-key">"message"</span>: <span class="tok-str">"Pack purchased successfully."</span>,
+  <span class="tok-key">"data"</span>: {
+    <span class="tok-key">"id"</span>: <span class="tok-num">77</span>,
+    <span class="tok-key">"pack_id"</span>: <span class="tok-num">14</span>,
+    <span class="tok-key">"wallet_transaction"</span>: {
+      <span class="tok-key">"id"</span>: <span class="tok-num">5510</span>, <span class="tok-key">"type"</span>: <span class="tok-str">"purchase"</span>, <span class="tok-key">"amount"</span>: <span class="tok-num">-250</span>,
+      <span class="tok-key">"balance_after"</span>: <span class="tok-num">90</span>, <span class="tok-key">"description"</span>: <span class="tok-str">"Pack purchase: Spicy Secrets"</span>,
+      <span class="tok-key">"created_at"</span>: <span class="tok-str">"2026-08-28T10:12:00Z"</span>
+    },
+    <span class="tok-key">"purchased_at"</span>: <span class="tok-str">"2026-08-28T10:12:00Z"</span>
+  }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ TOKEN BUNDLES ============ -->
+      <section class="group-head" id="tokenbundles"><h2>Token Bundles</h2><p>Real-money top-ups that credit the wallet.</p></section>
+
+      <section class="endpoint" id="get-token-bundles">
+        <div class="endpoint-head"><span class="method get">GET</span><code class="path">/token-bundles</code></div>
+        <p class="desc">List purchasable token bundles.</p>
+        <div class="meta-line"><span><b>Rate limit</b> api</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <h4>Query</h4>
+            <p><code>per_page</code> / <code>cursor</code> only &mdash; no filters exist for this resource.</p>
+            <div class="note"><b>Two different kinds of number</b><code>price</code> is real money (<code>decimal(8,2)</code> + <code>currency</code>) &mdash; what the player pays. <code>tokens</code> is the integer token count they receive. Don't confuse the two when rendering "$4.99 &rarr; 500 tokens."</div>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": true,
+  "message": "OK",
+  "data": [
+    {
+      "id": 5, "slug": "starter-pack", "name": "Starter Pack",
+      "tokens": 500, "price": 4.99, "currency": "USD",
+      "badge": "Best value", "gradient": ["#F0A83C", "#A6701F"],
+      "is_featured": true,
+      "created_at": "2026-01-05T00:00:00Z", "updated_at": "2026-01-05T00:00:00Z"
+    }
+  ],
+  "meta": { "per_page": 20, "has_more_pages": false, "next_cursor": null, "prev_cursor": null }
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>,
+  <span class="tok-key">"message"</span>: <span class="tok-str">"OK"</span>,
+  <span class="tok-key">"data"</span>: [
+    {
+      <span class="tok-key">"id"</span>: <span class="tok-num">5</span>, <span class="tok-key">"slug"</span>: <span class="tok-str">"starter-pack"</span>, <span class="tok-key">"name"</span>: <span class="tok-str">"Starter Pack"</span>,
+      <span class="tok-key">"tokens"</span>: <span class="tok-num">500</span>, <span class="tok-key">"price"</span>: <span class="tok-num">4.99</span>, <span class="tok-key">"currency"</span>: <span class="tok-str">"USD"</span>,
+      <span class="tok-key">"badge"</span>: <span class="tok-str">"Best value"</span>, <span class="tok-key">"gradient"</span>: [<span class="tok-str">"#F0A83C"</span>, <span class="tok-str">"#A6701F"</span>],
+      <span class="tok-key">"is_featured"</span>: <span class="tok-bool">true</span>,
+      <span class="tok-key">"created_at"</span>: <span class="tok-str">"2026-01-05T00:00:00Z"</span>, <span class="tok-key">"updated_at"</span>: <span class="tok-str">"2026-01-05T00:00:00Z"</span>
+    }
+  ],
+  <span class="tok-key">"meta"</span>: { <span class="tok-key">"per_page"</span>: <span class="tok-num">20</span>, <span class="tok-key">"has_more_pages"</span>: <span class="tok-bool">false</span>, <span class="tok-key">"next_cursor"</span>: <span class="tok-null">null</span>, <span class="tok-key">"prev_cursor"</span>: <span class="tok-null">null</span> }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="post-token-bundles-purchase">
+        <div class="endpoint-head"><span class="method post">POST</span><code class="path">/token-bundles/{id}/purchase</code></div>
+        <p class="desc">Charge the player and credit tokens to their wallet.</p>
+        <div class="meta-line"><span><b>Rate limit</b> purchases (10/min)</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <h4>Headers</h4>
+            <table class="params"><tr><td class="field">Idempotency-Key<span class="req">required</span></td><td class="rule">same mechanism as pack purchase</td></tr></table>
+            <h4>Business rules</h4>
+            <ul style="color:var(--text-muted); font-size:.9rem; padding-left:1.1rem; margin:.3rem 0;">
+              <li>Routes through a payment provider (currently a manual/test driver &mdash; no live gateway yet).</li>
+              <li>Card/payment declined &rarr; <code>402</code>.</li>
+              <li>Same key reused for a different bundle &rarr; <code>409</code>.</li>
+            </ul>
+            <div class="status-row">
+              <span class="status-pill ok">201 Created</span>
+              <span class="status-pill err">401</span><span class="status-pill err">402 payment declined</span>
+              <span class="status-pill err">404</span><span class="status-pill err">409 key conflict</span>
+              <span class="status-pill err">422</span><span class="status-pill err">429</span>
+            </div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='curl -X POST https://api.yowimo.com/api/v1/token-bundles/5/purchase \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Idempotency-Key: 2c9f...-71ab"'><span class="tok-flag">curl -X POST</span> https://api.yowimo.com/api/v1/token-bundles/5/purchase \
+  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span> \
+  -H <span class="tok-str">"Idempotency-Key: 2c9f...-71ab"</span></pre>
+            </div>
+            <div class="code-block">
+              <div class="code-head"><span>201 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": true,
+  "message": "Token bundle purchased successfully.",
+  "data": {
+    "id": 5511, "type": "top_up", "amount": 500,
+    "balance_after": 590, "description": "Token bundle: Starter Pack",
+    "created_at": "2026-08-28T10:15:00Z"
+  }
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>,
+  <span class="tok-key">"message"</span>: <span class="tok-str">"Token bundle purchased successfully."</span>,
+  <span class="tok-key">"data"</span>: {
+    <span class="tok-key">"id"</span>: <span class="tok-num">5511</span>, <span class="tok-key">"type"</span>: <span class="tok-str">"top_up"</span>, <span class="tok-key">"amount"</span>: <span class="tok-num">500</span>,
+    <span class="tok-key">"balance_after"</span>: <span class="tok-num">590</span>, <span class="tok-key">"description"</span>: <span class="tok-str">"Token bundle: Starter Pack"</span>,
+    <span class="tok-key">"created_at"</span>: <span class="tok-str">"2026-08-28T10:15:00Z"</span>
+  }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ WALLET ============ -->
+      <section class="group-head" id="wallet"><h2>Wallet</h2><p>Read-only. Tokens move only as a side effect of purchases, game rewards, or admin adjustments &mdash; there's no direct wallet-write endpoint.</p></section>
+
+      <section class="endpoint" id="get-wallet">
+        <div class="endpoint-head"><span class="method get">GET</span><code class="path">/wallet</code></div>
+        <p class="desc">Current token balance.</p>
+        <div class="meta-line"><span><b>Rate limit</b> api</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": true,
+  "message": "OK",
+  "data": { "balance": 590, "currency": "tokens", "created_at": "2026-03-01T09:00:00Z", "updated_at": "2026-08-28T10:15:00Z" }
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>,
+  <span class="tok-key">"message"</span>: <span class="tok-str">"OK"</span>,
+  <span class="tok-key">"data"</span>: { <span class="tok-key">"balance"</span>: <span class="tok-num">590</span>, <span class="tok-key">"currency"</span>: <span class="tok-str">"tokens"</span>, <span class="tok-key">"created_at"</span>: <span class="tok-str">"2026-03-01T09:00:00Z"</span>, <span class="tok-key">"updated_at"</span>: <span class="tok-str">"2026-08-28T10:15:00Z"</span> }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="get-wallet-transactions">
+        <div class="endpoint-head"><span class="method get">GET</span><code class="path">/wallet/transactions</code></div>
+        <p class="desc">Full ledger, newest first. No date or type filter exists yet.</p>
+        <div class="meta-line"><span><b>Rate limit</b> api</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <h4>Fields</h4>
+            <table class="params">
+              <tr><td class="field">type</td><td class="rule"><code>top_up</code> &middot; <code>purchase</code> &middot; <code>refund</code> &middot; <code>bonus</code> &middot; <code>adjustment</code> &middot; <code>reward</code></td></tr>
+              <tr><td class="field">amount</td><td class="rule">signed integer &mdash; negative for debits, positive for credits</td></tr>
+            </table>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">422</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": true, "message": "OK",
+  "data": [
+    { "id": 5511, "type": "top_up", "amount": 500, "balance_after": 590, "description": "Token bundle: Starter Pack", "created_at": "2026-08-28T10:15:00Z" },
+    { "id": 5510, "type": "purchase", "amount": -250, "balance_after": 90, "description": "Pack purchase: Spicy Secrets", "created_at": "2026-08-28T10:12:00Z" }
+  ],
+  "meta": { "per_page": 20, "has_more_pages": false, "next_cursor": null, "prev_cursor": null }
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"OK"</span>,
+  <span class="tok-key">"data"</span>: [
+    { <span class="tok-key">"id"</span>: <span class="tok-num">5511</span>, <span class="tok-key">"type"</span>: <span class="tok-str">"top_up"</span>, <span class="tok-key">"amount"</span>: <span class="tok-num">500</span>, <span class="tok-key">"balance_after"</span>: <span class="tok-num">590</span>, <span class="tok-key">"description"</span>: <span class="tok-str">"Token bundle: Starter Pack"</span>, <span class="tok-key">"created_at"</span>: <span class="tok-str">"2026-08-28T10:15:00Z"</span> },
+    { <span class="tok-key">"id"</span>: <span class="tok-num">5510</span>, <span class="tok-key">"type"</span>: <span class="tok-str">"purchase"</span>, <span class="tok-key">"amount"</span>: <span class="tok-num">-250</span>, <span class="tok-key">"balance_after"</span>: <span class="tok-num">90</span>, <span class="tok-key">"description"</span>: <span class="tok-str">"Pack purchase: Spicy Secrets"</span>, <span class="tok-key">"created_at"</span>: <span class="tok-str">"2026-08-28T10:12:00Z"</span> }
+  ],
+  <span class="tok-key">"meta"</span>: { <span class="tok-key">"per_page"</span>: <span class="tok-num">20</span>, <span class="tok-key">"has_more_pages"</span>: <span class="tok-bool">false</span>, <span class="tok-key">"next_cursor"</span>: <span class="tok-null">null</span>, <span class="tok-key">"prev_cursor"</span>: <span class="tok-null">null</span> }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ PARTIES ============ -->
+      <section class="group-head" id="parties"><h2>Parties</h2><p>Create, discover, and run the lifecycle of a party room.</p></section>
+
+      <section class="endpoint" id="get-parties">
+        <div class="endpoint-head"><span class="method get">GET</span><code class="path">/parties</code></div>
+        <p class="desc">The public discover feed.</p>
+        <div class="meta-line"><span><b>Rate limit</b> api</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <h4>Query</h4>
+            <table class="params">
+              <tr><td class="field">mode</td><td class="rule">optional &mdash; <code>online</code> &middot; <code>hybrid</code> &middot; <code>in_person</code></td></tr>
+              <tr><td class="field">game_type_id</td><td class="rule">optional, integer, must exist</td></tr>
+              <tr><td class="field">search</td><td class="rule">optional &mdash; matches title or host username</td></tr>
+              <tr><td class="field">per_page / cursor</td><td class="rule">pagination</td></tr>
+            </table>
+            <div class="note"><b>There is no "my parties" endpoint</b>This feed hardcodes <code>visibility=public AND status IN (scheduled, live)</code>. It never returns drafts, private parties, or ended/cancelled ones &mdash; not even the caller's own. Track a player's own parties client-side (from create/join responses) until such an endpoint exists.</div>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">422</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw="curl &quot;https://api.yowimo.com/api/v1/parties?mode=online&amp;per_page=10&quot; \
+  -H &quot;Authorization: Bearer $TOKEN&quot;"><span class="tok-flag">curl</span> <span class="tok-str">"https://api.yowimo.com/api/v1/parties?mode=online&per_page=10"</span> \
+  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span></pre>
+            </div>
+            <div class="code-block">
+              <div class="code-head"><span>Shape</span></div>
+              <pre>Cursor-paginated <span class="tok-str">PartyResource</span> array &mdash; see full shape under <span class="tok-str">GET /parties/{id}</span>.</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="post-parties">
+        <div class="endpoint-head"><span class="method post">POST</span><code class="path">/parties</code></div>
+        <p class="desc">Create a party. The caller becomes host and first member automatically.</p>
+        <div class="meta-line"><span><b>Rate limit</b> api <span style="color:var(--text-faint)">(not party-actions)</span></span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <h4>Body</h4>
+            <table class="params">
+              <tr><td class="field">title<span class="req">required</span></td><td class="rule">string, max 100</td></tr>
+              <tr><td class="field">description</td><td class="rule">nullable, string, max 1000</td></tr>
+              <tr><td class="field">game_type_id / pack_id</td><td class="rule">nullable, integer, must exist</td></tr>
+              <tr><td class="field">mode<span class="req">required</span></td><td class="rule"><code>online</code> &middot; <code>hybrid</code> &middot; <code>in_person</code></td></tr>
+              <tr><td class="field">visibility<span class="req">required</span></td><td class="rule"><code>public</code> &middot; <code>private</code></td></tr>
+              <tr><td class="field">max_players</td><td class="rule">integer, 2&ndash;200 (default 8)</td></tr>
+              <tr><td class="field">starts_at</td><td class="rule">nullable, date, on/after now</td></tr>
+              <tr><td class="field">save_as_draft</td><td class="rule">boolean</td></tr>
+              <tr><td class="field">location<span class="opt">required if mode is hybrid/in_person</span></td><td class="rule">object: <code>venue_name</code>, <code>address</code>, <code>latitude</code> (-90&ndash;90), <code>longitude</code> (-180&ndash;180)</td></tr>
+              <tr><td class="field">tags</td><td class="rule">nullable, array, max 5 items, each max 20 chars</td></tr>
+            </table>
+            <div class="note"><b>Status is derived, not sent</b><code>room_code</code> is always server-generated. Resulting <code>status</code>: <code>save_as_draft=true</code> &rarr; <code>draft</code>; else if <code>starts_at</code> is set &rarr; <code>scheduled</code>; else &rarr; <code>live</code> immediately.</div>
+            <div class="status-row"><span class="status-pill ok">201 Created</span><span class="status-pill err">401</span><span class="status-pill err">422</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='curl -X POST https://api.yowimo.com/api/v1/parties \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '"'"'{"title":"Friday chaos","mode":"online","visibility":"public","pack_id":14}'"'"''><span class="tok-flag">curl -X POST</span> https://api.yowimo.com/api/v1/parties \
+  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span> \
+  -H <span class="tok-str">"Content-Type: application/json"</span> \
+  -d <span class="tok-str">'{"title":"Friday chaos","mode":"online","visibility":"public","pack_id":14}'</span></pre>
+            </div>
+            <div class="code-block">
+              <div class="code-head"><span>201 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": true,
+  "message": "Party created successfully.",
+  "data": {
+    "id": 902, "room_code": "9F3K2A", "title": "Friday chaos",
+    "mode": "online", "visibility": "public", "status": "live",
+    "max_players": 8, "players_count": 1, "likes_count": 0,
+    "liked_by_me": false, "joined_by_me": true,
+    "host": { "id": 482, "username": "maya" }
+  }
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>,
+  <span class="tok-key">"message"</span>: <span class="tok-str">"Party created successfully."</span>,
+  <span class="tok-key">"data"</span>: {
+    <span class="tok-key">"id"</span>: <span class="tok-num">902</span>, <span class="tok-key">"room_code"</span>: <span class="tok-str">"9F3K2A"</span>, <span class="tok-key">"title"</span>: <span class="tok-str">"Friday chaos"</span>,
+    <span class="tok-key">"mode"</span>: <span class="tok-str">"online"</span>, <span class="tok-key">"visibility"</span>: <span class="tok-str">"public"</span>, <span class="tok-key">"status"</span>: <span class="tok-str">"live"</span>,
+    <span class="tok-key">"max_players"</span>: <span class="tok-num">8</span>, <span class="tok-key">"players_count"</span>: <span class="tok-num">1</span>, <span class="tok-key">"likes_count"</span>: <span class="tok-num">0</span>,
+    <span class="tok-key">"liked_by_me"</span>: <span class="tok-bool">false</span>, <span class="tok-key">"joined_by_me"</span>: <span class="tok-bool">true</span>,
+    <span class="tok-key">"host"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">482</span>, <span class="tok-key">"username"</span>: <span class="tok-str">"maya"</span> }
+  }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="get-parties-id">
+        <div class="endpoint-head"><span class="method get">GET</span><code class="path">/parties/{id}</code></div>
+        <p class="desc">Full party detail.</p>
+        <div class="meta-line"><span><b>Rate limit</b> api</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <h4>Visibility rules</h4>
+            <ul style="color:var(--text-muted); font-size:.9rem; padding-left:1.1rem; margin:.3rem 0;">
+              <li>Host always sees their own party, any status.</li>
+              <li>A <code>draft</code> party is visible to nobody else &mdash; not 404, <b style="color:var(--text)">403</b>.</li>
+              <li>Otherwise visible only if <code>visibility=public</code>.</li>
+            </ul>
+            <div class="note"><b>room_code can be entirely absent</b>Present via a conditional field &mdash; shown to the host, or when the party is public. In the (policy-blocked) private+non-host case the key is omitted from the JSON, not <code>null</code>. Check with <code>"room_code" in data</code>, not a falsy check.</div>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403 draft/private, not yours</span><span class="status-pill err">404</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "id": 902,
+    "room_code": "9F3K2A",
+    "title": "Friday chaos",
+    "description": null,
+    "mode": "online",
+    "visibility": "public",
+    "status": "live",
+    "max_players": 8,
+    "players_count": 4,
+    "likes_count": 12,
+    "liked_by_me": true,
+    "joined_by_me": true,
+    "is_sponsored": false,
+    "sponsor_name": null,
+    "tags": ["friday", "chill"],
+    "starts_at": null,
+    "location": null,
+    "cover_image_url": null,
+    "gradient": ["#F0A83C", "#B23A34"],
+    "host": { "id": 482, "username": "maya", "display_name": "Maya", "avatar_url": "..." },
+    "game_type": { "id": 3, "slug": "party" },
+    "pack": { "id": 14, "slug": "spicy-secrets" },
+    "created_at": "2026-08-28T10:00:00Z",
+    "updated_at": "2026-08-28T10:20:00Z"
+  }
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>,
+  <span class="tok-key">"message"</span>: <span class="tok-str">"OK"</span>,
+  <span class="tok-key">"data"</span>: {
+    <span class="tok-key">"id"</span>: <span class="tok-num">902</span>,
+    <span class="tok-key">"room_code"</span>: <span class="tok-str">"9F3K2A"</span>,
+    <span class="tok-key">"title"</span>: <span class="tok-str">"Friday chaos"</span>,
+    <span class="tok-key">"description"</span>: <span class="tok-null">null</span>,
+    <span class="tok-key">"mode"</span>: <span class="tok-str">"online"</span>,
+    <span class="tok-key">"visibility"</span>: <span class="tok-str">"public"</span>,
+    <span class="tok-key">"status"</span>: <span class="tok-str">"live"</span>,
+    <span class="tok-key">"max_players"</span>: <span class="tok-num">8</span>,
+    <span class="tok-key">"players_count"</span>: <span class="tok-num">4</span>,
+    <span class="tok-key">"likes_count"</span>: <span class="tok-num">12</span>,
+    <span class="tok-key">"liked_by_me"</span>: <span class="tok-bool">true</span>,
+    <span class="tok-key">"joined_by_me"</span>: <span class="tok-bool">true</span>,
+    <span class="tok-key">"is_sponsored"</span>: <span class="tok-bool">false</span>,
+    <span class="tok-key">"sponsor_name"</span>: <span class="tok-null">null</span>,
+    <span class="tok-key">"tags"</span>: [<span class="tok-str">"friday"</span>, <span class="tok-str">"chill"</span>],
+    <span class="tok-key">"starts_at"</span>: <span class="tok-null">null</span>,
+    <span class="tok-key">"location"</span>: <span class="tok-null">null</span>,
+    <span class="tok-key">"cover_image_url"</span>: <span class="tok-null">null</span>,
+    <span class="tok-key">"gradient"</span>: [<span class="tok-str">"#F0A83C"</span>, <span class="tok-str">"#B23A34"</span>],
+    <span class="tok-key">"host"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">482</span>, <span class="tok-key">"username"</span>: <span class="tok-str">"maya"</span>, <span class="tok-key">"display_name"</span>: <span class="tok-str">"Maya"</span>, <span class="tok-key">"avatar_url"</span>: <span class="tok-str">"..."</span> },
+    <span class="tok-key">"game_type"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">3</span>, <span class="tok-key">"slug"</span>: <span class="tok-str">"party"</span> },
+    <span class="tok-key">"pack"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">14</span>, <span class="tok-key">"slug"</span>: <span class="tok-str">"spicy-secrets"</span> },
+    <span class="tok-key">"created_at"</span>: <span class="tok-str">"2026-08-28T10:00:00Z"</span>,
+    <span class="tok-key">"updated_at"</span>: <span class="tok-str">"2026-08-28T10:20:00Z"</span>
+  }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="post-parties-like">
+        <div class="endpoint-head"><span class="method post">POST</span><code class="path">/parties/{party}/like</code></div>
+        <p class="desc">Like a party. Idempotent &mdash; liking twice doesn't double-count.</p>
+        <div class="meta-line"><span><b>Rate limit</b> party-actions (30/min)</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403 can't view party</span><span class="status-pill err">404</span><span class="status-pill err">429</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='curl -X POST https://api.yowimo.com/api/v1/parties/902/like \
+  -H "Authorization: Bearer $TOKEN"'><span class="tok-flag">curl -X POST</span> https://api.yowimo.com/api/v1/parties/902/like \
+  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span></pre>
+            </div>
+            <div class="code-block"><div class="code-head"><span>Shape</span></div><pre>Full <span class="tok-str">PartyResource</span>, message "Party liked successfully."</pre></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="delete-parties-like">
+        <div class="endpoint-head"><span class="method delete">DELETE</span><code class="path">/parties/{party}/like</code></div>
+        <p class="desc">Unlike. A no-op success if you hadn't liked it.</p>
+        <div class="meta-line"><span><b>Rate limit</b> party-actions (30/min)</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs"><div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403</span><span class="status-pill err">404</span><span class="status-pill err">429</span></div></div>
+          <div class="endpoint-code"><div class="code-block"><div class="code-head"><span>Shape</span></div><pre>Full <span class="tok-str">PartyResource</span>, message "Party unliked successfully."</pre></div></div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="post-parties-join">
+        <div class="endpoint-head"><span class="method post">POST</span><code class="path">/parties/{party}/join</code></div>
+        <p class="desc">Join as a member. Idempotent if already a member.</p>
+        <div class="meta-line"><span><b>Rate limit</b> party-actions (30/min)</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <h4>Fails when</h4>
+            <table class="params">
+              <tr><td class="field">status not scheduled/live</td><td class="rule">422</td></tr>
+              <tr><td class="field">players_count &ge; max_players</td><td class="rule">409 full</td></tr>
+            </table>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403</span><span class="status-pill err">404</span><span class="status-pill err">409 full</span><span class="status-pill err">422 not joinable</span><span class="status-pill err">429</span></div>
+          </div>
+          <div class="endpoint-code"><div class="code-block"><div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
+            <pre data-raw='curl -X POST https://api.yowimo.com/api/v1/parties/902/join \
+  -H "Authorization: Bearer $TOKEN"'><span class="tok-flag">curl -X POST</span> https://api.yowimo.com/api/v1/parties/902/join \
+  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span></pre></div></div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="delete-parties-leave">
+        <div class="endpoint-head"><span class="method delete">DELETE</span><code class="path">/parties/{party}/leave</code></div>
+        <p class="desc">Leave a party you're a member of.</p>
+        <div class="meta-line"><span><b>Rate limit</b> party-actions (30/min)</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <div class="note"><b>The host can't leave their own party</b>Returns <code>409</code>, message "The host cannot leave their own party. End the party instead." Leaving when you're not a member is a silent no-op (still 200).</div>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403</span><span class="status-pill err">404</span><span class="status-pill err">409 host</span><span class="status-pill err">429</span></div>
+          </div>
+          <div class="endpoint-code"><div class="code-block"><div class="code-head"><span>Shape</span></div><pre>Full <span class="tok-str">PartyResource</span>, message "Left party successfully."</pre></div></div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="post-parties-start">
+        <div class="endpoint-head"><span class="method post">POST</span><code class="path">/parties/{party}/start</code></div>
+        <p class="desc">Transition a draft/scheduled party to live. Host only.</p>
+        <div class="meta-line"><span><b>Rate limit</b> party-actions (30/min)</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <div class="note"><b>Host-only, regardless of visibility</b>A non-host caller gets 403 even on a public party they can otherwise view/join.</div>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403 non-host</span><span class="status-pill err">404</span><span class="status-pill err">422 wrong status</span><span class="status-pill err">429</span></div>
+          </div>
+          <div class="endpoint-code"><div class="code-block"><div class="code-head"><span>Shape</span></div><pre>Full <span class="tok-str">PartyResource</span> with <span class="tok-key">status</span>: <span class="tok-str">"live"</span>, message "Party started successfully."</pre></div></div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="post-parties-end">
+        <div class="endpoint-head"><span class="method post">POST</span><code class="path">/parties/{party}/end</code></div>
+        <p class="desc">End a live party. Host only.</p>
+        <div class="meta-line"><span><b>Rate limit</b> party-actions (30/min)</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs"><div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403</span><span class="status-pill err">404</span><span class="status-pill err">422 wasn't live</span><span class="status-pill err">429</span></div></div>
+          <div class="endpoint-code"><div class="code-block"><div class="code-head"><span>Shape</span></div><pre>Full <span class="tok-str">PartyResource</span> with <span class="tok-key">status</span>: <span class="tok-str">"ended"</span>.</pre></div></div>
+        </div>
+      </section>
+
+      <!-- ============ GAME SESSIONS ============ -->
+      <section class="group-head" id="gamesessions"><h2>Game Sessions</h2><p>Runs inside a live party: turn order, cards, and round/game completion. Server-authoritative &mdash; the client only ever advances, never decides outcomes.</p></section>
+
+      <section class="endpoint" id="post-game-start">
+        <div class="endpoint-head"><span class="method post">POST</span><code class="path">/parties/{party}/game/start</code></div>
+        <p class="desc">Start the game engine for a live party. Host only.</p>
+        <div class="meta-line"><span><b>Rate limit</b> party-actions (30/min)</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <h4>Body</h4>
+            <table class="params"><tr><td class="field">rounds</td><td class="rule">nullable, integer, one of <code>5, 10, 15, 20</code> &mdash; defaults to 10</td></tr></table>
+            <h4>Fails when</h4>
+            <ul style="color:var(--text-muted); font-size:.9rem; padding-left:1.1rem; margin:.3rem 0;">
+              <li>Party isn't <code>live</code> &rarr; 422.</li>
+              <li>A running session already exists &rarr; 409.</li>
+              <li>Party has no pack assigned, or the pack has zero cards of a needed kind &rarr; 422.</li>
+            </ul>
+            <div class="note"><b>200, not 201</b>This creates a new <code>GameSession</code> but returns 200. Turn order is randomized once at start; card kind strictly alternates truth/dare by turn count; each turn gets a 30-second server timer &mdash; an idle player is auto-skipped.</div>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403 non-host</span><span class="status-pill err">404</span><span class="status-pill err">409 already running</span><span class="status-pill err">422</span><span class="status-pill err">429</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='curl -X POST https://api.yowimo.com/api/v1/parties/902/game/start \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '"'"'{"rounds":10}'"'"''><span class="tok-flag">curl -X POST</span> https://api.yowimo.com/api/v1/parties/902/game/start \
+  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span> \
+  -H <span class="tok-str">"Content-Type: application/json"</span> \
+  -d <span class="tok-str">'{"rounds":10}'</span></pre>
+            </div>
+            <div class="code-block">
+              <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": true,
+  "message": "Game session started successfully.",
+  "data": {
+    "id": 61, "party_id": 902, "status": "running",
+    "rounds_count": 10, "current_round_number": 1,
+    "started_at": "2026-08-28T10:30:00Z", "ended_at": null,
+    "current_round": { "id": 140, "number": 1, "started_at": "2026-08-28T10:30:00Z", "completed_at": null },
+    "current_turn": {
+      "id": 500, "position": 0, "user_id": 482,
+      "card": { "id": 901, "kind": "truth", "text": "...", "position": 0 },
+      "started_at": "2026-08-28T10:30:00Z", "completed_at": null,
+      "expires_at": "2026-08-28T10:30:30Z", "is_afk": false
+    }
+  }
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>,
+  <span class="tok-key">"message"</span>: <span class="tok-str">"Game session started successfully."</span>,
+  <span class="tok-key">"data"</span>: {
+    <span class="tok-key">"id"</span>: <span class="tok-num">61</span>, <span class="tok-key">"party_id"</span>: <span class="tok-num">902</span>, <span class="tok-key">"status"</span>: <span class="tok-str">"running"</span>,
+    <span class="tok-key">"rounds_count"</span>: <span class="tok-num">10</span>, <span class="tok-key">"current_round_number"</span>: <span class="tok-num">1</span>,
+    <span class="tok-key">"started_at"</span>: <span class="tok-str">"2026-08-28T10:30:00Z"</span>, <span class="tok-key">"ended_at"</span>: <span class="tok-null">null</span>,
+    <span class="tok-key">"current_round"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">140</span>, <span class="tok-key">"number"</span>: <span class="tok-num">1</span>, <span class="tok-key">"started_at"</span>: <span class="tok-str">"2026-08-28T10:30:00Z"</span>, <span class="tok-key">"completed_at"</span>: <span class="tok-null">null</span> },
+    <span class="tok-key">"current_turn"</span>: {
+      <span class="tok-key">"id"</span>: <span class="tok-num">500</span>, <span class="tok-key">"position"</span>: <span class="tok-num">0</span>, <span class="tok-key">"user_id"</span>: <span class="tok-num">482</span>,
+      <span class="tok-key">"card"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">901</span>, <span class="tok-key">"kind"</span>: <span class="tok-str">"truth"</span>, <span class="tok-key">"text"</span>: <span class="tok-str">"..."</span>, <span class="tok-key">"position"</span>: <span class="tok-num">0</span> },
+      <span class="tok-key">"started_at"</span>: <span class="tok-str">"2026-08-28T10:30:00Z"</span>, <span class="tok-key">"completed_at"</span>: <span class="tok-null">null</span>,
+      <span class="tok-key">"expires_at"</span>: <span class="tok-str">"2026-08-28T10:30:30Z"</span>, <span class="tok-key">"is_afk"</span>: <span class="tok-bool">false</span>
+    }
+  }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="post-game-next-turn">
+        <div class="endpoint-head"><span class="method post">POST</span><code class="path">/game/{gameSession}/next-turn</code></div>
+        <p class="desc">Complete the current turn and advance. Host only. Note this path is top-level &mdash; not nested under <code>/parties</code>.</p>
+        <div class="meta-line"><span><b>Rate limit</b> party-actions (30/min)</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <p>Advances the turn cursor; when the round's last turn completes it dispatches round-completion server-side, and when the last round completes the session itself completes. There's no separate "session complete" flag beyond <code>status: "completed"</code> and a populated <code>ended_at</code> &mdash; watch for that combination in the response, or subscribe to the realtime channel for the completion event instead of polling this endpoint.</p>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403 non-host</span><span class="status-pill err">404</span><span class="status-pill err">422 not running / pack exhausted</span><span class="status-pill err">429</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='curl -X POST https://api.yowimo.com/api/v1/game/61/next-turn \
+  -H "Authorization: Bearer $TOKEN"'><span class="tok-flag">curl -X POST</span> https://api.yowimo.com/api/v1/game/61/next-turn \
+  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span></pre>
+            </div>
+            <div class="code-block"><div class="code-head"><span>Shape</span></div><pre>Same <span class="tok-str">GameSessionResource</span> as above, message "Advanced to the next turn."</pre></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ PUSH TOKENS ============ -->
+      <section class="group-head" id="pushtokens"><h2>Push Tokens</h2><p>Register a device for FCM push. One token per user &mdash; registering replaces the previous one.</p></section>
+
+      <section class="endpoint" id="post-push-tokens">
+        <div class="endpoint-head"><span class="method post">POST</span><code class="path">/push-tokens</code></div>
+        <p class="desc">Register (or replace) this user's push token.</p>
+        <div class="meta-line"><span><b>Rate limit</b> push-tokens (10/min)</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <h4>Body</h4>
+            <table class="params">
+              <tr><td class="field">token<span class="req">required</span></td><td class="rule">string, max 255</td></tr>
+              <tr><td class="field">platform<span class="req">required</span></td><td class="rule"><code>ios</code> &middot; <code>android</code></td></tr>
+            </table>
+            <div class="note"><b>200, not 201, despite replace-on-register</b>Also: if this exact token string was previously registered to a different user (shared device), that stale row is deleted first so notifications route to the right person.</div>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">422</span><span class="status-pill err">429</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block"><div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='curl -X POST https://api.yowimo.com/api/v1/push-tokens \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '"'"'{"token":"fcm-device-token","platform":"ios"}'"'"''><span class="tok-flag">curl -X POST</span> https://api.yowimo.com/api/v1/push-tokens \
+  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span> \
+  -H <span class="tok-str">"Content-Type: application/json"</span> \
+  -d <span class="tok-str">'{"token":"fcm-device-token","platform":"ios"}'</span></pre></div>
+            <div class="code-block"><div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{ "success": true, "message": "Push token registered successfully.", "data": { "id": 12, "platform": "ios", "created_at": "2026-08-28T10:00:00Z", "updated_at": "2026-08-28T10:00:00Z" } }'>{ <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"Push token registered successfully."</span>, <span class="tok-key">"data"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">12</span>, <span class="tok-key">"platform"</span>: <span class="tok-str">"ios"</span>, <span class="tok-key">"created_at"</span>: <span class="tok-str">"2026-08-28T10:00:00Z"</span>, <span class="tok-key">"updated_at"</span>: <span class="tok-str">"2026-08-28T10:00:00Z"</span> } }</pre></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="delete-push-tokens">
+        <div class="endpoint-head"><span class="method delete">DELETE</span><code class="path">/push-tokens</code></div>
+        <p class="desc">Unregister this device. No body, no id &mdash; removes the caller's one token.</p>
+        <div class="meta-line"><span><b>Rate limit</b> push-tokens (10/min)</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs"><div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">429</span></div></div>
+          <div class="endpoint-code"><div class="code-block"><div class="code-head"><span>Shape</span></div><pre>{ <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"Push token removed successfully."</span>, <span class="tok-key">"data"</span>: [] }</pre></div></div>
+        </div>
+      </section>
+
+      <!-- ============ NOTIFICATIONS ============ -->
+      <section class="group-head" id="notifications"><h2>Notifications</h2><p>The persisted, catch-up-when-offline feed. Real-time delivery for a connected client comes through the Reverb channels, not this API &mdash; this is the read/history layer.</p></section>
+
+      <section class="endpoint" id="get-notifications">
+        <div class="endpoint-head"><span class="method get">GET</span><code class="path">/notifications</code></div>
+        <p class="desc">List notifications, newest first.</p>
+        <div class="meta-line"><span><b>Rate limit</b> api</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <p>No <code>unread</code>/<code>type</code> filter exists &mdash; filter client-side on <code>read_at</code>. Response carries <code>Cache-Control: no-store</code> &mdash; don't cache it.</p>
+            <div class="note"><b>type is an opaque string, not an enum</b>Values are inconsistent (<code>party.member_joined</code> uses an underscore, <code>party.member.left</code> uses a dot). Treat as constants to switch on, not a dot-path to parse: <code>wallet.credited</code>, <code>wallet.debited</code>, <code>party.started</code>, <code>party.member_joined</code>, <code>party.member.left</code>, <code>game.completed</code>, <code>purchase.completed</code>, <code>round.completed</code>, <code>friend.request.sent</code>, <code>friend.request.accepted</code>.</div>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">422</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": true, "message": "OK",
+  "data": [
+    { "id": 771, "title": "Game complete!", "body": "You earned 25 tokens.", "type": "game.completed", "metadata": { "game_session_id": 61 }, "read_at": null, "created_at": "2026-08-28T10:45:00Z" }
+  ],
+  "meta": { "per_page": 20, "has_more_pages": false, "next_cursor": null, "prev_cursor": null }
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"OK"</span>,
+  <span class="tok-key">"data"</span>: [
+    { <span class="tok-key">"id"</span>: <span class="tok-num">771</span>, <span class="tok-key">"title"</span>: <span class="tok-str">"Game complete!"</span>, <span class="tok-key">"body"</span>: <span class="tok-str">"You earned 25 tokens."</span>, <span class="tok-key">"type"</span>: <span class="tok-str">"game.completed"</span>, <span class="tok-key">"metadata"</span>: { <span class="tok-key">"game_session_id"</span>: <span class="tok-num">61</span> }, <span class="tok-key">"read_at"</span>: <span class="tok-null">null</span>, <span class="tok-key">"created_at"</span>: <span class="tok-str">"2026-08-28T10:45:00Z"</span> }
+  ],
+  <span class="tok-key">"meta"</span>: { <span class="tok-key">"per_page"</span>: <span class="tok-num">20</span>, <span class="tok-key">"has_more_pages"</span>: <span class="tok-bool">false</span>, <span class="tok-key">"next_cursor"</span>: <span class="tok-null">null</span>, <span class="tok-key">"prev_cursor"</span>: <span class="tok-null">null</span> }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="patch-notifications-read">
+        <div class="endpoint-head"><span class="method patch">PATCH</span><code class="path">/notifications/read</code></div>
+        <p class="desc">Mark a single notification read.</p>
+        <div class="meta-line"><span><b>Rate limit</b> api</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <table class="params"><tr><td class="field">notification_id<span class="req">required</span></td><td class="rule">integer</td></tr></table>
+            <p>Scoped to the caller &mdash; another user's notification 404s rather than 403ing (doesn't leak existence). Marking an already-read one is a no-op, still 200.</p>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">404 not yours</span><span class="status-pill err">422</span></div>
+          </div>
+          <div class="endpoint-code"><div class="code-block"><div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
+            <pre data-raw='curl -X PATCH https://api.yowimo.com/api/v1/notifications/read \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '"'"'{"notification_id":771}'"'"''><span class="tok-flag">curl -X PATCH</span> https://api.yowimo.com/api/v1/notifications/read \
+  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span> \
+  -H <span class="tok-str">"Content-Type: application/json"</span> \
+  -d <span class="tok-str">'{"notification_id":771}'</span></pre></div></div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="patch-notifications-read-all">
+        <div class="endpoint-head"><span class="method patch">PATCH</span><code class="path">/notifications/read-all</code></div>
+        <p class="desc">Mark every notification read. No body.</p>
+        <div class="meta-line"><span><b>Rate limit</b> api</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs"><div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span></div></div>
+          <div class="endpoint-code"><div class="code-block"><div class="code-head"><span>Shape</span></div><pre>{ <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"All notifications marked as read."</span>, <span class="tok-key">"data"</span>: [] }</pre></div></div>
+        </div>
+      </section>
+
+      <!-- ============ FRIENDS ============ -->
+      <section class="group-head" id="friends"><h2>Friends</h2><p>Social graph: friend requests and the resulting friend list.</p></section>
+
+      <section class="endpoint" id="get-friends">
+        <div class="endpoint-head"><span class="method get">GET</span><code class="path">/friends</code></div>
+        <p class="desc">Accepted friends.</p>
+        <div class="meta-line"><span><b>Rate limit</b> api</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <div class="note"><b>Not paginated</b>Returns the full collection in a plain <code>data</code> array, no <code>meta</code>. Sorted by <code>accepted_at</code> descending.</div>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block"><div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "data": [
+    { "friendship_id": 44, "friend": { "id": 219, "username": "leo", "display_name": "Leo", "avatar_url": "..." }, "accepted_at": "2026-07-01T00:00:00Z" }
+  ]
+}'>{
+  <span class="tok-key">"data"</span>: [
+    { <span class="tok-key">"friendship_id"</span>: <span class="tok-num">44</span>, <span class="tok-key">"friend"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">219</span>, <span class="tok-key">"username"</span>: <span class="tok-str">"leo"</span>, <span class="tok-key">"display_name"</span>: <span class="tok-str">"Leo"</span>, <span class="tok-key">"avatar_url"</span>: <span class="tok-str">"..."</span> }, <span class="tok-key">"accepted_at"</span>: <span class="tok-str">"2026-07-01T00:00:00Z"</span> }
+  ]
+}</pre></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="delete-friends">
+        <div class="endpoint-head"><span class="method delete">DELETE</span><code class="path">/friends/{friendship}</code></div>
+        <p class="desc">Unfriend &mdash; removes an accepted friendship. Either side may call this.</p>
+        <div class="meta-line"><span><b>Rate limit</b> friend-requests (20/min)</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <div class="note"><b>Not the same as cancelling a request</b><code>DELETE /friends/{id}</code> unfriends an <i>accepted</i> friendship. <code>DELETE /friend-requests/{id}</code> below withdraws a <i>pending</i> request you sent. Same HTTP verb, similar URL, different resource and different actor rules &mdash; don't conflate them in the client.</div>
+            <p>Sets status to <code>removed</code> (a soft transition, not a row delete) &mdash; only valid from <code>accepted</code>, else 422.</p>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403 not a party to it</span><span class="status-pill err">404</span><span class="status-pill err">422 not accepted</span><span class="status-pill err">429</span></div>
+          </div>
+          <div class="endpoint-code"><div class="code-block"><div class="code-head"><span>Shape</span></div><pre>{ <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"Friend removed successfully."</span>, <span class="tok-key">"data"</span>: [] }</pre></div></div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="get-friend-requests">
+        <div class="endpoint-head"><span class="method get">GET</span><code class="path">/friend-requests</code></div>
+        <p class="desc">Pending requests, both directions.</p>
+        <div class="meta-line"><span><b>Rate limit</b> api</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <div class="note"><b>No direction field</b>Includes requests you sent <i>and</i> received. Compare <code>sender.id</code>/<code>receiver.id</code> against your own user id to know which is which. Also not paginated &mdash; full collection, no <code>meta</code>.</div>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block"><div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "data": [
+    { "id": 91, "status": "pending", "sender": { "id": 482, "username": "maya" }, "receiver": { "id": 340, "username": "sam" }, "accepted_at": null, "created_at": "2026-08-27T00:00:00Z" }
+  ]
+}'>{
+  <span class="tok-key">"data"</span>: [
+    { <span class="tok-key">"id"</span>: <span class="tok-num">91</span>, <span class="tok-key">"status"</span>: <span class="tok-str">"pending"</span>, <span class="tok-key">"sender"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">482</span>, <span class="tok-key">"username"</span>: <span class="tok-str">"maya"</span> }, <span class="tok-key">"receiver"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">340</span>, <span class="tok-key">"username"</span>: <span class="tok-str">"sam"</span> }, <span class="tok-key">"accepted_at"</span>: <span class="tok-null">null</span>, <span class="tok-key">"created_at"</span>: <span class="tok-str">"2026-08-27T00:00:00Z"</span> }
+  ]
+}</pre></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="post-friend-requests">
+        <div class="endpoint-head"><span class="method post">POST</span><code class="path">/friend-requests</code></div>
+        <p class="desc">Send a friend request.</p>
+        <div class="meta-line"><span><b>Rate limit</b> friend-requests (20/min)</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <table class="params"><tr><td class="field">receiver_id<span class="req">required</span></td><td class="rule">integer, must exist, can't be your own id (custom message: "You cannot send a friend request to yourself.")</td></tr></table>
+            <div class="status-row"><span class="status-pill ok">201 Created</span><span class="status-pill err">401</span><span class="status-pill err">409 already friends / duplicate request</span><span class="status-pill err">422</span><span class="status-pill err">429</span></div>
+          </div>
+          <div class="endpoint-code"><div class="code-block"><div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
+            <pre data-raw='curl -X POST https://api.yowimo.com/api/v1/friend-requests \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '"'"'{"receiver_id":340}'"'"''><span class="tok-flag">curl -X POST</span> https://api.yowimo.com/api/v1/friend-requests \
+  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span> \
+  -H <span class="tok-str">"Content-Type: application/json"</span> \
+  -d <span class="tok-str">'{"receiver_id":340}'</span></pre></div></div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="post-friend-requests-accept">
+        <div class="endpoint-head"><span class="method post">POST</span><code class="path">/friend-requests/{friendship}/accept</code></div>
+        <p class="desc">Accept a pending request. Receiver only.</p>
+        <div class="meta-line"><span><b>Rate limit</b> friend-requests (20/min)</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <p>The sender cannot accept their own outgoing request &mdash; 403.</p>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403 not the receiver</span><span class="status-pill err">404</span><span class="status-pill err">422 not pending</span><span class="status-pill err">429</span></div>
+          </div>
+          <div class="endpoint-code"><div class="code-block"><div class="code-head"><span>Shape</span></div><pre>Full <span class="tok-str">FriendshipResource</span>, message "Friend request accepted successfully."</pre></div></div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="post-friend-requests-reject">
+        <div class="endpoint-head"><span class="method post">POST</span><code class="path">/friend-requests/{friendship}/reject</code></div>
+        <p class="desc">Reject a pending request. Receiver only.</p>
+        <div class="meta-line"><span><b>Rate limit</b> friend-requests (20/min)</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs"><div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403</span><span class="status-pill err">404</span><span class="status-pill err">422</span><span class="status-pill err">429</span></div></div>
+          <div class="endpoint-code"><div class="code-block"><div class="code-head"><span>Shape</span></div><pre>Full <span class="tok-str">FriendshipResource</span>, message "Friend request rejected successfully."</pre></div></div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="delete-friend-requests">
+        <div class="endpoint-head"><span class="method delete">DELETE</span><code class="path">/friend-requests/{friendship}</code></div>
+        <p class="desc">Cancel a request <i>you sent</i>. Sender only &mdash; the "I'm withdrawing it" action.</p>
+        <div class="meta-line"><span><b>Rate limit</b> friend-requests (20/min)</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs"><div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403 not the sender</span><span class="status-pill err">404</span><span class="status-pill err">422 not pending</span><span class="status-pill err">429</span></div></div>
+          <div class="endpoint-code"><div class="code-block"><div class="code-head"><span>Shape</span></div><pre>{ <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"Friend request cancelled successfully."</span>, <span class="tok-key">"data"</span>: [] }</pre></div></div>
+        </div>
+      </section>
+
+      <!-- ============ SYSTEM ============ -->
+      <section class="group-head" id="system"><h2>System</h2><p>Public, unauthenticated.</p></section>
+
+      <section class="endpoint" id="get-health">
+        <div class="endpoint-head"><span class="method get">GET</span><code class="path">/health</code><span class="noauth">No auth required</span></div>
+        <p class="desc">Liveness of the database, Redis, queue, and broadcast (Reverb) dependencies.</p>
+        <div class="meta-line"><span><b>Rate limit</b> api</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <div class="note"><b>Envelope shape depends on outcome</b>Healthy responses nest checks under <code>data.checks</code>; an unhealthy (503) response nests the same object under <code>errors.checks</code> instead. Branch on the HTTP status, not on trying both keys.</div>
+            <div class="status-row"><span class="status-pill ok">200 all healthy</span><span class="status-pill err">503 one or more down</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block"><div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": true,
+  "message": "All services healthy.",
+  "data": { "checks": { "database": {"status":"ok"}, "redis": {"status":"ok"}, "queue": {"status":"ok"}, "broadcast": {"status":"ok"} } }
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>,
+  <span class="tok-key">"message"</span>: <span class="tok-str">"All services healthy."</span>,
+  <span class="tok-key">"data"</span>: { <span class="tok-key">"checks"</span>: { <span class="tok-key">"database"</span>: {<span class="tok-key">"status"</span>:<span class="tok-str">"ok"</span>}, <span class="tok-key">"redis"</span>: {<span class="tok-key">"status"</span>:<span class="tok-str">"ok"</span>}, <span class="tok-key">"queue"</span>: {<span class="tok-key">"status"</span>:<span class="tok-str">"ok"</span>}, <span class="tok-key">"broadcast"</span>: {<span class="tok-key">"status"</span>:<span class="tok-str">"ok"</span>} } }
+}</pre></div>
+            <div class="code-block"><div class="code-head"><span>503 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": false,
+  "message": "One or more services are unhealthy.",
+  "errors": { "checks": { "database": {"status":"ok"}, "redis": {"status":"down","message":"Connection refused"}, "queue": {"status":"ok"}, "broadcast": {"status":"skipped"} } }
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">false</span>,
+  <span class="tok-key">"message"</span>: <span class="tok-str">"One or more services are unhealthy."</span>,
+  <span class="tok-key">"errors"</span>: { <span class="tok-key">"checks"</span>: { <span class="tok-key">"database"</span>: {<span class="tok-key">"status"</span>:<span class="tok-str">"ok"</span>}, <span class="tok-key">"redis"</span>: {<span class="tok-key">"status"</span>:<span class="tok-str">"down"</span>,<span class="tok-key">"message"</span>:<span class="tok-str">"Connection refused"</span>}, <span class="tok-key">"queue"</span>: {<span class="tok-key">"status"</span>:<span class="tok-str">"ok"</span>}, <span class="tok-key">"broadcast"</span>: {<span class="tok-key">"status"</span>:<span class="tok-str">"skipped"</span>} } }
+}</pre></div>
+          </div>
+        </div>
+      </section>
+
+      <footer>Yowimo API Reference &middot; v1 &middot; verified against the running backend, 2026-08-28</footer>
+    </div>
+  </main>
+</div>
+
+<script>
+(function(){
+  var PLACEHOLDER = 'https://api.yowimo.com/api/v1';
+  var base = window.location.origin + '/api/v1';
+  if (base !== PLACEHOLDER) {
+    document.querySelectorAll('pre').forEach(function(pre){
+      if (pre.innerHTML.indexOf(PLACEHOLDER) !== -1) {
+        pre.innerHTML = pre.innerHTML.split(PLACEHOLDER).join(base);
+      }
+      var raw = pre.getAttribute('data-raw');
+      if (raw && raw.indexOf(PLACEHOLDER) !== -1) {
+        pre.setAttribute('data-raw', raw.split(PLACEHOLDER).join(base));
+      }
+    });
+    document.querySelectorAll('.base-url').forEach(function(el){
+      el.innerHTML = el.innerHTML.split(PLACEHOLDER).join(base);
+    });
+  }
+})();
+(function(){
+  var toggle = document.getElementById('navToggle');
+  var sidenav = document.getElementById('sidenav');
+  var scrim = document.getElementById('scrim');
+  function closeNav(){ sidenav.classList.remove('open'); scrim.classList.remove('open'); toggle.setAttribute('aria-expanded','false'); }
+  function openNav(){ sidenav.classList.add('open'); scrim.classList.add('open'); toggle.setAttribute('aria-expanded','true'); }
+  toggle.addEventListener('click', function(){ sidenav.classList.contains('open') ? closeNav() : openNav(); });
+  scrim.addEventListener('click', closeNav);
+  sidenav.querySelectorAll('.nav-link').forEach(function(a){ a.addEventListener('click', function(){ if(window.innerWidth <= 900) closeNav(); }); });
+
+  var search = document.getElementById('navSearch');
+  var groups = Array.prototype.slice.call(document.querySelectorAll('.nav-group'));
+  var empty = document.getElementById('navEmpty');
+  search.addEventListener('input', function(){
+    var q = search.value.trim().toLowerCase();
+    var anyVisible = false;
+    groups.forEach(function(g){
+      var links = g.querySelectorAll('.nav-link');
+      var groupHasMatch = false;
+      links.forEach(function(a){
+        var hay = (a.getAttribute('data-search') || '') + ' ' + a.textContent;
+        var match = q === '' || hay.toLowerCase().indexOf(q) !== -1;
+        a.style.display = match ? '' : 'none';
+        if (match) groupHasMatch = true;
+      });
+      g.style.display = groupHasMatch ? '' : 'none';
+      if (groupHasMatch) anyVisible = true;
+    });
+    empty.style.display = anyVisible ? 'none' : 'block';
+  });
+
+  document.querySelectorAll('.copy-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var pre = btn.closest('.code-block').querySelector('pre');
+      var text = pre.getAttribute('data-raw') || pre.textContent;
+      function done(){ var old = btn.textContent; btn.textContent = 'Copied'; setTimeout(function(){ btn.textContent = old; }, 1200); }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(function(){ fallbackCopy(text); done(); });
+      } else {
+        fallbackCopy(text); done();
+      }
+    });
+  });
+  function fallbackCopy(text){
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch(e){}
+    document.body.removeChild(ta);
+  }
+
+  var navLinks = Array.prototype.slice.call(document.querySelectorAll('.nav-link'));
+  var sections = navLinks.map(function(a){ return document.getElementById(a.getAttribute('href').slice(1)); }).filter(Boolean);
+  if ('IntersectionObserver' in window) {
+    var current = null;
+    var observer = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if (entry.isIntersecting) {
+          var id = entry.target.id;
+          var link = document.querySelector('.nav-link[href="#' + id + '"]');
+          if (link && link !== current) {
+            if (current) current.classList.remove('active');
+            link.classList.add('active');
+            current = link;
+          }
+        }
+      });
+    }, { rootMargin: '-72px 0px -70% 0px', threshold: 0 });
+    sections.forEach(function(s){ observer.observe(s); });
+  }
+})();
+</script>
+</body>
+</html>
