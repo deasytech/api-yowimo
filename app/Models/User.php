@@ -110,4 +110,17 @@ class User extends Authenticatable implements FilamentUser, HasName
     {
         return $this->hasMany(Friendship::class, 'receiver_id');
     }
+
+    /**
+     * Overrides the `Notifiable` trait's built-in `notifications()` (which targets
+     * Laravel's default polymorphic database-notifications schema) — this app's
+     * `notifications` table uses its own schema (see `Notification` model) and is
+     * only ever written to via the custom `InAppChannel`, not the `database` channel.
+     *
+     * @return HasMany<Notification, $this>
+     */
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(Notification::class);
+    }
 }

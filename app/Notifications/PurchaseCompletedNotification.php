@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\WalletTransaction;
 use App\Notifications\Channels\FcmChannel;
+use App\Notifications\Channels\InAppChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
@@ -23,7 +24,7 @@ class PurchaseCompletedNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return [FcmChannel::class];
+        return [FcmChannel::class, InAppChannel::class];
     }
 
     public function toFcm(object $notifiable): CloudMessage
@@ -39,5 +40,22 @@ class PurchaseCompletedNotification extends Notification implements ShouldQueue
                 'reference_id' => (string) $this->transaction->reference_id,
                 'wallet_transaction_id' => (string) $this->transaction->id,
             ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toInApp(object $notifiable): array
+    {
+        return [
+            'title' => 'Purchase completed',
+            'body' => $this->transaction->description ?? 'Your purchase completed successfully.',
+            'type' => 'purchase.completed',
+            'metadata' => [
+                'reference_type' => $this->transaction->reference_type,
+                'reference_id' => $this->transaction->reference_id,
+                'wallet_transaction_id' => $this->transaction->id,
+            ],
+        ];
     }
 }

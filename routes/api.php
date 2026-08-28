@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\GameSessionController;
 use App\Http\Controllers\Api\V1\GameTypeController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\MeController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PackController;
 use App\Http\Controllers\Api\V1\PackPurchaseController;
 use App\Http\Controllers\Api\V1\PartyController;
@@ -49,6 +50,10 @@ Route::prefix('v1')->group(function () {
 
         Route::post('/push-tokens', [PushTokenController::class, 'store'])->middleware('throttle:push-tokens');
         Route::delete('/push-tokens', [PushTokenController::class, 'destroy'])->middleware('throttle:push-tokens');
+
+        Route::get('/notifications', [NotificationController::class, 'index']);
+        Route::patch('/notifications/read', [NotificationController::class, 'markRead']);
+        Route::patch('/notifications/read-all', [NotificationController::class, 'markAllRead']);
 
         Route::get('/friends', [FriendshipController::class, 'index']);
         Route::delete('/friends/{friendship}', [FriendshipController::class, 'destroy'])->middleware('throttle:friend-requests');
