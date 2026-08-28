@@ -5,6 +5,7 @@ namespace App\Notifications;
 use App\Models\Friendship;
 use App\Models\User;
 use App\Notifications\Channels\FcmChannel;
+use App\Notifications\Channels\InAppChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
@@ -25,7 +26,7 @@ class FriendRequestAcceptedNotification extends Notification implements ShouldQu
      */
     public function via(object $notifiable): array
     {
-        return [FcmChannel::class];
+        return [FcmChannel::class, InAppChannel::class];
     }
 
     public function toFcm(object $notifiable): CloudMessage
@@ -42,5 +43,23 @@ class FriendRequestAcceptedNotification extends Notification implements ShouldQu
                 'friendship_id' => (string) $this->friendship->id,
                 'accepter_id' => (string) $this->accepter->id,
             ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toInApp(object $notifiable): array
+    {
+        $accepterName = $this->accepter->display_name ?: $this->accepter->username;
+
+        return [
+            'title' => 'Friend request accepted',
+            'body' => "{$accepterName} accepted your friend request.",
+            'type' => 'friend.request.accepted',
+            'metadata' => [
+                'friendship_id' => $this->friendship->id,
+                'accepter_id' => $this->accepter->id,
+            ],
+        ];
     }
 }

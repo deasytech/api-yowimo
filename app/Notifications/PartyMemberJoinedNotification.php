@@ -5,6 +5,7 @@ namespace App\Notifications;
 use App\Models\Party;
 use App\Models\User;
 use App\Notifications\Channels\FcmChannel;
+use App\Notifications\Channels\InAppChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
@@ -25,7 +26,7 @@ class PartyMemberJoinedNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return [FcmChannel::class];
+        return [FcmChannel::class, InAppChannel::class];
     }
 
     public function toFcm(object $notifiable): CloudMessage
@@ -42,5 +43,23 @@ class PartyMemberJoinedNotification extends Notification implements ShouldQueue
                 'party_id' => (string) $this->party->id,
                 'user_id' => (string) $this->joiningUser->id,
             ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toInApp(object $notifiable): array
+    {
+        $joiningUserName = $this->joiningUser->display_name ?: $this->joiningUser->username;
+
+        return [
+            'title' => 'New party member',
+            'body' => "{$joiningUserName} joined your party \"{$this->party->title}\".",
+            'type' => 'party.member_joined',
+            'metadata' => [
+                'party_id' => $this->party->id,
+                'user_id' => $this->joiningUser->id,
+            ],
+        ];
     }
 }

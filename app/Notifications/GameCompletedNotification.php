@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\GameSession;
 use App\Notifications\Channels\FcmChannel;
+use App\Notifications\Channels\InAppChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
@@ -23,7 +24,7 @@ class GameCompletedNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return [FcmChannel::class];
+        return [FcmChannel::class, InAppChannel::class];
     }
 
     public function toFcm(object $notifiable): CloudMessage
@@ -38,5 +39,21 @@ class GameCompletedNotification extends Notification implements ShouldQueue
                 'game_session_id' => (string) $this->gameSession->id,
                 'party_id' => (string) $this->gameSession->party_id,
             ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toInApp(object $notifiable): array
+    {
+        return [
+            'title' => 'Game completed',
+            'body' => 'The game has ended. Thanks for playing!',
+            'type' => 'game.completed',
+            'metadata' => [
+                'game_session_id' => $this->gameSession->id,
+                'party_id' => $this->gameSession->party_id,
+            ],
+        ];
     }
 }

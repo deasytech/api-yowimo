@@ -5,6 +5,7 @@ namespace App\Notifications;
 use App\Models\Friendship;
 use App\Models\User;
 use App\Notifications\Channels\FcmChannel;
+use App\Notifications\Channels\InAppChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
@@ -25,7 +26,7 @@ class FriendRequestSentNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return [FcmChannel::class];
+        return [FcmChannel::class, InAppChannel::class];
     }
 
     public function toFcm(object $notifiable): CloudMessage
@@ -42,5 +43,23 @@ class FriendRequestSentNotification extends Notification implements ShouldQueue
                 'friendship_id' => (string) $this->friendship->id,
                 'sender_id' => (string) $this->sender->id,
             ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toInApp(object $notifiable): array
+    {
+        $senderName = $this->sender->display_name ?: $this->sender->username;
+
+        return [
+            'title' => 'New friend request',
+            'body' => "{$senderName} sent you a friend request.",
+            'type' => 'friend.request.sent',
+            'metadata' => [
+                'friendship_id' => $this->friendship->id,
+                'sender_id' => $this->sender->id,
+            ],
+        ];
     }
 }

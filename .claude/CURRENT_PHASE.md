@@ -1,11 +1,21 @@
 # Current Phase — Yowimo Backend
 
-**Assessed:** 2026-08-28, against `dev` after the "wire remaining events to push" work landed, by direct code inspection.
+**Assessed:** 2026-08-28, against `dev` after the "in-app notifications" work landed, by direct code inspection.
 **Basis:** `docs/audit/*`, `docs/implementation/IMPLEMENTATION_ORDER.md`, `.claude/PROJECT_CONTEXT.md`.
 
 ---
 
 ## Current Sprint
+
+**Post-Sprint-14 — In-app notifications** (recommendation written up in `.claude/NEXT_TASK.md` after re-running the dependency analysis against `docs/architecture/00`–`60` directly, confirmed by the user, then implemented), **done.** No route, request/response shape, or existing business logic changed — this is new, additive scope only.
+
+- ✅ `notifications` table + `App\Models\Notification` (`id, user_id, title, body, type, read_at, metadata, created_at`), matching the exact schema in `docs/architecture/38_DATABASE_SCHEMA_REFERENCE.md` — a plain `user_id`-keyed table, not Laravel's default polymorphic notifications package table (same "bespoke table over generic package one" pattern as `analytics_events` from Sprint 12).
+- ✅ `App\Notifications\Channels\InAppChannel`, a new custom notification channel (alongside the existing `FcmChannel`) that persists a row when a notification implements `toInApp()`. All 10 existing `*Notification` classes (the same ones wired to push across Sprint 9 and the two most recent post-Sprint-14 items) now also implement `toInApp()` and list `InAppChannel::class` in `via()` — same title/body/type content already generated for FCM, so the two channels can't drift on *whether* something fires, only on delivery mechanism. The WalletCredited/WalletDebited double-notification suppression added earlier this session (skip when `reference_type` is set) lives in the listener, before `notify()` is called — so it suppresses both channels together, not just push.
+- ✅ `GET /notifications` (cursor-paginated, newest first, scoped to the authenticated user — mirrors `WalletController::transactions`'s shape/pattern exactly), `PATCH /notifications/read` (body: `notification_id`; 404s if it doesn't belong to the caller, scoped-query pattern rather than a separate Policy, mirroring `PushTokenService`), `PATCH /notifications/read-all` — matches the exact endpoints in `docs/architecture/39_REST_API_REFERENCE.md`.
+- ✅ `User::notifications()` deliberately overrides the `Notifiable` trait's built-in database-notifications relation (which targets Laravel's default schema) to point at this app's own `Notification` model instead — documented inline since it's a non-obvious shadow, not an accident.
+- Live delivery: no new broadcast was added for the notification row itself. The 10 underlying domain events already broadcast on `App.Models.User.{id}`/`party.{id}` (Sprint 8 + the two most recent post-Sprint-14 items), so a connected client already gets a live signal when one of these happens; `GET /notifications` is the persisted, read-stateful, catch-up-when-offline feed on top of that — not a duplicate live channel. `notification_preferences` (named with no column spec in doc 38) and a real Firebase project stay out of scope, as documented in `NEXT_TASK.md` before this was built.
+- ✅ Tests: `NotificationFactory`; `tests/Feature/Api/V1/NotificationControllerTest.php` (list/pagination/ownership-scoping, mark-one-read, mark-all-read, 404 on another user's notification, 401 with no token); `tests/Feature/Notifications/InAppChannelTest.php` (persists on `toInApp`, no-ops without it); `tests/Feature/Notifications/InAppNotificationDeliveryTest.php` (three representative events prove the real event → listener → both-channels path, including the wallet/purchase suppression applying to the in-app channel too).
+- ✅ Full suite (275 tests) and Pint both pass with no regressions.
 
 **Post-Sprint-14 — Wire remaining events to push** (unscheduled item from `.claude/NEXT_TASK.md`'s "Notifications beyond v0" candidate, picked up by user decision — the specific events and their recipient rules were confirmed with the user up front, the same way Sprint 9's original three were), **done.** No route, request/response shape, or existing business logic changed.
 
@@ -103,7 +113,7 @@ Real code exists but the module is narrower than its documented scope, or is unr
 | **Sponsorship** | `parties.is_sponsored` / `sponsor_name` columns exist. | No sponsor entity, no sponsor-facing flow of any kind — schema hint only. |
 | **Game Engine (rounds/turns/timers)** | `game_sessions`/`rounds`/`turns` tables + `GameSessionService`; host-only start/next-turn, randomized turn order, host-configurable rounds, Truth/Dare card dealing with no-repeat-until-exhausted, auto-completion; 30s server-authoritative turn timer with AFK-skip (tracked per turn), crash-recovery sweep, and `RoundCompleted`/`GameCompleted` events. | Votes, scoring, and reward granting — none of these were built; rewards were explicitly descoped from Sprint 7 by the user and have no owning sprint in the current plan (see Current Priority). |
 | **Realtime (Reverb)** | `laravel/reverb` installed; `party.{id}` presence channel + `game-session.{id}` private channel, both membership-gated; a per-user `App.Models.User.{id}` private channel (used by `FriendRequestSent`/`FriendRequestAccepted`/`WalletCredited`/`WalletDebited`/`PurchaseCompleted`/`PartyCreated`); `PartyMemberJoined`/`PartyMemberLeft`/`PartyStarted`/`TurnStarted`/`RoundCompleted`/`GameCompleted`/`FriendRequestSent`/`FriendRequestAccepted`/`WalletCredited`/`WalletDebited`/`PurchaseCompleted`/`PartyCreated` all broadcast. | No live client (React Native) has verified the integration end-to-end. |
-| **Notifications** | `push_tokens` table/API; FCM channel; `PartyMemberJoinedNotification`/`RoundCompletedNotification`/`WalletCreditedNotification`/`FriendRequestSentNotification`/`FriendRequestAcceptedNotification`/`PartyStartedNotification`/`GameCompletedNotification`/`PartyMemberLeftNotification`/`WalletDebitedNotification`/`PurchaseCompletedNotification`, each queued off a new listener. | No real Firebase project/credentials configured in any environment yet (push is wired but inert until `FIREBASE_CREDENTIALS` is set); `PartyCreated` (self-triggered) and `TurnStarted` (fires up to every ~30s) are deliberately not wired to push; no in-app delivery; no client (React Native) has verified receiving a real push. |
+| **Notifications** | `push_tokens` table/API; FCM channel; `PartyMemberJoinedNotification`/`RoundCompletedNotification`/`WalletCreditedNotification`/`FriendRequestSentNotification`/`FriendRequestAcceptedNotification`/`PartyStartedNotification`/`GameCompletedNotification`/`PartyMemberLeftNotification`/`WalletDebitedNotification`/`PurchaseCompletedNotification`, each queued off a new listener, delivered over both `FcmChannel` and the new `InAppChannel`; `notifications` table + `GET /notifications`/`PATCH /notifications/read`/`PATCH /notifications/read-all`. | No real Firebase project/credentials configured in any environment yet (push is wired but inert until `FIREBASE_CREDENTIALS` is set); `PartyCreated` (self-triggered) and `TurnStarted` (fires up to every ~30s) are deliberately not wired to either channel; no `notification_preferences` (per-channel opt-in/opt-out); no client (React Native) has verified receiving a real push. |
 
 ---
 
@@ -119,11 +129,11 @@ Chat/Messaging, Voice/Video (LiveKit), Moderation/Trust & Safety, Creator Econom
 
 ## Current Priority
 
-**Nothing is scheduled.** Sprint 14 was explicitly the last sprint in `IMPLEMENTATION_ORDER.md`'s 14-sprint plan, and the doc (`IMPLEMENTATION_ORDER.md:205`) says any further work should be planned fresh with the user, not assumed from this document. The friend-request-events item and the "wire remaining events to push" item below have since been picked up and shipped (see Current Sprint above). See `.claude/NEXT_TASK.md` for the remaining candidates and the "If Ambiguous" guidance — the short version: ask the user which one to build next before writing any code.
+**Nothing is scheduled.** Sprint 14 was explicitly the last sprint in `IMPLEMENTATION_ORDER.md`'s 14-sprint plan, and the doc (`IMPLEMENTATION_ORDER.md:205`) says any further work should be planned fresh with the user, not assumed from this document. The friend-request-events item, the "wire remaining events to push" item, and the "in-app notifications" item below have since been picked up and shipped (see Current Sprint above). See `.claude/NEXT_TASK.md` for the remaining candidates and the "If Ambiguous" guidance — the short version: ask the user which one to build next before writing any code.
 
 Outstanding, unscheduled (needs a design decision before it can be assigned to a sprint):
 - Reward granting on round/game completion (amount, trigger, recipients) — explicitly out of Sprint 7 per the user; no sprint in the current 14-sprint plan owns it.
-- Notifications beyond v0, remaining scope: in-app (Reverb) delivery, and configuring a real Firebase project per environment — none scheduled. (The "remaining fired events" piece is now done — see Current Sprint above.)
+- Notifications beyond v0, remaining scope: `notification_preferences` (per-channel opt-in/opt-out, named with no column spec in `docs/architecture/38_DATABASE_SCHEMA_REFERENCE.md`), and configuring a real Firebase project per environment — none scheduled. (Wiring the remaining fired events to push, and in-app delivery, are both now done — see Current Sprint above.)
 - In-panel password management for admins (Sprint 11 set an admin's password via `tinker`/seeder only — no self-service UI) — no sprint owns this.
 - A Filament Analytics resource/dashboard, and populating `analytics_events`' `ip`/`device`/`country` columns (would need request context threaded through every service call site) — surfaced by Sprint 12, neither scheduled.
 - AI Host beyond v0: the full "Yowi" persona (voice, moderation, translation, recommendations), a `RoundCompleted` trigger, retry/backoff on failure, and configuring a real OpenAI project per environment — surfaced by Sprint 13, none scheduled.
@@ -136,7 +146,7 @@ Lower-priority, not blocking, carried over from Sprint 1:
 
 ## Next Recommended Sprint
 
-None scheduled — Sprint 14 was the last sprint in `IMPLEMENTATION_ORDER.md`, and it has landed. Remaining work is the unscheduled items above (needs product/design decisions) and Tier 4 (`§G`, deferred pending a business trigger).
+None scheduled — in-app notifications (the prior recommendation) has landed (see Current Sprint above). Remaining work is the unscheduled items above (needs product/design decisions, or external credentials this agent can't provide) and Tier 4 (`§G`, deferred pending a business trigger). See `.claude/NEXT_TASK.md` for the current candidate list.
 
 ---
 

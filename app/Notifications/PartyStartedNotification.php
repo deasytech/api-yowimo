@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\Party;
 use App\Notifications\Channels\FcmChannel;
+use App\Notifications\Channels\InAppChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
@@ -23,7 +24,7 @@ class PartyStartedNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return [FcmChannel::class];
+        return [FcmChannel::class, InAppChannel::class];
     }
 
     public function toFcm(object $notifiable): CloudMessage
@@ -37,5 +38,20 @@ class PartyStartedNotification extends Notification implements ShouldQueue
                 'type' => 'party.started',
                 'party_id' => (string) $this->party->id,
             ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toInApp(object $notifiable): array
+    {
+        return [
+            'title' => 'Party started',
+            'body' => "\"{$this->party->title}\" has started!",
+            'type' => 'party.started',
+            'metadata' => [
+                'party_id' => $this->party->id,
+            ],
+        ];
     }
 }
