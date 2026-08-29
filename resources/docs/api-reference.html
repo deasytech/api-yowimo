@@ -82,10 +82,10 @@
     background:linear-gradient(135deg, var(--accent), var(--m-post));
     flex:none;
   }
-  .topbar .name{ font-family:'Sora'; font-weight:700; font-size:.98rem; letter-spacing:.01em; }
-  .topbar .tag{ font-size:.72rem; color:var(--text-muted); border:1px solid var(--border); padding:.15rem .5rem; border-radius:99px; font-family:'IBM Plex Mono'; }
+  .topbar .name{ font-family:'Sora',ui-sans-serif,system-ui,sans-serif; font-weight:700; font-size:.98rem; letter-spacing:.01em; }
+  .topbar .tag{ font-size:.72rem; color:var(--text-muted); border:1px solid var(--border); padding:.15rem .5rem; border-radius:99px; font-family:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace; }
   .topbar .spacer{ flex:1; }
-  .topbar .base-url{ font-size:.78rem; color:var(--text-muted); font-family:'IBM Plex Mono'; display:none; }
+  .topbar .base-url{ font-size:.78rem; color:var(--text-muted); font-family:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace; display:none; }
   @media (min-width:760px){ .topbar .base-url{ display:inline-flex; align-items:center; gap:.4rem; } }
   .nav-toggle{
     display:none; align-items:center; justify-content:center;
@@ -106,7 +106,7 @@
   .search-wrap input{
     width:100%; padding:.55rem .7rem .55rem 2rem; border-radius:7px;
     border:1px solid var(--border); background:var(--surface); color:var(--text);
-    font-family:'Manrope'; font-size:.85rem; outline:none;
+    font-family:'Manrope',ui-sans-serif,system-ui,sans-serif; font-size:.85rem; outline:none;
   }
   .search-wrap input:focus{ border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
   .search-wrap svg{ position:absolute; left:.6rem; top:50%; transform:translateY(-50%); opacity:.5; }
@@ -121,7 +121,7 @@
   }
   .nav-link:hover{ background:var(--surface); color:var(--text); }
   .nav-link.active{ background:var(--accent-soft); color:var(--accent-ink); font-weight:600; }
-  .nav-link .m{ font-family:'IBM Plex Mono'; font-size:.62rem; font-weight:600; width:38px; flex:none; }
+  .nav-link .m{ font-family:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.62rem; font-weight:600; width:38px; flex:none; }
   .nav-link .m.get{ color:var(--m-get); } .nav-link .m.post{ color:var(--m-post); }
   .nav-link .m.patch{ color:var(--m-patch); } .nav-link .m.delete{ color:var(--m-delete); }
   .nav-link .p{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -145,7 +145,7 @@
   .content-inner{ max-width:1180px; margin:0 auto; }
 
   .hero{ padding:3rem 0 2rem; max-width:640px; }
-  .hero .eyebrow{ font-family:'IBM Plex Mono'; font-size:.75rem; color:var(--accent); letter-spacing:.06em; margin-bottom:.7rem; }
+  .hero .eyebrow{ font-family:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.75rem; color:var(--accent); letter-spacing:.06em; margin-bottom:.7rem; }
   .hero h1{ font-size:2.1rem; font-weight:800; margin-bottom:.85rem; }
   .hero p{ color:var(--text-muted); font-size:1.02rem; }
 
@@ -171,7 +171,7 @@
   }
   .endpoint-head{ display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; margin-bottom:.6rem; }
   .method{
-    font-family:'IBM Plex Mono'; font-weight:600; font-size:.72rem; letter-spacing:.03em;
+    font-family:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace; font-weight:600; font-size:.72rem; letter-spacing:.03em;
     padding:.22rem .5rem; border-radius:5px; flex:none;
   }
   .method.get{ color:var(--m-get); background:var(--m-get-bg); }
@@ -181,7 +181,7 @@
   .endpoint-head code.path{ font-size:.95rem; font-weight:500; }
   .endpoint-head .noauth{ font-size:.68rem; color:var(--text-faint); border:1px solid var(--border); padding:.15rem .45rem; border-radius:99px; }
   .endpoint > .desc{ color:var(--text-muted); font-size:.94rem; max-width:640px; margin-bottom:.3rem; }
-  .meta-line{ display:flex; gap:1rem; flex-wrap:wrap; font-size:.78rem; color:var(--text-faint); margin-bottom:1.3rem; font-family:'IBM Plex Mono'; }
+  .meta-line{ display:flex; gap:1rem; flex-wrap:wrap; font-size:.78rem; color:var(--text-faint); margin-bottom:1.3rem; font-family:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace; }
   .meta-line b{ color:var(--text-muted); font-weight:600; }
 
   .endpoint-grid{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,420px); gap:2.2rem; align-items:start; }
@@ -193,7 +193,7 @@
   .params{ width:100%; border-collapse:collapse; font-size:.85rem; }
   .params th{ text-align:left; font-size:.7rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-faint); padding:.4rem .55rem; border-bottom:1px solid var(--border-strong); }
   .params td{ padding:.55rem .55rem; border-bottom:1px solid var(--border); vertical-align:top; }
-  .params td.field{ font-family:'IBM Plex Mono'; font-size:.82rem; color:var(--text); white-space:nowrap; }
+  .params td.field{ font-family:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.82rem; color:var(--text); white-space:nowrap; }
   .params td.rule{ color:var(--text-muted); }
   .params .req{ color:var(--m-delete); font-size:.68rem; font-weight:600; margin-left:.35rem; }
   .params .opt{ color:var(--text-faint); font-size:.68rem; margin-left:.35rem; }
@@ -201,11 +201,12 @@
   .note{ background:var(--note-bg); border:1px solid var(--note-border); color:var(--note-text); border-radius:var(--radius); padding:.8rem .95rem; font-size:.85rem; margin:.9rem 0; }
   .note b{ display:block; font-size:.68rem; text-transform:uppercase; letter-spacing:.06em; margin-bottom:.3rem; opacity:.85; }
   .note code{ background:rgba(0,0,0,.08); padding:.05rem .3rem; border-radius:4px; }
-  :root[data-theme="dark"] .note code, @media (prefers-color-scheme:dark){ .note code{ background:rgba(255,255,255,.08); } }
+  :root[data-theme="dark"] .note code{ background:rgba(255,255,255,.08); }
+  @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .note code{ background:rgba(255,255,255,.08); } }
 
   .status-row{ display:flex; flex-wrap:wrap; gap:.4rem; margin-top:1rem; }
   .status-pill{
-    font-family:'IBM Plex Mono'; font-size:.72rem; padding:.22rem .55rem; border-radius:99px;
+    font-family:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.72rem; padding:.22rem .55rem; border-radius:99px;
     border:1px solid var(--border); color:var(--text-muted); background:var(--surface);
   }
   .status-pill.ok{ color:var(--m-post); border-color:var(--m-post-bg); background:var(--m-post-bg); }
@@ -222,16 +223,16 @@
     display:flex; align-items:center; justify-content:space-between;
     padding:.5rem .7rem; border-bottom:1px solid var(--code-border);
   }
-  .code-head span{ font-family:'IBM Plex Mono'; font-size:.7rem; color:var(--code-muted); letter-spacing:.03em; text-transform:uppercase; }
+  .code-head span{ font-family:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.7rem; color:var(--code-muted); letter-spacing:.03em; text-transform:uppercase; }
   .copy-btn{
     display:inline-flex; align-items:center; gap:.3rem; background:transparent; border:1px solid var(--code-border);
-    color:var(--code-muted); font-family:'IBM Plex Mono'; font-size:.68rem; padding:.25rem .5rem; border-radius:5px; cursor:pointer;
+    color:var(--code-muted); font-family:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.68rem; padding:.25rem .5rem; border-radius:5px; cursor:pointer;
   }
   .copy-btn:hover{ color:var(--code-text); border-color:var(--code-muted); }
   .copy-btn:focus-visible, a:focus-visible, .nav-link:focus-visible, input:focus-visible, .nav-toggle:focus-visible{
     outline:2px solid var(--accent); outline-offset:2px;
   }
-  pre{ margin:0; padding:.85rem .9rem; overflow-x:auto; font-family:'IBM Plex Mono'; font-size:.78rem; line-height:1.6; color:var(--code-text); }
+  pre{ margin:0; padding:.85rem .9rem; overflow-x:auto; font-family:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.78rem; line-height:1.6; color:var(--code-text); }
   pre::-webkit-scrollbar{ height:8px; } pre::-webkit-scrollbar-thumb{ background:var(--code-border); border-radius:8px; }
   .tok-key{ color:#8FD3FF; } .tok-str{ color:#B9E88F; } .tok-num{ color:#F0C674; } .tok-bool{ color:#F0A8D0; } .tok-null{ color:var(--code-muted); }
   .tok-verb{ color:#F0A83C; font-weight:600; } .tok-path{ color:#8FD3FF; } .tok-flag{ color:var(--code-muted); }
@@ -520,6 +521,7 @@
           <div class="endpoint-docs">
             <h4>Body</h4>
             <table class="params">
+              <tr><th>Field</th><th>Rules</th></tr>
               <tr><td class="field">username</td><td class="rule">string, 3&ndash;32 chars, <code>a-zA-Z0-9_.</code> only, unique</td></tr>
               <tr><td class="field">avatar_url</td><td class="rule">nullable, url, max 2048</td></tr>
               <tr><td class="field">first_name / last_name / display_name</td><td class="rule">nullable, string, max 100</td></tr>
@@ -577,11 +579,13 @@
           <div class="endpoint-docs">
             <h4>Query</h4>
             <table class="params">
+              <tr><th>Field</th><th>Rules</th></tr>
               <tr><td class="field">search</td><td class="rule">optional, string, max 100 &mdash; matches name or tagline</td></tr>
               <tr><td class="field">per_page / cursor</td><td class="rule">pagination, see above</td></tr>
             </table>
             <h4>Fields</h4>
             <table class="params">
+              <tr><th>Field</th><th>Values</th></tr>
               <tr><td class="field">intensity</td><td class="rule"><code>chill</code> &middot; <code>medium</code> &middot; <code>wild</code></td></tr>
               <tr><td class="field">cost</td><td class="rule">integer, tokens (not currency)</td></tr>
             </table>
@@ -653,6 +657,7 @@
           <div class="endpoint-docs">
             <h4>Query</h4>
             <table class="params">
+              <tr><th>Field</th><th>Rules</th></tr>
               <tr><td class="field">category</td><td class="rule">optional &mdash; <code>spicy</code> &middot; <code>couples</code> &middot; <code>family</code> &middot; <code>corporate</code> &middot; <code>limited</code></td></tr>
               <tr><td class="field">game_type_id</td><td class="rule">optional, integer, must exist</td></tr>
               <tr><td class="field">search</td><td class="rule">optional, string, max 100</td></tr>
@@ -761,7 +766,7 @@
         <div class="endpoint-grid">
           <div class="endpoint-docs">
             <h4>Path</h4>
-            <table class="params"><tr><td class="field">id</td><td class="rule">integer, numeric route constraint</td></tr></table>
+            <table class="params"><tr><th>Field</th><th>Rules</th></tr><tr><td class="field">id</td><td class="rule">integer, numeric route constraint</td></tr></table>
             <div class="note"><b>preview_cards means two different things</b>If you own the pack, <code>preview_cards</code> silently contains the <i>full</i> card set instead of just the preview-flagged ones &mdash; same JSON key either way. Check <code>owned_by_me</code> to know which you got; the response shape alone doesn't tell you.</div>
             <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">404 not found or inactive</span></div>
           </div>
@@ -813,7 +818,7 @@
         <div class="endpoint-grid">
           <div class="endpoint-docs">
             <h4>Headers</h4>
-            <table class="params"><tr><td class="field">Idempotency-Key<span class="req">required</span></td><td class="rule">any string, max 255 &mdash; missing header &rarr; 422</td></tr></table>
+            <table class="params"><tr><th>Header</th><th>Rules</th></tr><tr><td class="field">Idempotency-Key<span class="req">required</span></td><td class="rule">any string, max 255 &mdash; missing header &rarr; 422</td></tr></table>
             <div class="note"><b>Idempotency-Key is mandatory</b>There is no non-idempotent fallback. Generate a UUID per purchase attempt and resend the <i>same</i> key on retry so a flaky connection can't double-charge the player.</div>
             <h4>Business rules</h4>
             <ul style="color:var(--text-muted); font-size:.9rem; padding-left:1.1rem; margin:.3rem 0;">
@@ -929,7 +934,7 @@
         <div class="endpoint-grid">
           <div class="endpoint-docs">
             <h4>Headers</h4>
-            <table class="params"><tr><td class="field">Idempotency-Key<span class="req">required</span></td><td class="rule">same mechanism as pack purchase</td></tr></table>
+            <table class="params"><tr><th>Header</th><th>Rules</th></tr><tr><td class="field">Idempotency-Key<span class="req">required</span></td><td class="rule">same mechanism as pack purchase</td></tr></table>
             <h4>Business rules</h4>
             <ul style="color:var(--text-muted); font-size:.9rem; padding-left:1.1rem; margin:.3rem 0;">
               <li>Routes through a payment provider (currently a manual/test driver &mdash; no live gateway yet).</li>
@@ -1012,6 +1017,7 @@
           <div class="endpoint-docs">
             <h4>Fields</h4>
             <table class="params">
+              <tr><th>Field</th><th>Values</th></tr>
               <tr><td class="field">type</td><td class="rule"><code>top_up</code> &middot; <code>purchase</code> &middot; <code>refund</code> &middot; <code>bonus</code> &middot; <code>adjustment</code> &middot; <code>reward</code></td></tr>
               <tr><td class="field">amount</td><td class="rule">signed integer &mdash; negative for debits, positive for credits</td></tr>
             </table>
@@ -1051,6 +1057,7 @@
           <div class="endpoint-docs">
             <h4>Query</h4>
             <table class="params">
+              <tr><th>Field</th><th>Rules</th></tr>
               <tr><td class="field">mode</td><td class="rule">optional &mdash; <code>online</code> &middot; <code>hybrid</code> &middot; <code>in_person</code></td></tr>
               <tr><td class="field">game_type_id</td><td class="rule">optional, integer, must exist</td></tr>
               <tr><td class="field">search</td><td class="rule">optional &mdash; matches title or host username</td></tr>
@@ -1082,6 +1089,7 @@
           <div class="endpoint-docs">
             <h4>Body</h4>
             <table class="params">
+              <tr><th>Field</th><th>Rules</th></tr>
               <tr><td class="field">title<span class="req">required</span></td><td class="rule">string, max 100</td></tr>
               <tr><td class="field">description</td><td class="rule">nullable, string, max 1000</td></tr>
               <tr><td class="field">game_type_id / pack_id</td><td class="rule">nullable, integer, must exist</td></tr>
@@ -1255,6 +1263,7 @@
           <div class="endpoint-docs">
             <h4>Fails when</h4>
             <table class="params">
+              <tr><th>Condition</th><th>Status</th></tr>
               <tr><td class="field">status not scheduled/live</td><td class="rule">422</td></tr>
               <tr><td class="field">players_count &ge; max_players</td><td class="rule">409 full</td></tr>
             </table>
@@ -1313,7 +1322,7 @@
         <div class="endpoint-grid">
           <div class="endpoint-docs">
             <h4>Body</h4>
-            <table class="params"><tr><td class="field">rounds</td><td class="rule">nullable, integer, one of <code>5, 10, 15, 20</code> &mdash; defaults to 10</td></tr></table>
+            <table class="params"><tr><th>Field</th><th>Rules</th></tr><tr><td class="field">rounds</td><td class="rule">nullable, integer, one of <code>5, 10, 15, 20</code> &mdash; defaults to 10</td></tr></table>
             <h4>Fails when</h4>
             <ul style="color:var(--text-muted); font-size:.9rem; padding-left:1.1rem; margin:.3rem 0;">
               <li>Party isn't <code>live</code> &rarr; 422.</li>
@@ -1404,6 +1413,7 @@
           <div class="endpoint-docs">
             <h4>Body</h4>
             <table class="params">
+              <tr><th>Field</th><th>Rules</th></tr>
               <tr><td class="field">token<span class="req">required</span></td><td class="rule">string, max 255</td></tr>
               <tr><td class="field">platform<span class="req">required</span></td><td class="rule"><code>ios</code> &middot; <code>android</code></td></tr>
             </table>
@@ -1475,7 +1485,7 @@
         <div class="meta-line"><span><b>Rate limit</b> api</span></div>
         <div class="endpoint-grid">
           <div class="endpoint-docs">
-            <table class="params"><tr><td class="field">notification_id<span class="req">required</span></td><td class="rule">integer</td></tr></table>
+            <table class="params"><tr><th>Field</th><th>Rules</th></tr><tr><td class="field">notification_id<span class="req">required</span></td><td class="rule">integer</td></tr></table>
             <p>Scoped to the caller &mdash; another user's notification 404s rather than 403ing (doesn't leak existence). Marking an already-read one is a no-op, still 200.</p>
             <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">404 not yours</span><span class="status-pill err">422</span></div>
           </div>
@@ -1571,7 +1581,7 @@
         <div class="meta-line"><span><b>Rate limit</b> friend-requests (20/min)</span></div>
         <div class="endpoint-grid">
           <div class="endpoint-docs">
-            <table class="params"><tr><td class="field">receiver_id<span class="req">required</span></td><td class="rule">integer, must exist, can't be your own id (custom message: "You cannot send a friend request to yourself.")</td></tr></table>
+            <table class="params"><tr><th>Field</th><th>Rules</th></tr><tr><td class="field">receiver_id<span class="req">required</span></td><td class="rule">integer, must exist, can't be your own id (custom message: "You cannot send a friend request to yourself.")</td></tr></table>
             <div class="status-row"><span class="status-pill ok">201 Created</span><span class="status-pill err">401</span><span class="status-pill err">409 already friends / duplicate request</span><span class="status-pill err">422</span><span class="status-pill err">429</span></div>
           </div>
           <div class="endpoint-code"><div class="code-block"><div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
