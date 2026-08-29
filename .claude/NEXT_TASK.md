@@ -1,6 +1,6 @@
 # Current Task
 
-None confirmed. In-app notifications — the recommendation this file previously carried — has shipped (see `.claude/CURRENT_PHASE.md`'s Current Sprint section: `notifications` table, `InAppChannel`, all 10 `*Notification` classes updated, `GET /notifications`/`PATCH /notifications/read`/`PATCH /notifications/read-all`). Sprint 14 was the last numbered sprint in the 14-sprint plan in `docs/implementation/IMPLEMENTATION_ORDER.md`; there is no Sprint 15 defined, and nothing below is confirmed as the next pick.
+None confirmed. Reward granting on game completion — the recommendation this file previously carried — has shipped in flat-amount form (see `.claude/CURRENT_PHASE.md`'s Current Sprint section: `WalletTransactionType::Reward`, `GrantGameCompletionReward` listener, 25 tokens to every player who took a turn, off `GameCompleted` only). The full documented Reward/Scoring/Achievement Engine (voting, MVP, creativity, daily streaks, sponsors, combo multipliers) is still unbuilt — that's a separate, much larger candidate, not this task. Sprint 14 was the last numbered sprint in the 14-sprint plan in `docs/implementation/IMPLEMENTATION_ORDER.md`; there is no Sprint 15 defined, and nothing below is confirmed as the next pick.
 
 # Why There's No Task Here
 
@@ -10,7 +10,7 @@ None confirmed. In-app notifications — the recommendation this file previously
 
 Unscheduled items carried over from `docs/implementation/CURRENT_PHASE.md`'s "Outstanding, unscheduled" list, roughly in order of how self-contained they are. Each was checked directly against the relevant `docs/architecture/` file, not assumed from the earlier July audit:
 
-- **Reward granting on round/game completion** — checked against `08_GAME_ENGINE.md`'s "Reward Engine"/"Scoring Engine" sections: a full reward/scoring/achievement subsystem (voting, MVP, creativity, daily streaks, XP, badges, combo multipliers), not a small add-on. Amount/trigger/recipients are genuinely undecided business scope; explicitly descoped from Sprint 7.
+- **Reward Engine beyond the flat game-completion grant** — checked against `08_GAME_ENGINE.md`'s "Reward Engine"/"Scoring Engine"/"Achievement Engine" sections: voting, MVP, creativity, daily streaks, XP, badges, combo multipliers, leaderboards, sponsor rewards — none of that infrastructure exists (no voting engine, no XP/badge/streak columns anywhere). A full subsystem, not a small add-on; still needs its own scoping pass.
 - **A real Firebase project per environment** — blocked on the user providing credentials, not a coding task (same reason it's been unscheduled since Sprint 9).
 - **`notification_preferences`** (per-channel opt-in/opt-out) — named in `38_DATABASE_SCHEMA_REFERENCE.md` with no column spec given (a "future" placeholder, like doc 14's "Future: Email/SES" note); undefined enough to need its own scoping pass before it can be built.
 - **In-panel admin password management** — checked against `16_ADMIN_PANEL_ARCHITECTURE.md`: appears only as one bullet in a security-requirements checklist ("Strong Password Policy," alongside MFA/session timeout/IP logging), not a specified feature. Sprint 11 set passwords via `tinker`/seeder only; thin doc grounding for anything beyond that.
