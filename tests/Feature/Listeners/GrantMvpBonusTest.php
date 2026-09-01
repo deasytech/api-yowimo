@@ -34,17 +34,32 @@ function makeLivePartyForMvpBonus(int $memberCount): array
     return [$host, $party->fresh(), $members->pluck('user_id')];
 }
 
-it('pushes the MVP-bonus listener onto the queue when GameCompleted fires', function () {
+it('pushes the MVP-bonus listener onto the queue when GameCompleted fires, but only after the final turn\'s Challenge Completed XP already landed', function () {
     [$host, $party] = makeLivePartyForMvpBonus(1);
 
     $service = app(GameSessionService::class);
     $session = $service->start($host, $party, 1);
+    $lastTurnId = $session->currentTurn()->id;
 
     Queue::fake();
 
+    // Single member, single round: this one nextTurn() call completes the
+    // only (and therefore last) turn, which also completes the game.
     $service->nextTurn($session);
 
     Queue::assertPushed(CallQueuedListener::class, fn ($job) => $job->class === GrantMvpBonus::class);
+
+    // GrantMvpBonus's job is only *queued* here, not yet run (Queue::fake()
+    // never executes it) — proving this row already exists is what proves
+    // GrantChallengeCompletionXp (deliberately not ShouldQueue) already ran
+    // and committed before GameCompleted, and therefore GrantMvpBonus's job,
+    // was even dispatched. If GrantChallengeCompletionXp ever became
+    // ShouldQueue again, this assertion would fail: Queue::fake() would
+    // intercept it too, and this row wouldn't exist yet.
+    expect(XpTransaction::where('reference_type', Turn::class)
+        ->where('reference_id', $lastTurnId)
+        ->where('type', XpTransactionType::ChallengeCompleted)
+        ->exists())->toBeTrue();
 });
 
 it('awards the MVP bonus to every player tied for the highest XP when nobody voted', function () {

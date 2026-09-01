@@ -2,6 +2,7 @@
 
 namespace App\Services\Game;
 
+use App\Enums\GameSessionStatus;
 use App\Enums\VoteCategory;
 use App\Enums\XpTransactionType;
 use App\Events\VoteCast;
@@ -41,13 +42,21 @@ class VoteService
     /**
      * Cast a vote on a completed turn, crediting XP to the turn's player.
      *
-     * @throws VotingNotAllowedException if the turn hasn't completed, or was AFK-skipped.
+     * @throws VotingNotAllowedException if the turn hasn't completed, was AFK-skipped, or the game has already ended.
      * @throws DuplicateVoteException if the voter already cast this category of vote on this turn.
      */
     public function cast(User $voter, Turn $turn, VoteCategory $category): Vote
     {
         if ($turn->completed_at === null || $turn->is_afk) {
             throw new VotingNotAllowedException;
+        }
+
+        // Once the game has ended, GrantMvpBonus has already snapshotted final
+        // standings; a vote afterward would credit XP that can never be
+        // reflected in the MVP determination, so it's rejected rather than
+        // silently accepted.
+        if ($turn->gameSession->status !== GameSessionStatus::Running) {
+            throw new VotingNotAllowedException('Voting is not allowed after the game has ended.');
         }
 
         return DB::transaction(function () use ($voter, $turn, $category) {

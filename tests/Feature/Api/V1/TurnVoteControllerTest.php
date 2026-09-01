@@ -169,6 +169,43 @@ it('forbids a non-party-member from voting', function () {
         ->assertStatus(403);
 });
 
+it('rejects voting on a turn after the game has already completed', function () {
+    [$host, $hostToken] = provisionVoteTestUser($this, $this->clerkToken(['sub' => 'user_vote_host_ended']), 'user_vote_host_ended');
+    [$voter] = provisionVoteTestUser($this, $this->clerkToken(['sub' => 'user_vote_voter_ended']), 'user_vote_voter_ended');
+    $party = makePartyForVoteTest($host, $voter);
+
+    $this->app->make('auth')->forgetGuards();
+    // The minimum allowed rounds count (5) with 2 members means 10 turns
+    // total; ten next-turn calls complete the whole game.
+    $start = $this->withHeader('Authorization', "Bearer {$hostToken}")
+        ->postJson("/api/v1/parties/{$party->id}/game/start", ['rounds' => 5])
+        ->assertStatus(200);
+
+    $sessionId = $start->json('data.id');
+    $turnId = $start->json('data.current_turn.id');
+    $turnOwnerId = $start->json('data.current_turn.user_id');
+
+    for ($i = 0; $i < 9; $i++) {
+        $this->withHeader('Authorization', "Bearer {$hostToken}")
+            ->postJson("/api/v1/game/{$sessionId}/next-turn")
+            ->assertStatus(200);
+    }
+
+    $this->withHeader('Authorization', "Bearer {$hostToken}")
+        ->postJson("/api/v1/game/{$sessionId}/next-turn")
+        ->assertStatus(200)
+        ->assertJsonPath('data.status', 'completed');
+
+    $voterToken = $turnOwnerId === $host->id
+        ? $this->clerkToken(['sub' => 'user_vote_voter_ended'])
+        : $hostToken;
+    $this->app->make('auth')->forgetGuards();
+
+    $this->withHeader('Authorization', "Bearer {$voterToken}")
+        ->postJson(voteEndpoint($sessionId, $turnId), ['category' => 'winner'])
+        ->assertStatus(422);
+});
+
 it('rejects voting on a turn that has not completed yet', function () {
     [$host, $hostToken] = provisionVoteTestUser($this, $this->clerkToken(['sub' => 'user_vote_host_incomplete']), 'user_vote_host_incomplete');
     [$voter] = provisionVoteTestUser($this, $this->clerkToken(['sub' => 'user_vote_voter_incomplete']), 'user_vote_voter_incomplete');

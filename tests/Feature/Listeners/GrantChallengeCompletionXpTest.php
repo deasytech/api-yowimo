@@ -31,17 +31,23 @@ function makeLivePartyForChallengeXp(int $memberCount): array
     return [$host, $party->fresh()];
 }
 
-it('pushes the challenge-completion XP listener onto the queue when TurnCompleted fires', function () {
+it('runs synchronously (not queued) when TurnCompleted fires, so GameCompleted can never race it', function () {
     [$host, $party] = makeLivePartyForChallengeXp(2);
 
     $service = app(GameSessionService::class);
     $session = $service->start($host, $party, 1);
+    $turnOwnerId = $session->currentTurn()->user_id;
 
     Queue::fake();
 
     $service->nextTurn($session);
 
-    Queue::assertPushed(CallQueuedListener::class, fn ($job) => $job->class === GrantChallengeCompletionXp::class);
+    // The listener itself was never queued: the credit already landed
+    // inline, before nextTurn() even returned. (TurnCompleted's own
+    // broadcast still queues a separate BroadcastEvent job — that's
+    // unrelated and expected.)
+    Queue::assertNotPushed(CallQueuedListener::class, fn ($job) => $job->class === GrantChallengeCompletionXp::class);
+    expect(User::find($turnOwnerId)->xp)->toBe(50);
 });
 
 it('credits 50 XP to the turn player when their turn completes normally', function () {

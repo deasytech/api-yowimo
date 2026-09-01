@@ -24,8 +24,12 @@ class GrantMvpBonus implements ShouldQueue
             return;
         }
 
+        // Excludes any prior MvpBonus rows so a queue redelivery of this same
+        // listener recomputes standings from merit alone, not from a total
+        // already inflated by a bonus it granted last time.
         $totals = XpTransaction::query()
             ->where('game_session_id', $gameSession->id)
+            ->where('type', '!=', XpTransactionType::MvpBonus)
             ->selectRaw('user_id, SUM(amount) as total')
             ->groupBy('user_id')
             ->pluck('total', 'user_id');

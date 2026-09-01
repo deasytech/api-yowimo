@@ -6,9 +6,18 @@ use App\Enums\XpTransactionType;
 use App\Events\TurnCompleted;
 use App\Models\Turn;
 use App\Services\Game\XpService;
-use Illuminate\Contracts\Queue\ShouldQueue;
 
-class GrantChallengeCompletionXp implements ShouldQueue
+/**
+ * Deliberately not ShouldQueue: TurnCompleted and GameCompleted are both
+ * ShouldDispatchAfterCommit, dispatched in that order from the same
+ * GameSessionService::advance() call. Running this listener inline guarantees
+ * every turn's Challenge Completed XP is committed before GameCompleted (and
+ * therefore GrantMvpBonus, which reads the same ledger) can even be
+ * dispatched — with maxProcesses > 1 on Horizon's default queue (see
+ * config/horizon.php), a queued version of this listener could race a
+ * concurrently-running GrantMvpBonus and lose.
+ */
+class GrantChallengeCompletionXp
 {
     private const XP_AMOUNT = 50;
 
