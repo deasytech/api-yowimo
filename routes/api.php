@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\V1\PartyMembershipController;
 use App\Http\Controllers\Api\V1\PushTokenController;
 use App\Http\Controllers\Api\V1\TokenBundleController;
 use App\Http\Controllers\Api\V1\TokenBundlePurchaseController;
+use App\Http\Controllers\Api\V1\TurnVoteController;
 use App\Http\Controllers\Api\V1\WalletController;
 use Illuminate\Support\Facades\Route;
 
@@ -47,6 +48,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/parties/{party}/end', [PartyMembershipController::class, 'end'])->middleware('throttle:party-actions');
         Route::post('/parties/{party}/game/start', [GameSessionController::class, 'start'])->middleware('throttle:party-actions');
         Route::post('/game/{gameSession}/next-turn', [GameSessionController::class, 'nextTurn'])->middleware('throttle:party-actions');
+        Route::post('/game/{gameSession}/turns/{turn}/vote', [TurnVoteController::class, 'store'])->middleware('throttle:party-actions');
 
         Route::post('/push-tokens', [PushTokenController::class, 'store'])->middleware('throttle:push-tokens');
         Route::delete('/push-tokens', [PushTokenController::class, 'destroy'])->middleware('throttle:push-tokens');

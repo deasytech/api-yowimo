@@ -2,6 +2,7 @@
 
 use App\Exceptions\Api\AlreadyFriendsException;
 use App\Exceptions\Api\DuplicateFriendRequestException;
+use App\Exceptions\Api\DuplicateVoteException;
 use App\Exceptions\Api\IdempotencyKeyConflictException;
 use App\Exceptions\Api\InsufficientWalletBalanceException;
 use App\Exceptions\Api\InvalidClerkTokenException;
@@ -13,6 +14,7 @@ use App\Exceptions\Api\PartyFullException;
 use App\Exceptions\Api\PartyHostCannotLeaveException;
 use App\Exceptions\Api\PartyNotJoinableException;
 use App\Exceptions\Api\PaymentDeclinedException;
+use App\Exceptions\Api\VotingNotAllowedException;
 use App\Support\ApiExceptionRegistrar;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -60,6 +62,8 @@ return Application::configure(basePath: dirname(__DIR__))
             DuplicateFriendRequestException::class,
             AlreadyFriendsException::class,
             InvalidFriendshipTransitionException::class,
+            DuplicateVoteException::class,
+            VotingNotAllowedException::class,
         ]);
 
         ApiExceptionRegistrar::register($exceptions);

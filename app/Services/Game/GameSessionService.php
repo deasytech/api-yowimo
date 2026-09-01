@@ -7,6 +7,7 @@ use App\Enums\PackCardKind;
 use App\Enums\PartyStatus;
 use App\Events\GameCompleted;
 use App\Events\RoundCompleted;
+use App\Events\TurnCompleted;
 use App\Events\TurnStarted;
 use App\Exceptions\Api\GameSessionAlreadyActiveException;
 use App\Exceptions\Api\GameSessionNotActiveException;
@@ -103,6 +104,7 @@ class GameSessionService
 
             $turn = $session->currentTurn();
             $turn->update(['completed_at' => now()]);
+            TurnCompleted::dispatch($session->id, $turn->round_id, $turn->id, $turn->user_id, false);
 
             return $this->advance($session);
         });
@@ -136,6 +138,7 @@ class GameSessionService
             }
 
             $turn->update(['completed_at' => now(), 'is_afk' => true]);
+            TurnCompleted::dispatch($session->id, $turn->round_id, $turn->id, $turn->user_id, true);
 
             return $this->advance($session);
         });

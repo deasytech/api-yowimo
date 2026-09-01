@@ -1,11 +1,22 @@
 # Current Phase — Yowimo Backend
 
-**Assessed:** 2026-08-28, against `dev` after the "in-app notifications" work landed, by direct code inspection.
+**Assessed:** 2026-09-01, against `dev` after the "Voting Engine + XP scoring" work landed, by direct code inspection.
 **Basis:** `docs/audit/*`, `docs/implementation/IMPLEMENTATION_ORDER.md`, `.claude/PROJECT_CONTEXT.md`.
 
 ---
 
 ## Current Sprint
+
+**Post-Sprint-14 — Voting Engine + XP scoring (Reward Engine, Phase 1)** (unscheduled item from `.claude/NEXT_TASK.md`'s "Reward Engine beyond the flat game-completion grant" candidate — scoped down to a confirmed first slice, not the full engine; voting-after-each-turn confirmed with the user up front, the same way each prior sprint's scope was confirmed), **done.** Adds one new route (`POST /game/{gameSession}/turns/{turn}/vote`); no existing route, request/response shape, or business logic changed except one additive field (`xp`) on `UserResource`.
+
+- ✅ New `App\Events\TurnCompleted` (mirrors `RoundCompleted`'s shape exactly), dispatched from `GameSessionService::nextTurn()`/`skipAfkTurn()` right after a turn's `completed_at` is set — the signal a turn just finished and voting is open, and the trigger for the "Challenge Completed" XP grant.
+- ✅ `votes` table + `App\Models\Vote` (append-only, `unique(turn_id, voter_id, category)` at the DB layer) — any party member other than the turn's own player (`App\Policies\TurnPolicy::vote`) can cast one `winner`/`funny`/`creativity` vote per category per completed, non-AFK turn.
+- ✅ XP ledger mirroring the `Wallet`/`WalletTransaction`/`WalletService` pattern exactly (minus debit — XP is credit-only, nothing spends it yet): `users.xp` cached column, append-only `xp_transactions` table, `App\Services\Game\XpService::credit()`.
+- ✅ Point values taken directly from `docs/architecture/08_GAME_ENGINE.md`'s Scoring Engine example: Winner vote +25, Funny vote +15, Creativity vote +20 (`App\Services\Game\VoteService::cast()`), Challenge Completed +50 (`App\Listeners\GrantChallengeCompletionXp`, off `TurnCompleted`, skipped for AFK-skipped turns), MVP bonus +100 (`App\Listeners\GrantMvpBonus`, off `GameCompleted`, awarded to every player tied for the highest XP earned in that game — an explicit tie-break choice, since Challenge Completed alone makes ties common).
+- ✅ `App\Events\VoteCast` broadcasts on the existing `game-session.{id}` channel (already authorized for party members in `routes/channels.php`, no channel-auth changes needed).
+- Explicitly out of scope per the user's Phase-1 answer: Badges/Achievements, Daily Streaks, Combo multipliers (the doc marks this "(Future)" itself), sponsor/advertisement rewards, leaderboard endpoints — still unscheduled.
+- ✅ Tests: `TurnVoteControllerTest` (auth, self-vote-forbidden, non-member-forbidden, not-yet-completed-422, duplicate-vote-409, invalid-category-422, success + XP assertion), `GrantChallengeCompletionXpTest`, `GrantMvpBonusTest` (queued-assertion + real-run pattern, mirroring `GrantGameCompletionRewardTest`, including a tie case and a votes-differentiate-the-winner case).
+- ✅ Full suite (291 tests) and Pint both pass with no regressions.
 
 **Post-Sprint-14 — In-app notifications** (recommendation written up in `.claude/NEXT_TASK.md` after re-running the dependency analysis against `docs/architecture/00`–`60` directly, confirmed by the user, then implemented), **done.** Adds three new routes (`GET /notifications`, `PATCH /notifications/read`, `PATCH /notifications/read-all`); no existing route, request/response shape, or business logic changed — everything else here is new, additive scope only.
 
