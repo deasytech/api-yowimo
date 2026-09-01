@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Exceptions\Api\AlreadyFriendsException;
 use App\Exceptions\Api\DuplicateFriendRequestException;
+use App\Exceptions\Api\DuplicateVoteException;
 use App\Exceptions\Api\GameSessionAlreadyActiveException;
 use App\Exceptions\Api\GameSessionNotActiveException;
 use App\Exceptions\Api\GameSessionPackUnavailableException;
@@ -18,6 +19,7 @@ use App\Exceptions\Api\PartyFullException;
 use App\Exceptions\Api\PartyHostCannotLeaveException;
 use App\Exceptions\Api\PartyNotJoinableException;
 use App\Exceptions\Api\PaymentDeclinedException;
+use App\Exceptions\Api\VotingNotAllowedException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -175,6 +177,24 @@ class ApiExceptionRegistrar
             $exceptions,
             GameSessionPackUnavailableException::class,
             fn (GameSessionPackUnavailableException $e) => ApiResponse::error(
+                $e->getMessage(),
+                status: 422
+            )
+        );
+
+        self::registerHandler(
+            $exceptions,
+            DuplicateVoteException::class,
+            fn (DuplicateVoteException $e) => ApiResponse::error(
+                $e->getMessage(),
+                status: 409
+            )
+        );
+
+        self::registerHandler(
+            $exceptions,
+            VotingNotAllowedException::class,
+            fn (VotingNotAllowedException $e) => ApiResponse::error(
                 $e->getMessage(),
                 status: 422
             )

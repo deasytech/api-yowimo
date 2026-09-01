@@ -31,6 +31,7 @@ use Illuminate\Notifications\Notifiable;
     'status',
     'password',
     'is_admin',
+    'xp',
 ])]
 class User extends Authenticatable implements FilamentUser, HasName
 {
@@ -50,6 +51,7 @@ class User extends Authenticatable implements FilamentUser, HasName
             'status' => UserStatus::class,
             'password' => 'hashed',
             'is_admin' => 'boolean',
+            'xp' => 'integer',
         ];
     }
 
@@ -122,5 +124,13 @@ class User extends Authenticatable implements FilamentUser, HasName
     public function notifications(): HasMany
     {
         return $this->hasMany(Notification::class);
+    }
+
+    /**
+     * @return HasMany<XpTransaction, $this>
+     */
+    public function xpTransactions(): HasMany
+    {
+        return $this->hasMany(XpTransaction::class);
     }
 }

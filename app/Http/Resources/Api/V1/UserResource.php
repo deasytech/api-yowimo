@@ -28,6 +28,7 @@ class UserResource extends JsonResource
             'interests' => $this->interests ?? [],
             'privacy_settings' => $this->privacy_settings ?? [],
             'status' => $this->status->value,
+            'xp' => $this->xp,
             'last_seen_at' => $this->last_seen_at,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
