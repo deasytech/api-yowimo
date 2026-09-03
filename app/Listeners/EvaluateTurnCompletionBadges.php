@@ -39,7 +39,7 @@ class EvaluateTurnCompletionBadges implements ShouldQueue
             ->whereHas('packCard', fn ($query) => $query->where('kind', $turn->packCard->kind))
             ->count();
 
-        if ($completedCount !== self::KIND_THRESHOLD) {
+        if ($completedCount < self::KIND_THRESHOLD) {
             return;
         }
 

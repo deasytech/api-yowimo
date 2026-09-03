@@ -44,6 +44,6 @@ class BadgeController extends Controller
             UserBadgeResource::collection($earned),
             $earned,
             'Earned badges retrieved successfully.'
-        );
+        )->header('Cache-Control', 'no-store');
     }
 }

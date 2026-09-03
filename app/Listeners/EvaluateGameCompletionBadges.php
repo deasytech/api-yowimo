@@ -41,11 +41,11 @@ class EvaluateGameCompletionBadges implements ShouldQueue
                 ->distinct('game_session_id')
                 ->count('game_session_id');
 
-            if ($completedGameSessionCount === 1) {
+            if ($completedGameSessionCount >= 1) {
                 $this->badges->award($user, BadgeKey::FirstParty, $gameSession);
             }
 
-            if ($completedGameSessionCount === self::HUNDRED_PARTIES_THRESHOLD) {
+            if ($completedGameSessionCount >= self::HUNDRED_PARTIES_THRESHOLD) {
                 $this->badges->award($user, BadgeKey::HundredParties, $gameSession);
             }
 

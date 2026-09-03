@@ -35,7 +35,7 @@ class EvaluateFriendshipBadges implements ShouldQueue
                 ->where(fn ($query) => $query->where('sender_id', $userId)->orWhere('receiver_id', $userId))
                 ->count();
 
-            if ($acceptedCount === self::THRESHOLD) {
+            if ($acceptedCount >= self::THRESHOLD) {
                 $this->badges->award($user, BadgeKey::SocialButterfly, $friendship);
             }
         }

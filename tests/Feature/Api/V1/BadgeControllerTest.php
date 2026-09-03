@@ -58,4 +58,5 @@ it("lists only the authenticated user's earned badges, newest first", function (
     expect($response->json('data'))->toHaveCount(2);
     $response->assertJsonPath('data.0.badge.name', 'Party King');
     $response->assertJsonPath('data.1.badge.name', 'First Party');
+    expect($response->headers->get('Cache-Control'))->toContain('no-store');
 });
