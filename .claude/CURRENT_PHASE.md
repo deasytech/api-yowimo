@@ -1,11 +1,15 @@
 # Current Phase — Yowimo Backend
 
-**Assessed:** 2026-08-28, against `dev` after the "in-app notifications" work landed, by direct code inspection.
-**Basis:** `docs/audit/*`, `docs/implementation/IMPLEMENTATION_ORDER.md`, `.claude/PROJECT_CONTEXT.md`.
+**Assessed:** 2026-09-03, against `dev` after the "Badges & Achievements" work landed, by direct code inspection.
+**Basis:** `docs/audit/*`, `docs/implementation/IMPLEMENTATION_ORDER.md`, `.claude/PROJECT_CONTEXT.md`. This copy had fallen behind `docs/implementation/CURRENT_PHASE.md` (missing the Voting Engine + XP scoring and Badges & Achievements entries) — see that file for the full per-sprint detail; the summary below is condensed rather than duplicated in full.
 
 ---
 
 ## Current Sprint
+
+**Post-Sprint-14 — Badges & Achievements (Reward Engine, Phase 2)**, **done.** `badges`/`user_badges` tables, `Badge`/`UserBadge` models, `BadgeService`, `GET /badges`, `GET /users/me/badges`; seven badges (First Party, 100 Parties, Perfect Game, Party King, Truth Master, Dare Devil, Social Butterfly) awarded automatically off existing `GameCompleted`/`TurnCompleted`/`FriendRequestAccepted` events, delivered via a new `BadgeAwardedNotification` over the existing `FcmChannel`/`InAppChannel`. No existing route, request/response shape, or business logic changed. Daily streaks, combo multipliers, sponsor rewards, and leaderboards remain unscheduled. Full detail in `docs/implementation/CURRENT_PHASE.md`.
+
+**Post-Sprint-14 — Voting Engine + XP scoring (Reward Engine, Phase 1)**, **done.** `votes` table, `Vote`/`XpTransaction` models, `XpService`/`VoteService`, `POST /game/{gameSession}/turns/{turn}/vote`; Winner/Funny/Creativity vote XP, Challenge Completed XP, MVP bonus. Full detail in `docs/implementation/CURRENT_PHASE.md`.
 
 **Post-Sprint-14 — Reward granting on game completion** (unscheduled item from `.claude/NEXT_TASK.md`, picked up by user decision — scope confirmed with the user up front: game-completion trigger only, players who took a turn, flat 25-token amount, no wallet-transaction reference to keep the existing generic `WalletCredited` notification firing), **done.** No route, request/response shape, or existing business logic changed; the full documented Reward/Scoring/Achievement Engine (voting, MVP, creativity, daily streaks, combo multipliers) remains unbuilt and unscheduled — none of that infrastructure exists yet, so building it was out of scope for this pass.
 
