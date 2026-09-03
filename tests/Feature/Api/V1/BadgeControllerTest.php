@@ -8,6 +8,8 @@ use Tests\Support\FakesClerk;
 
 const API_V1_BADGES_ENDPOINT = '/api/v1/badges';
 const API_V1_MY_BADGES_ENDPOINT = '/api/v1/users/me/badges';
+const BADGE_NAME_FIRST_PARTY = 'First Party';
+const BADGE_NAME_PARTY_KING = 'Party King';
 
 uses(FakesClerk::class);
 
@@ -23,8 +25,8 @@ it('rejects requests with no bearer token', function () {
 it('lists the badge catalog', function () {
     $token = $this->clerkToken();
 
-    Badge::factory()->create(['key' => BadgeKey::FirstParty, 'name' => 'First Party']);
-    Badge::factory()->create(['key' => BadgeKey::PartyKing, 'name' => 'Party King']);
+    Badge::factory()->create(['key' => BadgeKey::FirstParty, 'name' => BADGE_NAME_FIRST_PARTY]);
+    Badge::factory()->create(['key' => BadgeKey::PartyKing, 'name' => BADGE_NAME_PARTY_KING]);
 
     $response = $this->withHeader('Authorization', "Bearer {$token}")
         ->getJson(API_V1_BADGES_ENDPOINT)
@@ -43,8 +45,8 @@ it("lists only the authenticated user's earned badges, newest first", function (
 
     $otherUser = User::factory()->create();
 
-    $firstBadge = Badge::factory()->create(['key' => BadgeKey::FirstParty, 'name' => 'First Party']);
-    $secondBadge = Badge::factory()->create(['key' => BadgeKey::PartyKing, 'name' => 'Party King']);
+    $firstBadge = Badge::factory()->create(['key' => BadgeKey::FirstParty, 'name' => BADGE_NAME_FIRST_PARTY]);
+    $secondBadge = Badge::factory()->create(['key' => BadgeKey::PartyKing, 'name' => BADGE_NAME_PARTY_KING]);
 
     UserBadge::create(['user_id' => $user->id, 'badge_id' => $firstBadge->id, 'earned_at' => now()->subDay()]);
     UserBadge::create(['user_id' => $user->id, 'badge_id' => $secondBadge->id, 'earned_at' => now()]);
@@ -56,7 +58,7 @@ it("lists only the authenticated user's earned badges, newest first", function (
         ->assertJson(['success' => true]);
 
     expect($response->json('data'))->toHaveCount(2);
-    $response->assertJsonPath('data.0.badge.name', 'Party King');
-    $response->assertJsonPath('data.1.badge.name', 'First Party');
+    $response->assertJsonPath('data.0.badge.name', BADGE_NAME_PARTY_KING);
+    $response->assertJsonPath('data.1.badge.name', BADGE_NAME_FIRST_PARTY);
     expect($response->headers->get('Cache-Control'))->toContain('no-store');
 });
