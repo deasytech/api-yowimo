@@ -1,16 +1,19 @@
 <?php
 
+use App\Enums\BadgeKey;
 use App\Enums\PackCardKind;
 use App\Enums\PartyStatus;
 use App\Enums\VoteCategory;
 use App\Enums\XpTransactionType;
 use App\Listeners\GrantMvpBonus;
+use App\Models\Badge;
 use App\Models\Pack;
 use App\Models\PackCard;
 use App\Models\Party;
 use App\Models\PartyMember;
 use App\Models\Turn;
 use App\Models\User;
+use App\Models\UserBadge;
 use App\Models\XpTransaction;
 use App\Services\Game\GameSessionService;
 use App\Services\Game\VoteService;
@@ -112,4 +115,17 @@ it('awards the MVP bonus only to the sole top scorer when votes differentiate pl
 
     expect($mvpTransaction)->not->toBeNull();
     expect($mvpTransaction->amount)->toBe(100);
+});
+
+it('awards the Party King badge to the MVP bonus recipient', function () {
+    Badge::factory()->create(['key' => BadgeKey::PartyKing]);
+
+    [$host, $party] = makeLivePartyForMvpBonus(1);
+
+    $service = app(GameSessionService::class);
+    $session = $service->start($host, $party, 1);
+    $service->nextTurn($session);
+
+    expect(UserBadge::whereHas('badge', fn ($q) => $q->where('key', BadgeKey::PartyKing))
+        ->where('user_id', $host->id)->exists())->toBeTrue();
 });
