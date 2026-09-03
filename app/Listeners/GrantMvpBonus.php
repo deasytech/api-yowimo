@@ -2,11 +2,13 @@
 
 namespace App\Listeners;
 
+use App\Enums\BadgeKey;
 use App\Enums\XpTransactionType;
 use App\Events\GameCompleted;
 use App\Models\GameSession;
 use App\Models\User;
 use App\Models\XpTransaction;
+use App\Services\Game\BadgeService;
 use App\Services\Game\XpService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
@@ -14,7 +16,10 @@ class GrantMvpBonus implements ShouldQueue
 {
     private const XP_AMOUNT = 100;
 
-    public function __construct(private readonly XpService $xp) {}
+    public function __construct(
+        private readonly XpService $xp,
+        private readonly BadgeService $badges,
+    ) {}
 
     public function handle(GameCompleted $event): void
     {
@@ -52,6 +57,8 @@ class GrantMvpBonus implements ShouldQueue
                 gameSessionId: $gameSession->id,
                 idempotencyKey: "mvp-bonus:{$gameSession->id}:{$user->id}",
             );
+
+            $this->badges->award($user, BadgeKey::PartyKing, $gameSession);
         }
     }
 }

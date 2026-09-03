@@ -133,4 +133,12 @@ class User extends Authenticatable implements FilamentUser, HasName
     {
         return $this->hasMany(XpTransaction::class);
     }
+
+    /**
+     * @return HasMany<UserBadge, $this>
+     */
+    public function badges(): HasMany
+    {
+        return $this->hasMany(UserBadge::class);
+    }
 }

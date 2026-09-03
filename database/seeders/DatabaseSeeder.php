@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
             GameTypeSeeder::class,
             PackSeeder::class,
             TokenBundleSeeder::class,
+            BadgeSeeder::class,
             PartySeeder::class,
         ]);
     }

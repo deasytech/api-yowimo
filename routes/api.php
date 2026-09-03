@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\BadgeController;
 use App\Http\Controllers\Api\V1\ClerkWebhookController;
 use App\Http\Controllers\Api\V1\FriendshipController;
 use App\Http\Controllers\Api\V1\GameSessionController;
@@ -36,6 +37,9 @@ Route::prefix('v1')->group(function () {
 
         Route::get('/wallet', [WalletController::class, 'show']);
         Route::get('/wallet/transactions', [WalletController::class, 'transactions']);
+
+        Route::get('/badges', [BadgeController::class, 'index']);
+        Route::get('/users/me/badges', [BadgeController::class, 'mine']);
 
         Route::get('/parties', [PartyController::class, 'index']);
         Route::post('/parties', [PartyController::class, 'store']);
