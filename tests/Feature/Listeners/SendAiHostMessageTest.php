@@ -3,6 +3,7 @@
 use App\Enums\PackCardKind;
 use App\Enums\PartyStatus;
 use App\Events\AiHostMessageSent;
+use App\Events\RoundCompleted;
 use App\Listeners\SendAiHostMessage;
 use App\Models\Pack;
 use App\Models\PackCard;
@@ -54,14 +55,18 @@ it('broadcasts an AI host message into the game session channel when GameComplet
     $provider->shouldReceive('respond')->once()->andReturn('What a wrap-up, party people!');
     app()->instance(AIProvider::class, $provider);
 
-    Event::fake([AiHostMessageSent::class]);
+    // Completing the only turn of a 1-round game fires RoundCompleted and
+    // GameCompleted together (see GameSessionService::advance()); faking
+    // RoundCompleted keeps this test isolated to the GameCompleted listener
+    // rather than also running the new SendAiHostRoundMessage listener.
+    Event::fake([AiHostMessageSent::class, RoundCompleted::class]);
 
     $service->nextTurn($session);
 
     Event::assertDispatched(AiHostMessageSent::class, fn ($event) => $event->gameSessionId === $session->id && $event->message === 'What a wrap-up, party people!');
 });
 
-it('skips broadcasting when the AI provider fails', function () {
+it('does not broadcast when the AI provider fails, and lets the failure surface for retry', function () {
     [$host, $party] = createLiveSoloGameSessionForAiHost();
 
     $service = app(GameSessionService::class);
@@ -71,9 +76,23 @@ it('skips broadcasting when the AI provider fails', function () {
     $provider->shouldReceive('respond')->once()->andThrow(new RuntimeException('OpenAI is down'));
     app()->instance(AIProvider::class, $provider);
 
-    Event::fake([AiHostMessageSent::class]);
+    Event::fake([AiHostMessageSent::class, RoundCompleted::class]);
 
-    $service->nextTurn($session);
+    // On the `sync` queue driver used in tests, a listener that throws has
+    // no separate worker to retry it later — the exception surfaces
+    // immediately to the caller (after SyncQueue::handleException() has
+    // already invoked failed()). With a real queue connection, tries()/
+    // backoff() below govern the retry instead, and the completing
+    // player's request is never affected either way, since dispatching a
+    // queued listener doesn't wait for it to run.
+    expect(fn () => $service->nextTurn($session))->toThrow(RuntimeException::class, 'OpenAI is down');
 
     Event::assertNotDispatched(AiHostMessageSent::class);
+});
+
+it('retries up to 4 times with 5s/15s/30s backoff before giving up', function () {
+    $listener = app(SendAiHostMessage::class);
+
+    expect($listener->tries())->toBe(4);
+    expect($listener->backoff())->toBe([5, 15, 30]);
 });

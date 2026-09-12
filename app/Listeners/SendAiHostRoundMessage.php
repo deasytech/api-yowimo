@@ -3,18 +3,18 @@
 namespace App\Listeners;
 
 use App\Events\AiHostMessageSent;
-use App\Events\GameCompleted;
+use App\Events\RoundCompleted;
 use App\Models\GameSession;
 use App\Services\AI\AIProvider;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
-class SendAiHostMessage implements ShouldQueue
+class SendAiHostRoundMessage implements ShouldQueue
 {
     public function __construct(private readonly AIProvider $provider) {}
 
-    public function handle(GameCompleted $event): void
+    public function handle(RoundCompleted $event): void
     {
         $session = GameSession::with(['party', 'pack'])->find($event->gameSessionId);
 
@@ -23,11 +23,12 @@ class SendAiHostMessage implements ShouldQueue
         }
 
         $prompt = sprintf(
-            'You are Yowi, the witty AI host of a party game app. The game "%s" just wrapped up in the party "%s" after %d round(s). '.
-            'Write one short, playful, upbeat reaction (max 2 sentences, no hashtags) congratulating the group.',
+            'You are Yowi, the witty AI host of a party game app. Round %d of %d in the game "%s" just wrapped up in the party "%s". '.
+            'Write one short, playful, upbeat reaction (max 2 sentences, no hashtags) hyping up the group for the next round.',
+            $event->roundNumber,
+            $session->rounds_count,
             $session->pack?->name ?? 'the game',
             $session->party?->title ?? 'the party',
-            $session->rounds_count,
         );
 
         $message = $this->provider->respond($prompt);
@@ -59,10 +60,11 @@ class SendAiHostMessage implements ShouldQueue
         return [5, 15, 30];
     }
 
-    public function failed(GameCompleted $event, Throwable $exception): void
+    public function failed(RoundCompleted $event, Throwable $exception): void
     {
-        Log::warning('AI host message failed after retries, skipping.', [
+        Log::warning('AI host round message failed after retries, skipping.', [
             'game_session_id' => $event->gameSessionId,
+            'round_id' => $event->roundId,
             'error' => $exception->getMessage(),
         ]);
     }
