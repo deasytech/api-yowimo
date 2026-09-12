@@ -21,7 +21,7 @@ class DatabaseSeeder extends Seeder
             [
                 'username' => 'superadmin',
                 'display_name' => 'Super Admin',
-                'email' => 'superadmin@yowimo.com',
+                'email' => 'super@yowimo.com',
                 'status' => UserStatus::Active,
             ]
         );

@@ -1,0 +1,577 @@
+{
+  "info": {
+    "name": "Yowimo API",
+    "description": "Yowimo backend API (routes/api.php).\n\nAuth: every endpoint except `GET /health` and `POST /webhooks/clerk` requires a Bearer JWT verified against Clerk's JWKS (the `clerk` guard, see `AppServiceProvider::boot()` / `config/auth.php`). Set the `bearer_token` collection variable to a real Clerk session token (e.g. copy it from your frontend's signed-in session, or Clerk's dashboard for a test user) — there is no local/offline way to mint one outside the test suite's `FakesClerk` trait.\n\nMany requests carry a small test script that captures ids (party_id, game_session_id, turn_id, pack_id, token_bundle_id, friendship_id, notification_id, game_type_id) from the response into collection variables, so running requests top-to-bottom within a folder chains naturally (e.g. create a party -> start the game -> advance turns -> vote).\n\nRate limits (see `AppServiceProvider`): `purchases` 10/min, `friend-requests` 20/min, `party-actions` 30/min, `push-tokens` 10/min, all stacked on the global `api` limiter (60/min) — expect 429s if you replay a request rapidly.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{bearer_token}}", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://api-yowimo.test/api/v1", "type": "string" },
+    { "key": "bearer_token", "value": "", "type": "string" },
+    { "key": "party_id", "value": "", "type": "string" },
+    { "key": "pack_id", "value": "", "type": "string" },
+    { "key": "token_bundle_id", "value": "", "type": "string" },
+    { "key": "game_type_id", "value": "", "type": "string" },
+    { "key": "game_session_id", "value": "", "type": "string" },
+    { "key": "turn_id", "value": "", "type": "string" },
+    { "key": "friendship_id", "value": "", "type": "string" },
+    { "key": "notification_id", "value": "", "type": "string" },
+    { "key": "receiver_id", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Health & Webhooks",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/health", "host": ["{{base_url}}"], "path": ["health"] },
+            "auth": { "type": "noauth" },
+            "description": "Public. Checks DB/Redis/Queue/Broadcast(Reverb)."
+          }
+        },
+        {
+          "name": "Clerk webhook (svix)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "svix-id", "value": "msg_replace_me" },
+              { "key": "svix-timestamp", "value": "1700000000" },
+              { "key": "svix-signature", "value": "v1,replace_me" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"user.created\",\n  \"data\": {}\n}"
+            },
+            "url": { "raw": "{{base_url}}/webhooks/clerk", "host": ["{{base_url}}"], "path": ["webhooks", "clerk"] },
+            "auth": { "type": "noauth" },
+            "description": "Signature-verified via svix (App\\Http\\Controllers\\Api\\V1\\ClerkWebhookController). Real requests come from Clerk itself; the svix-* headers above are placeholders and will 401 unless replaced with a genuinely signed payload."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Me",
+      "item": [
+        {
+          "name": "Get my profile",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/users/me", "host": ["{{base_url}}"], "path": ["users", "me"] }
+          }
+        },
+        {
+          "name": "Update my profile",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"party_host_01\",\n  \"display_name\": \"Party Host\",\n  \"bio\": \"Here to host games.\",\n  \"country_code\": \"US\",\n  \"interests\": [\"party games\", \"trivia\"]\n}"
+            },
+            "url": { "raw": "{{base_url}}/users/me", "host": ["{{base_url}}"], "path": ["users", "me"] },
+            "description": "All fields are optional (`sometimes`). See UpdateProfileRequest for full validation rules (username regex, avatar_url, date_of_birth, privacy_settings, etc.)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Game Types",
+      "item": [
+        {
+          "name": "List game types",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data && body.data.length) { pm.collectionVariables.set('game_type_id', body.data[0].id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/game-types?per_page=20",
+              "host": ["{{base_url}}"],
+              "path": ["game-types"],
+              "query": [{ "key": "per_page", "value": "20" }, { "key": "search", "value": "", "disabled": true }, { "key": "cursor", "value": "", "disabled": true }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Packs",
+      "item": [
+        {
+          "name": "List packs",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data && body.data.length) { pm.collectionVariables.set('pack_id', body.data[0].id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/packs?per_page=20",
+              "host": ["{{base_url}}"],
+              "path": ["packs"],
+              "query": [
+                { "key": "per_page", "value": "20" },
+                { "key": "category", "value": "family", "disabled": true },
+                { "key": "game_type_id", "value": "{{game_type_id}}", "disabled": true },
+                { "key": "search", "value": "", "disabled": true },
+                { "key": "cursor", "value": "", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Featured packs",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/packs/featured", "host": ["{{base_url}}"], "path": ["packs", "featured"] }
+          }
+        },
+        {
+          "name": "Show pack",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/packs/{{pack_id}}", "host": ["{{base_url}}"], "path": ["packs", "{{pack_id}}"] },
+            "description": "Full (non-preview) cards are included only if you own the pack; otherwise preview cards only."
+          }
+        },
+        {
+          "name": "Purchase pack",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "{{$guid}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": { "raw": "{{base_url}}/packs/{{pack_id}}/purchase", "host": ["{{base_url}}"], "path": ["packs", "{{pack_id}}", "purchase"] },
+            "description": "Debits your wallet. Idempotency-Key header is required (PurchasePackRequest). Rate-limited: 10/min (`purchases`)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Token Bundles",
+      "item": [
+        {
+          "name": "List token bundles",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data && body.data.length) { pm.collectionVariables.set('token_bundle_id', body.data[0].id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/token-bundles?per_page=20",
+              "host": ["{{base_url}}"],
+              "path": ["token-bundles"],
+              "query": [{ "key": "per_page", "value": "20" }, { "key": "cursor", "value": "", "disabled": true }]
+            }
+          }
+        },
+        {
+          "name": "Purchase token bundle",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "{{$guid}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": { "raw": "{{base_url}}/token-bundles/{{token_bundle_id}}/purchase", "host": ["{{base_url}}"], "path": ["token-bundles", "{{token_bundle_id}}", "purchase"] },
+            "description": "Credits your wallet via the manual/test PaymentProvider. Idempotency-Key header required. Rate-limited: 10/min (`purchases`)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wallet",
+      "item": [
+        {
+          "name": "Get wallet",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/wallet", "host": ["{{base_url}}"], "path": ["wallet"] }
+          }
+        },
+        {
+          "name": "List wallet transactions",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/wallet/transactions?per_page=20",
+              "host": ["{{base_url}}"],
+              "path": ["wallet", "transactions"],
+              "query": [{ "key": "per_page", "value": "20" }, { "key": "cursor", "value": "", "disabled": true }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Badges",
+      "item": [
+        {
+          "name": "List all badges",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/badges?per_page=20",
+              "host": ["{{base_url}}"],
+              "path": ["badges"],
+              "query": [{ "key": "per_page", "value": "20" }, { "key": "cursor", "value": "", "disabled": true }]
+            }
+          }
+        },
+        {
+          "name": "My badges",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/users/me/badges?per_page=20",
+              "host": ["{{base_url}}"],
+              "path": ["users", "me", "badges"],
+              "query": [{ "key": "per_page", "value": "20" }, { "key": "cursor", "value": "", "disabled": true }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Parties",
+      "item": [
+        {
+          "name": "List parties",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/parties?per_page=20",
+              "host": ["{{base_url}}"],
+              "path": ["parties"],
+              "query": [
+                { "key": "per_page", "value": "20" },
+                { "key": "mode", "value": "online", "disabled": true },
+                { "key": "game_type_id", "value": "{{game_type_id}}", "disabled": true },
+                { "key": "search", "value": "", "disabled": true },
+                { "key": "cursor", "value": "", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create party",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data && body.data.id) { pm.collectionVariables.set('party_id', body.data.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Friday Night Party\",\n  \"description\": \"Truth or dare, online\",\n  \"game_type_id\": {{game_type_id}},\n  \"pack_id\": {{pack_id}},\n  \"mode\": \"online\",\n  \"visibility\": \"public\",\n  \"max_players\": 10,\n  \"tags\": [\"fun\", \"casual\"]\n}"
+            },
+            "url": { "raw": "{{base_url}}/parties", "host": ["{{base_url}}"], "path": ["parties"] },
+            "description": "`mode` (online|hybrid|in_person) and `visibility` (public|private) are required. `location` is required when mode is hybrid or in_person. See StorePartyRequest for full rules."
+          }
+        },
+        {
+          "name": "Show party",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/parties/{{party_id}}", "host": ["{{base_url}}"], "path": ["parties", "{{party_id}}"] }
+          }
+        },
+        {
+          "name": "Like party",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/parties/{{party_id}}/like", "host": ["{{base_url}}"], "path": ["parties", "{{party_id}}", "like"] },
+            "description": "Rate-limited: 30/min (`party-actions`)."
+          }
+        },
+        {
+          "name": "Unlike party",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/parties/{{party_id}}/like", "host": ["{{base_url}}"], "path": ["parties", "{{party_id}}", "like"] }
+          }
+        },
+        {
+          "name": "Join party",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/parties/{{party_id}}/join", "host": ["{{base_url}}"], "path": ["parties", "{{party_id}}", "join"] }
+          }
+        },
+        {
+          "name": "Leave party",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/parties/{{party_id}}/leave", "host": ["{{base_url}}"], "path": ["parties", "{{party_id}}", "leave"] }
+          }
+        },
+        {
+          "name": "Start party (host only)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/parties/{{party_id}}/start", "host": ["{{base_url}}"], "path": ["parties", "{{party_id}}", "start"] },
+            "description": "Marks the party live. This is party-lifecycle start, distinct from the game session start below."
+          }
+        },
+        {
+          "name": "End party (host only)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/parties/{{party_id}}/end", "host": ["{{base_url}}"], "path": ["parties", "{{party_id}}", "end"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Game Sessions",
+      "item": [
+        {
+          "name": "Start game (host only)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data && body.data.id) { pm.collectionVariables.set('game_session_id', body.data.id); }",
+                  "if (body.data && body.data.current_turn && body.data.current_turn.id) { pm.collectionVariables.set('turn_id', body.data.current_turn.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rounds\": 5\n}"
+            },
+            "url": { "raw": "{{base_url}}/parties/{{party_id}}/game/start", "host": ["{{base_url}}"], "path": ["parties", "{{party_id}}", "game", "start"] },
+            "description": "`rounds` must be one of GameSessionService::ALLOWED_ROUNDS_COUNTS (optional, defaults server-side if omitted). Party must be Live with the host present. Rate-limited: 30/min (`party-actions`)."
+          }
+        },
+        {
+          "name": "Advance to next turn (host only)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data && body.data.current_turn && body.data.current_turn.id) { pm.collectionVariables.set('turn_id', body.data.current_turn.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/game/{{game_session_id}}/next-turn", "host": ["{{base_url}}"], "path": ["game", "{{game_session_id}}", "next-turn"] },
+            "description": "Advances the turn/round; auto-completes the session on the last turn of the last round (fires GameCompleted/RoundCompleted). Rate-limited: 30/min (`party-actions`)."
+          }
+        },
+        {
+          "name": "Vote on a turn",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"winner\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/game/{{game_session_id}}/turns/{{turn_id}}/vote", "host": ["{{base_url}}"], "path": ["game", "{{game_session_id}}", "turns", "{{turn_id}}", "vote"] },
+            "description": "`category` must be one of: winner, funny, creativity. Voting is only allowed once the turn has completed (422 otherwise). Rate-limited: 30/min (`party-actions`)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Push Tokens",
+      "item": [
+        {
+          "name": "Register push token",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"sample-device-push-token\",\n  \"platform\": \"ios\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/push-tokens", "host": ["{{base_url}}"], "path": ["push-tokens"] },
+            "description": "`platform` is `ios` or `android`. One token per user; registering again replaces it. Rate-limited: 10/min (`push-tokens`)."
+          }
+        },
+        {
+          "name": "Remove push token",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/push-tokens", "host": ["{{base_url}}"], "path": ["push-tokens"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "List notifications",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data && body.data.length) { pm.collectionVariables.set('notification_id', body.data[0].id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/notifications?per_page=20",
+              "host": ["{{base_url}}"],
+              "path": ["notifications"],
+              "query": [{ "key": "per_page", "value": "20" }, { "key": "cursor", "value": "", "disabled": true }]
+            }
+          }
+        },
+        {
+          "name": "Mark one notification read",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notification_id\": {{notification_id}}\n}"
+            },
+            "url": { "raw": "{{base_url}}/notifications/read", "host": ["{{base_url}}"], "path": ["notifications", "read"] },
+            "description": "404s if the notification doesn't belong to you."
+          }
+        },
+        {
+          "name": "Mark all notifications read",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{base_url}}/notifications/read-all", "host": ["{{base_url}}"], "path": ["notifications", "read-all"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Friends",
+      "item": [
+        {
+          "name": "List friends",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/friends", "host": ["{{base_url}}"], "path": ["friends"] }
+          }
+        },
+        {
+          "name": "List pending friend requests",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/friend-requests", "host": ["{{base_url}}"], "path": ["friend-requests"] },
+            "description": "Both directions: requests you sent and requests you received."
+          }
+        },
+        {
+          "name": "Send friend request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data && body.data.id) { pm.collectionVariables.set('friendship_id', body.data.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiver_id\": {{receiver_id}}\n}"
+            },
+            "url": { "raw": "{{base_url}}/friend-requests", "host": ["{{base_url}}"], "path": ["friend-requests"] },
+            "description": "`receiver_id` must be an existing user id, and cannot be your own. Rate-limited: 20/min (`friend-requests`)."
+          }
+        },
+        {
+          "name": "Accept friend request",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/friend-requests/{{friendship_id}}/accept", "host": ["{{base_url}}"], "path": ["friend-requests", "{{friendship_id}}", "accept"] }
+          }
+        },
+        {
+          "name": "Reject friend request",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/friend-requests/{{friendship_id}}/reject", "host": ["{{base_url}}"], "path": ["friend-requests", "{{friendship_id}}", "reject"] }
+          }
+        },
+        {
+          "name": "Cancel friend request (sender)",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/friend-requests/{{friendship_id}}", "host": ["{{base_url}}"], "path": ["friend-requests", "{{friendship_id}}"] }
+          }
+        },
+        {
+          "name": "Unfriend",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/friends/{{friendship_id}}", "host": ["{{base_url}}"], "path": ["friends", "{{friendship_id}}"] },
+            "description": "Soft-deletes to a `removed` status rather than a hard delete."
+          }
+        }
+      ]
+    }
+  ]
+}

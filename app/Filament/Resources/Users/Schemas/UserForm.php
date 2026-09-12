@@ -7,7 +7,9 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 
 class UserForm
 {
@@ -15,32 +17,51 @@ class UserForm
     {
         return $schema
             ->components([
-                TextInput::make('username')
-                    ->maxLength(255)
-                    ->unique(ignoreRecord: true),
-                TextInput::make('email')
-                    ->email()
-                    ->maxLength(255)
-                    ->unique(ignoreRecord: true),
-                TextInput::make('first_name')
-                    ->maxLength(255),
-                TextInput::make('last_name')
-                    ->maxLength(255),
-                TextInput::make('display_name')
-                    ->maxLength(255),
-                Textarea::make('bio')
-                    ->columnSpanFull(),
-                TextInput::make('country_code')
-                    ->maxLength(2),
-                Select::make('status')
-                    ->options([
-                        UserStatus::Active->value => 'Active',
-                        UserStatus::Deactivated->value => 'Deactivated',
-                    ])
-                    ->required(),
-                Toggle::make('is_admin')
-                    ->label('Admin access')
-                    ->helperText('Grants access to this admin panel.'),
+                Section::make('Identity')
+                    ->icon(Heroicon::OutlinedIdentification)
+                    ->columns(2)
+                    ->schema([
+                        TextInput::make('username')
+                            ->maxLength(255)
+                            ->unique(ignoreRecord: true),
+                        TextInput::make('email')
+                            ->email()
+                            ->maxLength(255)
+                            ->unique(ignoreRecord: true),
+                        TextInput::make('first_name')
+                            ->maxLength(255),
+                        TextInput::make('last_name')
+                            ->maxLength(255),
+                        TextInput::make('display_name')
+                            ->maxLength(255),
+                    ]),
+
+                Section::make('Profile')
+                    ->icon(Heroicon::OutlinedUsers)
+                    ->columns(2)
+                    ->schema([
+                        Textarea::make('bio')
+                            ->rows(3)
+                            ->columnSpanFull(),
+                        TextInput::make('country_code')
+                            ->maxLength(2),
+                    ]),
+
+                Section::make('Account')
+                    ->description('Status and admin panel access.')
+                    ->icon(Heroicon::OutlinedShieldCheck)
+                    ->columns(2)
+                    ->schema([
+                        Select::make('status')
+                            ->options([
+                                UserStatus::Active->value => 'Active',
+                                UserStatus::Deactivated->value => 'Deactivated',
+                            ])
+                            ->required(),
+                        Toggle::make('is_admin')
+                            ->label('Admin access')
+                            ->helperText('Grants access to this admin panel.'),
+                    ]),
             ]);
     }
 }

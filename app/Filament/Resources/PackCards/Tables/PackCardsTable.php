@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\PackCards\Tables;
 
+use App\Enums\PackCardKind;
+use App\Filament\Support\BadgeColors;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -19,11 +21,14 @@ class PackCardsTable
             ->columns([
                 TextColumn::make('pack.name')
                     ->label('Pack')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('kind')
-                    ->badge(),
+                    ->badge()
+                    ->color(fn (PackCardKind $state) => BadgeColors::packCardKind($state)),
                 TextColumn::make('text')
                     ->limit(60)
+                    ->tooltip(fn ($state) => $state)
                     ->searchable(),
                 TextColumn::make('position')
                     ->sortable(),
@@ -31,6 +36,7 @@ class PackCardsTable
                     ->boolean(),
             ])
             ->defaultSort('position')
+            ->striped()
             ->filters([
                 SelectFilter::make('kind')
                     ->options([
