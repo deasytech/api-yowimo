@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Pack;
+use App\Models\PackPurchase;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\CursorPaginator;
@@ -12,23 +13,27 @@ class PackService
     /**
      * @param  array{category?: string|null, game_type_id?: int|null, search?: string|null, per_page?: int|null, cursor?: string|null}  $filters
      */
-    public function list(array $filters): CursorPaginator
+    public function list(array $filters, ?User $viewer = null): CursorPaginator
     {
-        return $this->baseQuery($filters)
+        $packs = $this->baseQuery($filters)
             ->orderBy('sort_order')
             ->orderBy('id')
             ->cursorPaginate(
                 perPage: min($filters['per_page'] ?? 20, 50),
                 cursor: $filters['cursor'] ?? null,
             );
+
+        $this->annotateOwnedByMe($packs, $viewer);
+
+        return $packs;
     }
 
     /**
      * @param  array{per_page?: int|null, cursor?: string|null}  $filters
      */
-    public function featured(array $filters): CursorPaginator
+    public function featured(array $filters, ?User $viewer = null): CursorPaginator
     {
-        return Pack::query()
+        $packs = Pack::query()
             ->where('is_active', true)
             ->where('is_featured', true)
             ->orderBy('sort_order')
@@ -37,6 +42,10 @@ class PackService
                 perPage: min($filters['per_page'] ?? 20, 50),
                 cursor: $filters['cursor'] ?? null,
             );
+
+        $this->annotateOwnedByMe($packs, $viewer);
+
+        return $packs;
     }
 
     /**
@@ -59,6 +68,29 @@ class PackService
             : $query->where('is_preview', true)->orderBy('position')]);
 
         return $pack;
+    }
+
+    /**
+     * Sets `owned_by_me` on every pack in this page via a single indexed
+     * query (pack_purchases.user_id = ? AND pack_id IN (<ids on this
+     * page>)), bounded by the page size rather than one query per pack.
+     */
+    private function annotateOwnedByMe(CursorPaginator $packs, ?User $viewer): void
+    {
+        if (! $viewer) {
+            return;
+        }
+
+        $items = $packs->getCollection();
+
+        $ownedPackIds = PackPurchase::query()
+            ->where('user_id', $viewer->id)
+            ->whereIn('pack_id', $items->pluck('id'))
+            ->pluck('pack_id');
+
+        $items->each(function (Pack $pack) use ($ownedPackIds) {
+            $pack->owned_by_me = $ownedPackIds->contains($pack->id);
+        });
     }
 
     /**

@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\PartyVisibility;
 use App\Models\GameType;
 use App\Models\Pack;
 use App\Models\PackCard;
@@ -21,7 +22,10 @@ it('renders the list and view pages for every catalog and audit resource', funct
     $packCard = PackCard::factory()->create(['pack_id' => $pack->id]);
     $tokenBundle = TokenBundle::factory()->create();
     $user = User::factory()->create(['avatar_url' => 'https://example.com/avatar.jpg']);
-    $party = Party::factory()->create(['host_id' => $user->id, 'game_type_id' => $gameType->id, 'pack_id' => $pack->id]);
+    // Pinned public: PartyPolicy::view() (also used to authorize this admin
+    // page) only allows a non-host viewer to see public parties, and the
+    // factory otherwise randomizes visibility.
+    $party = Party::factory()->create(['host_id' => $user->id, 'game_type_id' => $gameType->id, 'pack_id' => $pack->id, 'visibility' => PartyVisibility::Public]);
 
     $resources = [
         'game-types' => $gameType,

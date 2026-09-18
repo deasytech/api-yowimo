@@ -3,6 +3,9 @@
 use App\Enums\PackCategory;
 use App\Models\Pack;
 use App\Models\PackCard;
+use App\Models\PackPurchase;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Tests\Support\FakesClerk;
 
 const API_V1_PACKS_ENDPOINT = '/api/v1/packs';
@@ -94,4 +97,61 @@ it('returns 404 for an inactive pack', function () {
     $this->withHeader('Authorization', "Bearer {$token}")
         ->getJson(API_V1_PACKS_ENDPOINT."/{$pack->id}")
         ->assertStatus(404);
+});
+
+it('flags owned_by_me per pack on the list endpoint', function () {
+    $token = $this->clerkToken(['sub' => 'user_pack_list_owner']);
+    $this->withHeader('Authorization', "Bearer {$token}")->getJson('/api/v1/users/me')->assertOk();
+    $viewer = User::where('clerk_user_id', 'user_pack_list_owner')->firstOrFail();
+
+    $owned = Pack::factory()->create(['name' => 'Owned Pack']);
+    $notOwned = Pack::factory()->create(['name' => 'Unowned Pack']);
+    PackPurchase::factory()->create(['pack_id' => $owned->id, 'user_id' => $viewer->id]);
+    // A purchase by a different user must not mark this pack as owned by the viewer.
+    PackPurchase::factory()->create(['pack_id' => $notOwned->id]);
+
+    $response = $this->withHeader('Authorization', "Bearer {$token}")
+        ->getJson(API_V1_PACKS_ENDPOINT)
+        ->assertStatus(200);
+
+    $byName = collect($response->json('data'))->keyBy('name');
+
+    expect($byName['Owned Pack']['owned_by_me'])->toBeTrue()
+        ->and($byName['Unowned Pack']['owned_by_me'])->toBeFalse();
+});
+
+it('flags owned_by_me per pack on the featured endpoint', function () {
+    $token = $this->clerkToken(['sub' => 'user_pack_featured_owner']);
+    $this->withHeader('Authorization', "Bearer {$token}")->getJson('/api/v1/users/me')->assertOk();
+    $viewer = User::where('clerk_user_id', 'user_pack_featured_owner')->firstOrFail();
+
+    $owned = Pack::factory()->create(['name' => 'Owned Featured Pack', 'is_featured' => true]);
+    PackPurchase::factory()->create(['pack_id' => $owned->id, 'user_id' => $viewer->id]);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->getJson(API_V1_PACKS_ENDPOINT.'/featured')
+        ->assertStatus(200)
+        ->assertJsonPath('data.0.owned_by_me', true);
+});
+
+it('resolves owned_by_me for a full page of packs in a single extra query', function () {
+    $token = $this->clerkToken(['sub' => 'user_pack_query_count']);
+    $this->withHeader('Authorization', "Bearer {$token}")->getJson('/api/v1/users/me')->assertOk();
+    $viewer = User::where('clerk_user_id', 'user_pack_query_count')->firstOrFail();
+
+    $packs = Pack::factory()->count(10)->create();
+    PackPurchase::factory()->create(['pack_id' => $packs->first()->id, 'user_id' => $viewer->id]);
+
+    DB::enableQueryLog();
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->getJson(API_V1_PACKS_ENDPOINT.'?per_page=10')
+        ->assertStatus(200);
+
+    $packPurchaseQueries = collect(DB::getQueryLog())
+        ->filter(fn ($query) => str_contains($query['query'], 'pack_purchases'));
+
+    DB::disableQueryLog();
+
+    expect($packPurchaseQueries)->toHaveCount(1);
 });
