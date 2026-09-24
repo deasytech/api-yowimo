@@ -10,6 +10,19 @@ use Illuminate\Support\Str;
 class ImageUploadField
 {
     /**
+     * Maps each mime type ImageOptimizer actually knows how to re-encode to
+     * the extension it's stored under. Anything else is rejected in
+     * saveUploadedFileUsing rather than trusted from the client's filename,
+     * since a spoofed/mismatched extension shouldn't decide what a file is
+     * saved as — the detected mime type does.
+     */
+    private const EXTENSION_BY_MIME_TYPE = [
+        'image/jpeg' => 'jpg',
+        'image/png' => 'png',
+        'image/webp' => 'webp',
+    ];
+
+    /**
      * Builds a FileUpload for a column that stores a plain image URL string
      * (not a Filament media/attachment relationship). Existing records were
      * seeded with arbitrary external URLs, not disk-relative paths, so this
@@ -27,7 +40,7 @@ class ImageUploadField
     public static function make(string $name, string $directory): FileUpload
     {
         return FileUpload::make($name)
-            ->image()
+            ->acceptedFileTypes(ImageOptimizer::SUPPORTED_MIME_TYPES)
             ->disk('public')
             ->directory($directory)
             ->visibility('public')
@@ -37,11 +50,18 @@ class ImageUploadField
                     return null;
                 }
 
-                $path = trim($directory, '/').'/'.Str::ulid().'.'.($file->getClientOriginalExtension() ?: 'bin');
+                $mimeType = $file->getMimeType();
+                $extension = self::EXTENSION_BY_MIME_TYPE[$mimeType] ?? null;
+
+                if ($extension === null) {
+                    return null;
+                }
+
+                $path = trim($directory, '/').'/'.Str::ulid().'.'.$extension;
 
                 $contents = ImageOptimizer::optimize(
                     file_get_contents($file->getRealPath()),
-                    $file->getMimeType(),
+                    $mimeType,
                 );
 
                 if (Storage::disk('public')->put($path, $contents, 'public') === false) {

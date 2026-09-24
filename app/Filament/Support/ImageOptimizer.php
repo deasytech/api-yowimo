@@ -22,7 +22,7 @@ class ImageOptimizer
 
     private const WEBP_QUALITY = 82;
 
-    private const SUPPORTED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+    public const SUPPORTED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
     public static function optimize(string $contents, ?string $mimeType): string
     {

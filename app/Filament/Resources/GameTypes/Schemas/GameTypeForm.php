@@ -56,7 +56,7 @@ class GameTypeForm
                             ->numeric()
                             ->default(0)
                             ->required()
-                            ->prefixIcon(Heroicon::OutlinedCurrencyDollar),
+                            ->suffix('tokens'),
                     ]),
 
                 Section::make('Appearance')

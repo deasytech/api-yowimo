@@ -64,7 +64,7 @@ class PackForm
                             ->numeric()
                             ->default(0)
                             ->required()
-                            ->prefixIcon(Heroicon::OutlinedCurrencyDollar),
+                            ->suffix('tokens'),
                         TextInput::make('truths_count')
                             ->numeric()
                             ->default(0)

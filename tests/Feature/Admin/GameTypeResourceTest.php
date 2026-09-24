@@ -82,3 +82,17 @@ it('stores a newly uploaded image as a full public URL', function () {
     expect($url)->toStartWith(Storage::disk('public')->url('game-types'));
     expect(Storage::disk('public')->files('game-types'))->not->toBeEmpty();
 });
+
+it('rejects an image upload with an unsupported mime type', function () {
+    Storage::fake('public');
+
+    $gameType = GameType::factory()->create(['image_url' => null]);
+
+    Livewire::test(EditGameType::class, ['record' => $gameType->getKey()])
+        ->fillForm(['image_url' => UploadedFile::fake()->create('malicious.svg', 10, 'image/svg+xml')])
+        ->call('save')
+        ->assertHasFormErrors(['image_url']);
+
+    expect($gameType->refresh()->image_url)->toBeNull();
+    expect(Storage::disk('public')->allFiles('game-types'))->toBeEmpty();
+});
