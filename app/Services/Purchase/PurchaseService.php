@@ -6,6 +6,7 @@ use App\Enums\WalletTransactionType;
 use App\Events\PurchaseCompleted;
 use App\Exceptions\Api\IdempotencyKeyConflictException;
 use App\Exceptions\Api\PaymentDeclinedException;
+use App\Models\PaymentMethod;
 use App\Models\TokenBundle;
 use App\Models\User;
 use App\Models\Wallet;
@@ -24,11 +25,21 @@ class PurchaseService
      * Purchase a token bundle: charge the user, then credit the tokens to
      * their wallet via the existing ledger, idempotently.
      *
+     * Exactly one of $paymentMethod or $paymentReference is normally given
+     * (see PaymentProvider::charge()); both are optional so the manual/test
+     * driver keeps working with neither, for local/CI use with no real
+     * gateway configured.
+     *
      * @throws PaymentDeclinedException if the payment provider declines the charge.
      */
-    public function purchase(User $user, TokenBundle $bundle, string $idempotencyKey): WalletTransaction
-    {
-        return DB::transaction(function () use ($user, $bundle, $idempotencyKey) {
+    public function purchase(
+        User $user,
+        TokenBundle $bundle,
+        string $idempotencyKey,
+        ?PaymentMethod $paymentMethod = null,
+        ?string $paymentReference = null,
+    ): WalletTransaction {
+        return DB::transaction(function () use ($user, $bundle, $idempotencyKey, $paymentMethod, $paymentReference) {
             // Lock the wallet row first so a concurrent retry with the same
             // idempotency key blocks here until this one commits, then re-checks
             // below instead of racing the payment provider into a double charge.
@@ -50,13 +61,19 @@ class PurchaseService
                 return $existing;
             }
 
-            // Known gap: ManualPaymentProvider has no real side effect to lose
-            // track of, but once a real gateway lands, a failure between this
-            // charge succeeding and the transaction below committing would
-            // leave no record of the charge, so a retry would charge again.
-            // Fix then by passing $idempotencyKey to the gateway's own native
-            // idempotency support rather than reconciling it ourselves.
-            if (! $this->paymentProvider->charge($user, $bundle)) {
+            // Known gap: a failure between the charge succeeding at Paystack
+            // and this transaction committing would leave no record of it
+            // here, so a client retry (new idempotency key or none at all)
+            // could charge the card again. PaystackPaymentProvider's
+            // charge-by-reference path is naturally guarded against this for
+            // the *client's* retry, since verifying the same reference twice
+            // just confirms the same already-completed charge rather than
+            // creating a new one — but a saved-method charge started fresh
+            // here has no such protection yet. Fix then by passing
+            // $idempotencyKey through as Paystack's own transaction
+            // reference, so a retried saved-method charge resolves to the
+            // original transaction instead of charging again.
+            if (! $this->paymentProvider->charge($user, $bundle, $paymentMethod, $paymentReference)) {
                 throw new PaymentDeclinedException;
             }
 

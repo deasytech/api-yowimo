@@ -9,6 +9,7 @@ use App\Exceptions\Api\InvalidClerkTokenException;
 use App\Exceptions\Api\InvalidClerkWebhookException;
 use App\Exceptions\Api\InvalidFriendshipTransitionException;
 use App\Exceptions\Api\InvalidPartyTransitionException;
+use App\Exceptions\Api\InvalidPaystackWebhookException;
 use App\Exceptions\Api\PackAlreadyOwnedException;
 use App\Exceptions\Api\PartyFullException;
 use App\Exceptions\Api\PartyHostCannotLeaveException;
@@ -51,6 +52,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->dontReport([
             InvalidClerkTokenException::class,
             InvalidClerkWebhookException::class,
+            InvalidPaystackWebhookException::class,
             InsufficientWalletBalanceException::class,
             IdempotencyKeyConflictException::class,
             PackAlreadyOwnedException::class,

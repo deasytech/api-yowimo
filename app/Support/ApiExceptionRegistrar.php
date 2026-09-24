@@ -14,6 +14,7 @@ use App\Exceptions\Api\InvalidClerkTokenException;
 use App\Exceptions\Api\InvalidClerkWebhookException;
 use App\Exceptions\Api\InvalidFriendshipTransitionException;
 use App\Exceptions\Api\InvalidPartyTransitionException;
+use App\Exceptions\Api\InvalidPaystackWebhookException;
 use App\Exceptions\Api\PackAlreadyOwnedException;
 use App\Exceptions\Api\PartyFullException;
 use App\Exceptions\Api\PartyHostCannotLeaveException;
@@ -51,6 +52,15 @@ class ApiExceptionRegistrar
             $exceptions,
             InvalidClerkWebhookException::class,
             fn (InvalidClerkWebhookException $e) => ApiResponse::error(
+                $e->getMessage(),
+                status: 400
+            )
+        );
+
+        self::registerHandler(
+            $exceptions,
+            InvalidPaystackWebhookException::class,
+            fn (InvalidPaystackWebhookException $e) => ApiResponse::error(
                 $e->getMessage(),
                 status: 400
             )
