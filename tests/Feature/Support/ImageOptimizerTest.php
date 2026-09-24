@@ -34,7 +34,7 @@ function makeTransparentPng(int $width, int $height): string
 it('downscales an oversized jpeg to fit within the max dimension', function () {
     $original = makeJpeg(3000, 2000);
 
-    $optimized = ImageOptimizer::optimize($original, 'image/jpeg');
+    $optimized = ImageOptimizer::optimize($original, ImageOptimizer::MIME_JPEG);
 
     [$width, $height] = getimagesizefromstring($optimized);
 
@@ -45,7 +45,7 @@ it('downscales an oversized jpeg to fit within the max dimension', function () {
 it('does not upscale an image already within the max dimension', function () {
     $original = makeJpeg(400, 300);
 
-    $optimized = ImageOptimizer::optimize($original, 'image/jpeg');
+    $optimized = ImageOptimizer::optimize($original, ImageOptimizer::MIME_JPEG);
 
     [$width, $height] = getimagesizefromstring($optimized);
 
@@ -55,7 +55,7 @@ it('does not upscale an image already within the max dimension', function () {
 it('shrinks file size when re-encoding a large, maximum-quality jpeg', function () {
     $original = makeJpeg(3000, 2000);
 
-    $optimized = ImageOptimizer::optimize($original, 'image/jpeg');
+    $optimized = ImageOptimizer::optimize($original, ImageOptimizer::MIME_JPEG);
 
     expect(strlen($optimized))->toBeLessThan(strlen($original));
 });
@@ -63,7 +63,7 @@ it('shrinks file size when re-encoding a large, maximum-quality jpeg', function 
 it('preserves png transparency after resizing', function () {
     $original = makeTransparentPng(2000, 2000);
 
-    $optimized = ImageOptimizer::optimize($original, 'image/png');
+    $optimized = ImageOptimizer::optimize($original, ImageOptimizer::MIME_PNG);
 
     $image = imagecreatefromstring($optimized);
     $corner = imagecolorat($image, 2, 2);
@@ -82,5 +82,5 @@ it('returns unsupported formats unchanged', function () {
 it('returns unreadable image bytes unchanged instead of throwing', function () {
     $garbage = 'this is not image data';
 
-    expect(ImageOptimizer::optimize($garbage, 'image/jpeg'))->toBe($garbage);
+    expect(ImageOptimizer::optimize($garbage, ImageOptimizer::MIME_JPEG))->toBe($garbage);
 });

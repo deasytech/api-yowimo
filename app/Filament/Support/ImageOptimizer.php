@@ -22,7 +22,13 @@ class ImageOptimizer
 
     private const WEBP_QUALITY = 82;
 
-    public const SUPPORTED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+    public const MIME_JPEG = 'image/jpeg';
+
+    public const MIME_PNG = 'image/png';
+
+    public const MIME_WEBP = 'image/webp';
+
+    public const SUPPORTED_MIME_TYPES = [self::MIME_JPEG, self::MIME_PNG, self::MIME_WEBP];
 
     public static function optimize(string $contents, ?string $mimeType): string
     {
@@ -30,7 +36,7 @@ class ImageOptimizer
             return $contents;
         }
 
-        if ($mimeType === 'image/webp' && ! function_exists('imagecreatefromwebp')) {
+        if ($mimeType === self::MIME_WEBP && ! function_exists('imagecreatefromwebp')) {
             return $contents;
         }
 
@@ -40,7 +46,7 @@ class ImageOptimizer
             return $contents;
         }
 
-        if ($mimeType === 'image/jpeg') {
+        if ($mimeType === self::MIME_JPEG) {
             $image = self::correctJpegOrientation($image, $contents);
         }
 
@@ -80,15 +86,19 @@ class ImageOptimizer
         ob_start();
 
         $ok = match ($mimeType) {
-            'image/jpeg' => imagejpeg($image, null, self::JPEG_QUALITY),
-            'image/png' => self::encodePng($image),
-            'image/webp' => imagewebp($image, null, self::WEBP_QUALITY),
+            self::MIME_JPEG => imagejpeg($image, null, self::JPEG_QUALITY),
+            self::MIME_PNG => self::encodePng($image),
+            self::MIME_WEBP => imagewebp($image, null, self::WEBP_QUALITY),
             default => false,
         };
 
         $contents = ob_get_clean();
 
-        return $ok ? ($contents ?: null) : null;
+        if (! $ok) {
+            return null;
+        }
+
+        return $contents ?: null;
     }
 
     private static function encodePng(GdImage $image): bool

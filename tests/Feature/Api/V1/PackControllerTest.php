@@ -101,7 +101,7 @@ it('returns 404 for an inactive pack', function () {
 
 it('flags owned_by_me per pack on the list endpoint', function () {
     $token = $this->clerkToken(['sub' => 'user_pack_list_owner']);
-    $this->withHeader('Authorization', "Bearer {$token}")->getJson('/api/v1/users/me')->assertOk();
+    $this->withHeader('Authorization', "Bearer {$token}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
     $viewer = User::where('clerk_user_id', 'user_pack_list_owner')->firstOrFail();
 
     $owned = Pack::factory()->create(['name' => 'Owned Pack']);
@@ -122,7 +122,7 @@ it('flags owned_by_me per pack on the list endpoint', function () {
 
 it('flags owned_by_me per pack on the featured endpoint', function () {
     $token = $this->clerkToken(['sub' => 'user_pack_featured_owner']);
-    $this->withHeader('Authorization', "Bearer {$token}")->getJson('/api/v1/users/me')->assertOk();
+    $this->withHeader('Authorization', "Bearer {$token}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
     $viewer = User::where('clerk_user_id', 'user_pack_featured_owner')->firstOrFail();
 
     $owned = Pack::factory()->create(['name' => 'Owned Featured Pack', 'is_featured' => true]);
@@ -136,7 +136,7 @@ it('flags owned_by_me per pack on the featured endpoint', function () {
 
 it('resolves owned_by_me for a full page of packs in a single extra query', function () {
     $token = $this->clerkToken(['sub' => 'user_pack_query_count']);
-    $this->withHeader('Authorization', "Bearer {$token}")->getJson('/api/v1/users/me')->assertOk();
+    $this->withHeader('Authorization', "Bearer {$token}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
     $viewer = User::where('clerk_user_id', 'user_pack_query_count')->firstOrFail();
 
     $packs = Pack::factory()->count(10)->create();
