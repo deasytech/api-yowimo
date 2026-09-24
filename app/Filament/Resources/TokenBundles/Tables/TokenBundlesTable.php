@@ -6,6 +6,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Support\Enums\FontWeight;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
@@ -20,12 +21,18 @@ class TokenBundlesTable
                 TextColumn::make('sort_order')
                     ->sortable(),
                 TextColumn::make('name')
-                    ->searchable(),
+                    ->searchable()
+                    ->weight(FontWeight::SemiBold),
                 TextColumn::make('slug')
-                    ->searchable(),
-                TextColumn::make('tokens'),
+                    ->searchable()
+                    ->copyable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('tokens')
+                    ->numeric()
+                    ->suffix(' tokens'),
                 TextColumn::make('price')
-                    ->money(fn ($record) => $record->currency ?? 'USD'),
+                    ->money(fn ($record) => $record->currency ?? 'USD')
+                    ->sortable(),
                 TextColumn::make('badge'),
                 IconColumn::make('is_featured')
                     ->boolean(),
@@ -33,6 +40,7 @@ class TokenBundlesTable
                     ->boolean(),
             ])
             ->defaultSort('sort_order')
+            ->striped()
             ->filters([
                 TernaryFilter::make('is_active'),
                 TernaryFilter::make('is_featured'),

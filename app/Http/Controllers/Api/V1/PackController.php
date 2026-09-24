@@ -19,7 +19,7 @@ class PackController extends Controller
     {
         $this->authorize('viewAny', Pack::class);
 
-        $packs = $this->packs->list($request->validated());
+        $packs = $this->packs->list($request->validated(), $request->user());
 
         return ApiResponse::paginated(
             PackResource::collection($packs),
@@ -32,7 +32,7 @@ class PackController extends Controller
     {
         $this->authorize('viewAny', Pack::class);
 
-        $packs = $this->packs->featured($request->validated());
+        $packs = $this->packs->featured($request->validated(), $request->user());
 
         return ApiResponse::paginated(
             PackResource::collection($packs),

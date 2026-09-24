@@ -604,11 +604,23 @@ Report inappropriate content.
 
 Marketplace packs.
 
+Each item carries `owned_by_me` (boolean) — `true` when the authenticated user has purchased that pack. Computed with a single batched lookup against `pack_purchases` for the packs on the current page (not a per-item query). Same field/semantics as `GET /packs/{id}`.
+
+---
+
+## GET /packs/featured
+
+Featured marketplace packs (`GET /packs` filtered to `is_featured`).
+
+Each item carries `owned_by_me`, same as `GET /packs`.
+
 ---
 
 ## GET /packs/{id}
 
 Pack details.
+
+Carries `owned_by_me` (boolean) — `true` when the authenticated user has purchased this pack. Full (non-preview) card content is only included when `owned_by_me` is `true`; otherwise only preview cards are returned.
 
 ---
 
