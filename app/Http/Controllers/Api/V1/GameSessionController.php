@@ -10,7 +10,6 @@ use App\Models\Party;
 use App\Services\Game\GameSessionService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class GameSessionController extends Controller
 {
@@ -25,7 +24,7 @@ class GameSessionController extends Controller
         return ApiResponse::success(new GameSessionResource($session), 'Game session started successfully.');
     }
 
-    public function nextTurn(Request $request, GameSession $gameSession): JsonResponse
+    public function nextTurn(GameSession $gameSession): JsonResponse
     {
         $this->authorize('manageGame', $gameSession->party);
 

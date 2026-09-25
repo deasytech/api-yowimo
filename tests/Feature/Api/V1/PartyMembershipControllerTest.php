@@ -6,6 +6,7 @@ use App\Models\Party;
 use App\Models\PartyMember;
 use App\Models\User;
 use Tests\Support\FakesClerk;
+use Tests\TestCase;
 
 uses(FakesClerk::class);
 
@@ -33,6 +34,35 @@ function endEndpoint(Party $party): string
     return "/api/v1/parties/{$party->id}/end";
 }
 
+/**
+ * Provisions (via a real request, matching this app's auto-provision-on-first-
+ * request behavior) and returns [User, bearer token] for a Clerk-authenticated
+ * host. clerkToken() is protected and unreachable from this free function, so
+ * callers must generate the token themselves and pass it in.
+ *
+ * @return array{0: User, 1: string}
+ */
+function provisionPartyHost(TestCase $test, string $token, string $sub): array
+{
+    $test->withHeader('Authorization', "Bearer {$token}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
+
+    return [User::where('clerk_user_id', $sub)->firstOrFail(), $token];
+}
+
+function makeLivePartyWithHostMember(int $maxPlayers = 8, int $playersCount = 1): Party
+{
+    $party = Party::factory()->create([
+        'visibility' => PartyVisibility::Public,
+        'status' => PartyStatus::Live,
+        'max_players' => $maxPlayers,
+        'players_count' => $playersCount,
+    ]);
+
+    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $party->host_id]);
+
+    return $party;
+}
+
 it('rejects join requests with no bearer token', function () {
     $party = Party::factory()->create();
 
@@ -41,13 +71,7 @@ it('rejects join requests with no bearer token', function () {
 
 it('joins a joinable party and increments players_count', function () {
     $token = $this->clerkToken(['sub' => 'user_joiner_one']);
-    $party = Party::factory()->create([
-        'visibility' => PartyVisibility::Public,
-        'status' => PartyStatus::Live,
-        'max_players' => 8,
-        'players_count' => 1,
-    ]);
-    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $party->host_id]);
+    $party = makeLivePartyWithHostMember();
 
     $this->withHeader('Authorization', "Bearer {$token}")
         ->postJson(joinEndpoint($party))
@@ -63,13 +87,7 @@ it('joins a joinable party and increments players_count', function () {
 
 it('does not double count a join from the same user', function () {
     $token = $this->clerkToken(['sub' => 'user_joiner_two']);
-    $party = Party::factory()->create([
-        'visibility' => PartyVisibility::Public,
-        'status' => PartyStatus::Live,
-        'max_players' => 8,
-        'players_count' => 1,
-    ]);
-    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $party->host_id]);
+    $party = makeLivePartyWithHostMember();
 
     $this->withHeader('Authorization', "Bearer {$token}")->postJson(joinEndpoint($party))->assertStatus(200);
     $this->withHeader('Authorization', "Bearer {$token}")->postJson(joinEndpoint($party))->assertStatus(200);
@@ -81,13 +99,7 @@ it('does not double count a join from the same user', function () {
 
 it('rejects joining a full party', function () {
     $token = $this->clerkToken(['sub' => 'user_joiner_full']);
-    $party = Party::factory()->create([
-        'visibility' => PartyVisibility::Public,
-        'status' => PartyStatus::Live,
-        'max_players' => 2,
-        'players_count' => 2,
-    ]);
-    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $party->host_id]);
+    $party = makeLivePartyWithHostMember(maxPlayers: 2, playersCount: 2);
     PartyMember::factory()->create(['party_id' => $party->id]);
 
     $this->withHeader('Authorization', "Bearer {$token}")
@@ -138,13 +150,7 @@ it('forbids joining a private party the user cannot view', function () {
 
 it('leaves a party and decrements players_count', function () {
     $token = $this->clerkToken(['sub' => 'user_leaver']);
-    $party = Party::factory()->create([
-        'visibility' => PartyVisibility::Public,
-        'status' => PartyStatus::Live,
-        'max_players' => 8,
-        'players_count' => 1,
-    ]);
-    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $party->host_id]);
+    $party = makeLivePartyWithHostMember();
 
     $this->withHeader('Authorization', "Bearer {$token}")->postJson(joinEndpoint($party))->assertStatus(200);
 
@@ -177,9 +183,7 @@ it('does not go below zero when leaving without having joined', function () {
 });
 
 it('blocks the host from leaving their own party', function () {
-    $hostToken = $this->clerkToken(['sub' => 'user_host_leave_block']);
-    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson('/api/v1/users/me')->assertOk();
-    $host = User::where('clerk_user_id', 'user_host_leave_block')->firstOrFail();
+    [$host, $hostToken] = provisionPartyHost($this, $this->clerkToken(['sub' => 'user_host_leave_block']), 'user_host_leave_block');
 
     $party = Party::factory()->create([
         'host_id' => $host->id,
@@ -198,9 +202,7 @@ it('blocks the host from leaving their own party', function () {
 });
 
 it('lets the host start their draft party', function () {
-    $hostToken = $this->clerkToken(['sub' => 'user_host_start']);
-    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson('/api/v1/users/me')->assertOk();
-    $host = User::where('clerk_user_id', 'user_host_start')->firstOrFail();
+    [$host, $hostToken] = provisionPartyHost($this, $this->clerkToken(['sub' => 'user_host_start']), 'user_host_start');
 
     $party = Party::factory()->create([
         'host_id' => $host->id,
@@ -234,9 +236,7 @@ it('forbids a non-host from starting a party', function () {
 });
 
 it('rejects starting a party that is already live', function () {
-    $hostToken = $this->clerkToken(['sub' => 'user_host_start_live']);
-    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson('/api/v1/users/me')->assertOk();
-    $host = User::where('clerk_user_id', 'user_host_start_live')->firstOrFail();
+    [$host, $hostToken] = provisionPartyHost($this, $this->clerkToken(['sub' => 'user_host_start_live']), 'user_host_start_live');
 
     $party = Party::factory()->create([
         'host_id' => $host->id,
@@ -250,9 +250,7 @@ it('rejects starting a party that is already live', function () {
 });
 
 it('lets the host end their live party', function () {
-    $hostToken = $this->clerkToken(['sub' => 'user_host_end']);
-    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson('/api/v1/users/me')->assertOk();
-    $host = User::where('clerk_user_id', 'user_host_end')->firstOrFail();
+    [$host, $hostToken] = provisionPartyHost($this, $this->clerkToken(['sub' => 'user_host_end']), 'user_host_end');
 
     $party = Party::factory()->create([
         'host_id' => $host->id,
@@ -286,9 +284,7 @@ it('forbids a non-host from ending a party', function () {
 });
 
 it('rejects ending a party that is not live', function () {
-    $hostToken = $this->clerkToken(['sub' => 'user_host_end_draft']);
-    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson('/api/v1/users/me')->assertOk();
-    $host = User::where('clerk_user_id', 'user_host_end_draft')->firstOrFail();
+    [$host, $hostToken] = provisionPartyHost($this, $this->clerkToken(['sub' => 'user_host_end_draft']), 'user_host_end_draft');
 
     $party = Party::factory()->create([
         'host_id' => $host->id,

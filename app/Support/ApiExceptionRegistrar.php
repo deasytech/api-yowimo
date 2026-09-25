@@ -36,9 +36,23 @@ use Throwable;
 class ApiExceptionRegistrar
 {
     /**
-     * Register API exception handlers.
+     * Register API exception handlers. Split by domain to stay under Sonar's
+     * function-length threshold; registration order is preserved exactly
+     * (each group is called in the same sequence the handlers used to be
+     * registered in) since NotFoundHttpException must be checked before the
+     * generic HttpException fallback that would otherwise also match it.
      */
     public static function register(Exceptions $exceptions): void
+    {
+        self::registerAuthExceptions($exceptions);
+        self::registerPaymentExceptions($exceptions);
+        self::registerPartyExceptions($exceptions);
+        self::registerFriendshipExceptions($exceptions);
+        self::registerGameSessionExceptions($exceptions);
+        self::registerGenericHttpExceptions($exceptions);
+    }
+
+    private static function registerAuthExceptions(Exceptions $exceptions): void
     {
         self::registerHandler(
             $exceptions,
@@ -66,7 +80,10 @@ class ApiExceptionRegistrar
                 status: 400
             )
         );
+    }
 
+    private static function registerPaymentExceptions(Exceptions $exceptions): void
+    {
         self::registerHandler(
             $exceptions,
             InsufficientWalletBalanceException::class,
@@ -111,7 +128,10 @@ class ApiExceptionRegistrar
                 status: 402
             )
         );
+    }
 
+    private static function registerPartyExceptions(Exceptions $exceptions): void
+    {
         self::registerHandler(
             $exceptions,
             PartyFullException::class,
@@ -147,7 +167,10 @@ class ApiExceptionRegistrar
                 status: 422
             )
         );
+    }
 
+    private static function registerFriendshipExceptions(Exceptions $exceptions): void
+    {
         self::registerHandler(
             $exceptions,
             DuplicateFriendRequestException::class,
@@ -174,7 +197,10 @@ class ApiExceptionRegistrar
                 status: 422
             )
         );
+    }
 
+    private static function registerGameSessionExceptions(Exceptions $exceptions): void
+    {
         self::registerHandler(
             $exceptions,
             GameSessionAlreadyActiveException::class,
@@ -219,7 +245,10 @@ class ApiExceptionRegistrar
                 status: 422
             )
         );
+    }
 
+    private static function registerGenericHttpExceptions(Exceptions $exceptions): void
+    {
         self::registerHandler(
             $exceptions,
             ThrottleRequestsException::class,

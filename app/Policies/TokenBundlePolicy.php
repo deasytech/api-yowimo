@@ -26,7 +26,7 @@ class TokenBundlePolicy
     /**
      * Determine whether the user can purchase the token bundle.
      */
-    public function purchase(User $user, TokenBundle $tokenBundle): bool
+    public function purchase(User $user, TokenBundle $tokenBundle): bool // NOSONAR php:S1172 - Laravel's Gate always calls policy methods with $user first positionally; removing it would shift $tokenBundle into that slot.
     {
         return $tokenBundle->is_active;
     }

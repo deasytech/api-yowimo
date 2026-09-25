@@ -45,31 +45,7 @@ class ImageUploadField
             ->directory($directory)
             ->visibility('public')
             ->fetchFileInformation(false)
-            ->saveUploadedFileUsing(function (UploadedFile $file) use ($directory): ?string {
-                if (! $file->isValid()) {
-                    return null;
-                }
-
-                $mimeType = $file->getMimeType();
-                $extension = self::EXTENSION_BY_MIME_TYPE[$mimeType] ?? null;
-
-                if ($extension === null) {
-                    return null;
-                }
-
-                $path = trim($directory, '/').'/'.Str::ulid().'.'.$extension;
-
-                $contents = ImageOptimizer::optimize(
-                    file_get_contents($file->getRealPath()),
-                    $mimeType,
-                );
-
-                if (Storage::disk('public')->put($path, $contents, 'public') === false) {
-                    return null;
-                }
-
-                return $path;
-            })
+            ->saveUploadedFileUsing(fn (UploadedFile $file): ?string => self::storeUploadedFile($file, $directory))
             ->getUploadedFileUsing(function (string $file): array {
                 return [
                     'name' => basename(parse_url($file, PHP_URL_PATH) ?: $file),
@@ -90,5 +66,28 @@ class ImageUploadField
     protected static function isAbsoluteUrl(string $value): bool
     {
         return (bool) preg_match('#^https?://#i', $value);
+    }
+
+    private static function storeUploadedFile(UploadedFile $file, string $directory): ?string
+    {
+        if (! $file->isValid()) {
+            return null;
+        }
+
+        $mimeType = $file->getMimeType();
+        $extension = self::EXTENSION_BY_MIME_TYPE[$mimeType] ?? null;
+
+        if ($extension === null) {
+            return null;
+        }
+
+        $path = trim($directory, '/').'/'.Str::ulid().'.'.$extension;
+
+        $contents = ImageOptimizer::optimize(
+            file_get_contents($file->getRealPath()),
+            $mimeType,
+        );
+
+        return Storage::disk('public')->put($path, $contents, 'public') ? $path : null;
     }
 }

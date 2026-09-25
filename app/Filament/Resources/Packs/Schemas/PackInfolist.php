@@ -4,7 +4,7 @@ namespace App\Filament\Resources\Packs\Schemas;
 
 use App\Enums\PackCategory;
 use App\Filament\Support\BadgeColors;
-use Filament\Infolists\Components\IconEntry;
+use App\Filament\Support\InfolistSections;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
@@ -55,27 +55,9 @@ class PackInfolist
                             ->label('Cover image'),
                     ]),
 
-                Section::make('Visibility & Ordering')
-                    ->icon(Heroicon::OutlinedEye)
-                    ->columns(3)
-                    ->schema([
-                        IconEntry::make('is_featured')
-                            ->boolean(),
-                        IconEntry::make('is_active')
-                            ->boolean(),
-                        TextEntry::make('sort_order'),
-                    ]),
+                InfolistSections::visibilityAndOrdering(),
 
-                Section::make('Timestamps')
-                    ->icon(Heroicon::OutlinedClock)
-                    ->columns(2)
-                    ->collapsible()
-                    ->schema([
-                        TextEntry::make('created_at')
-                            ->dateTime(),
-                        TextEntry::make('updated_at')
-                            ->dateTime(),
-                    ]),
+                InfolistSections::timestamps(),
             ]);
     }
 }

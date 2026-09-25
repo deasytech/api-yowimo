@@ -4,17 +4,14 @@ namespace App\Notifications;
 
 use App\Models\GameSession;
 use App\Models\Round;
-use App\Notifications\Channels\FcmChannel;
-use App\Notifications\Channels\InAppChannel;
+use App\Notifications\Concerns\DeliversViaFcmAndInApp;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
-use Kreait\Firebase\Messaging\CloudMessage;
-use Kreait\Firebase\Messaging\Notification as FcmNotification;
 
 class RoundCompletedNotification extends Notification implements ShouldQueue
 {
-    use Queueable;
+    use DeliversViaFcmAndInApp, Queueable;
 
     public function __construct(
         public readonly GameSession $gameSession,
@@ -22,31 +19,9 @@ class RoundCompletedNotification extends Notification implements ShouldQueue
     ) {}
 
     /**
-     * @return array<int, string>
-     */
-    public function via(object $notifiable): array
-    {
-        return [FcmChannel::class, InAppChannel::class];
-    }
-
-    public function toFcm(object $notifiable): CloudMessage
-    {
-        return CloudMessage::new()
-            ->withNotification(FcmNotification::create(
-                'Round completed',
-                "Round {$this->round->number} has ended.",
-            ))
-            ->withData([
-                'type' => 'round.completed',
-                'game_session_id' => (string) $this->gameSession->id,
-                'round_id' => (string) $this->round->id,
-            ]);
-    }
-
-    /**
      * @return array<string, mixed>
      */
-    public function toInApp(object $notifiable): array
+    private function payload(): array // NOSONAR php:S1144 - satisfies DeliversViaFcmAndInApp::payload(), called via $this->payload() in the trait
     {
         return [
             'title' => 'Round completed',

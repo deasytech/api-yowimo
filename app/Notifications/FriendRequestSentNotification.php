@@ -4,17 +4,14 @@ namespace App\Notifications;
 
 use App\Models\Friendship;
 use App\Models\User;
-use App\Notifications\Channels\FcmChannel;
-use App\Notifications\Channels\InAppChannel;
+use App\Notifications\Concerns\DeliversViaFcmAndInApp;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
-use Kreait\Firebase\Messaging\CloudMessage;
-use Kreait\Firebase\Messaging\Notification as FcmNotification;
 
 class FriendRequestSentNotification extends Notification implements ShouldQueue
 {
-    use Queueable;
+    use DeliversViaFcmAndInApp, Queueable;
 
     public function __construct(
         public readonly Friendship $friendship,
@@ -22,33 +19,9 @@ class FriendRequestSentNotification extends Notification implements ShouldQueue
     ) {}
 
     /**
-     * @return array<int, string>
-     */
-    public function via(object $notifiable): array
-    {
-        return [FcmChannel::class, InAppChannel::class];
-    }
-
-    public function toFcm(object $notifiable): CloudMessage
-    {
-        $senderName = $this->sender->display_name ?: $this->sender->username;
-
-        return CloudMessage::new()
-            ->withNotification(FcmNotification::create(
-                'New friend request',
-                "{$senderName} sent you a friend request.",
-            ))
-            ->withData([
-                'type' => 'friend.request.sent',
-                'friendship_id' => (string) $this->friendship->id,
-                'sender_id' => (string) $this->sender->id,
-            ]);
-    }
-
-    /**
      * @return array<string, mixed>
      */
-    public function toInApp(object $notifiable): array
+    private function payload(): array // NOSONAR php:S1144 - satisfies DeliversViaFcmAndInApp::payload(), called via $this->payload() in the trait
     {
         $senderName = $this->sender->display_name ?: $this->sender->username;
 

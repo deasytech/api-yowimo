@@ -123,11 +123,9 @@ class GameSessionService
         return DB::transaction(function () use ($turnId) {
             $turn = Turn::query()->whereKey($turnId)->lockForUpdate()->first();
 
-            if (! $turn || $turn->completed_at !== null) {
-                return null;
-            }
-
-            if (now()->lessThan($turn->started_at->copy()->addSeconds(self::TURN_TIMEOUT_SECONDS))) {
+            if (! $turn
+                || $turn->completed_at !== null
+                || now()->lessThan($turn->started_at->copy()->addSeconds(self::TURN_TIMEOUT_SECONDS))) {
                 return null;
             }
 

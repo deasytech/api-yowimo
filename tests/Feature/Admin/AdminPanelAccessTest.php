@@ -2,6 +2,8 @@
 
 use App\Models\User;
 
+const ADMIN_PANEL_ENDPOINT = '/admin';
+
 it('lets an admin user access the panel', function () {
     $admin = User::factory()->create([
         'password' => 'password',
@@ -9,7 +11,7 @@ it('lets an admin user access the panel', function () {
     ]);
 
     $this->actingAs($admin, 'web')
-        ->get('/admin')
+        ->get(ADMIN_PANEL_ENDPOINT)
         ->assertOk();
 });
 
@@ -20,11 +22,11 @@ it('denies a non-admin authenticated user', function () {
     ]);
 
     $this->actingAs($user, 'web')
-        ->get('/admin')
+        ->get(ADMIN_PANEL_ENDPOINT)
         ->assertForbidden();
 });
 
 it('redirects a guest to the login page', function () {
-    $this->get('/admin')
+    $this->get(ADMIN_PANEL_ENDPOINT)
         ->assertRedirect('/admin/login');
 });

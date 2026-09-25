@@ -19,7 +19,7 @@ it('throttles the purchases limiter per user and does not affect other users', f
     $bundle = TokenBundle::factory()->create(['tokens' => 10]);
 
     $token = $this->clerkToken(['sub' => 'user_throttle_purchases']);
-    $this->withHeader('Authorization', "Bearer {$token}")->getJson('/api/v1/users/me')->assertOk();
+    $this->withHeader('Authorization', "Bearer {$token}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
 
     for ($i = 0; $i < 10; $i++) {
         $this->withHeader('Authorization', "Bearer {$token}")
@@ -61,7 +61,7 @@ it('throttles the push-tokens limiter per user', function () {
 
 it('throttles the party-actions limiter per user', function () {
     $hostToken = $this->clerkToken(['sub' => 'user_throttle_party_host']);
-    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson('/api/v1/users/me')->assertOk();
+    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
     $host = User::where('clerk_user_id', 'user_throttle_party_host')->firstOrFail();
 
     $party = Party::factory()->create([
@@ -87,7 +87,7 @@ it('throttles the party-actions limiter per user', function () {
 
 it('throttles the friend-requests limiter per user', function () {
     $sender = $this->clerkToken(['sub' => 'user_throttle_friend_sender']);
-    $this->withHeader('Authorization', "Bearer {$sender}")->getJson('/api/v1/users/me')->assertOk();
+    $this->withHeader('Authorization', "Bearer {$sender}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
 
     $receivers = User::factory()->count(21)->create();
 

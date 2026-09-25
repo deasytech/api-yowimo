@@ -51,7 +51,7 @@ it('credits 25 tokens to every player who took a turn when the game completes', 
     $session = $service->start($host, $party, 1);
 
     // Drive every turn in the single round to trigger GameCompleted.
-    foreach ($session->turn_order as $ignored) {
+    for ($turn = 0; $turn < count($session->turn_order); $turn++) {
         $session = $service->nextTurn($session->fresh());
     }
 
@@ -69,14 +69,14 @@ it('credits 25 tokens to every player who took a turn when the game completes', 
 });
 
 it('does not reward a party member who joined after the game started and never took a turn', function () {
-    [$host, $party, $userIds] = makeLivePartyForGameCompletionReward(1);
+    [$host, $party] = makeLivePartyForGameCompletionReward(1);
 
     $service = app(GameSessionService::class);
     $session = $service->start($host, $party, 1);
 
     $latecomer = PartyMember::factory()->create(['party_id' => $party->id]);
 
-    foreach ($session->turn_order as $ignored) {
+    for ($turn = 0; $turn < count($session->turn_order); $turn++) {
         $session = $service->nextTurn($session->fresh());
     }
 

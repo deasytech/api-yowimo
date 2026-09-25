@@ -3,7 +3,6 @@
 namespace App\Services\AI;
 
 use Illuminate\Support\Facades\Http;
-use RuntimeException;
 
 class OpenAiProvider implements AIProvider
 {
@@ -12,7 +11,7 @@ class OpenAiProvider implements AIProvider
         $apiKey = config('services.openai.api_key');
 
         if (! $apiKey) {
-            throw new RuntimeException('OpenAI API key is not configured.');
+            throw new OpenAiNotConfiguredException('OpenAI API key is not configured.');
         }
 
         $model = config('services.openai.model');

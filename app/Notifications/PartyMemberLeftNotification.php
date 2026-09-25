@@ -4,17 +4,14 @@ namespace App\Notifications;
 
 use App\Models\Party;
 use App\Models\User;
-use App\Notifications\Channels\FcmChannel;
-use App\Notifications\Channels\InAppChannel;
+use App\Notifications\Concerns\DeliversViaFcmAndInApp;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
-use Kreait\Firebase\Messaging\CloudMessage;
-use Kreait\Firebase\Messaging\Notification as FcmNotification;
 
 class PartyMemberLeftNotification extends Notification implements ShouldQueue
 {
-    use Queueable;
+    use DeliversViaFcmAndInApp, Queueable;
 
     public function __construct(
         public readonly Party $party,
@@ -22,33 +19,9 @@ class PartyMemberLeftNotification extends Notification implements ShouldQueue
     ) {}
 
     /**
-     * @return array<int, string>
-     */
-    public function via(object $notifiable): array
-    {
-        return [FcmChannel::class, InAppChannel::class];
-    }
-
-    public function toFcm(object $notifiable): CloudMessage
-    {
-        $leavingUserName = $this->leavingUser->display_name ?: $this->leavingUser->username;
-
-        return CloudMessage::new()
-            ->withNotification(FcmNotification::create(
-                'Party member left',
-                "{$leavingUserName} left your party \"{$this->party->title}\".",
-            ))
-            ->withData([
-                'type' => 'party.member.left',
-                'party_id' => (string) $this->party->id,
-                'user_id' => (string) $this->leavingUser->id,
-            ]);
-    }
-
-    /**
      * @return array<string, mixed>
      */
-    public function toInApp(object $notifiable): array
+    private function payload(): array // NOSONAR php:S1144 - satisfies DeliversViaFcmAndInApp::payload(), called via $this->payload() in the trait
     {
         $leavingUserName = $this->leavingUser->display_name ?: $this->leavingUser->username;
 

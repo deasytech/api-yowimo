@@ -5,6 +5,8 @@ use App\Models\Friendship;
 use App\Models\User;
 use Tests\Support\FakesClerk;
 
+const API_V1_FRIEND_REQUESTS_ENDPOINT = '/api/v1/friend-requests';
+
 uses(FakesClerk::class);
 
 beforeEach(function () {
@@ -20,7 +22,7 @@ function authAs(string $clerkSub): User
 }
 
 it('rejects sending a friend request with no bearer token', function () {
-    $this->postJson('/api/v1/friend-requests', ['receiver_id' => User::factory()->create()->id])
+    $this->postJson(API_V1_FRIEND_REQUESTS_ENDPOINT, ['receiver_id' => User::factory()->create()->id])
         ->assertStatus(401);
 });
 
@@ -28,7 +30,7 @@ it('sends a friend request to another user', function () {
     $sender = authAs('friend_sender_1');
     $receiver = User::factory()->create();
 
-    $this->postJson('/api/v1/friend-requests', ['receiver_id' => $receiver->id])
+    $this->postJson(API_V1_FRIEND_REQUESTS_ENDPOINT, ['receiver_id' => $receiver->id])
         ->assertStatus(201)
         ->assertJsonPath('data.status', 'pending')
         ->assertJsonPath('data.sender.id', $sender->id)
@@ -40,7 +42,7 @@ it('sends a friend request to another user', function () {
 it('rejects sending a friend request to yourself', function () {
     $sender = authAs('friend_sender_self');
 
-    $this->postJson('/api/v1/friend-requests', ['receiver_id' => $sender->id])
+    $this->postJson(API_V1_FRIEND_REQUESTS_ENDPOINT, ['receiver_id' => $sender->id])
         ->assertStatus(422);
 });
 
@@ -54,7 +56,7 @@ it('rejects a duplicate pending friend request in either direction', function ()
         'status' => FriendshipStatus::Pending,
     ]);
 
-    $this->postJson('/api/v1/friend-requests', ['receiver_id' => $receiver->id])
+    $this->postJson(API_V1_FRIEND_REQUESTS_ENDPOINT, ['receiver_id' => $receiver->id])
         ->assertStatus(409);
 });
 
@@ -67,7 +69,7 @@ it('rejects sending a friend request to an existing friend', function () {
         'receiver_id' => $receiver->id,
     ]);
 
-    $this->postJson('/api/v1/friend-requests', ['receiver_id' => $receiver->id])
+    $this->postJson(API_V1_FRIEND_REQUESTS_ENDPOINT, ['receiver_id' => $receiver->id])
         ->assertStatus(409);
 });
 
@@ -199,7 +201,7 @@ it('lists pending friend requests, both incoming and outgoing', function () {
     Friendship::factory()->create(['sender_id' => $incomingFrom->id, 'receiver_id' => $user->id]);
     Friendship::factory()->create(['sender_id' => $user->id, 'receiver_id' => $outgoingTo->id]);
 
-    $response = $this->getJson('/api/v1/friend-requests')->assertStatus(200);
+    $response = $this->getJson(API_V1_FRIEND_REQUESTS_ENDPOINT)->assertStatus(200);
 
     expect($response->json('data'))->toHaveCount(2);
 });

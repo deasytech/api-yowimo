@@ -2,6 +2,8 @@
 
 use App\Services\Health\HealthCheckService;
 
+const TEST_LOCALHOST = '127.0.0.1';
+
 beforeEach(function () {
     $this->originalConfig = [
         'database.default' => config('database.default'),
@@ -39,7 +41,7 @@ it('reports database as down when the connection is invalid', function () {
 
 it('reports redis as down when unreachable', function () {
     config([
-        'database.redis.default.host' => '127.0.0.1',
+        'database.redis.default.host' => TEST_LOCALHOST,
         'database.redis.default.port' => 1,
     ]);
 
@@ -79,7 +81,7 @@ it('reports broadcast as ok when reverb is reachable', function () {
 
     config([
         'broadcasting.default' => 'reverb',
-        'broadcasting.connections.reverb.options.host' => '127.0.0.1',
+        'broadcasting.connections.reverb.options.host' => TEST_LOCALHOST,
         'broadcasting.connections.reverb.options.port' => $port,
     ]);
 
@@ -94,7 +96,7 @@ it('reports broadcast as ok when reverb is reachable', function () {
 it('reports broadcast as down when reverb is unreachable', function () {
     config([
         'broadcasting.default' => 'reverb',
-        'broadcasting.connections.reverb.options.host' => '127.0.0.1',
+        'broadcasting.connections.reverb.options.host' => TEST_LOCALHOST,
         'broadcasting.connections.reverb.options.port' => 1,
     ]);
 

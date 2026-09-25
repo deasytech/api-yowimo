@@ -23,12 +23,7 @@ class EvaluateTurnCompletionBadges implements ShouldQueue
         }
 
         $turn = Turn::find($event->turnId);
-
-        if (! $turn || ! $turn->packCard) {
-            return;
-        }
-
-        $user = User::find($event->userId);
+        $user = $turn && $turn->packCard ? User::find($event->userId) : null;
 
         if (! $user) {
             return;

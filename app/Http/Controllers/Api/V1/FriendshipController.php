@@ -50,7 +50,7 @@ class FriendshipController extends Controller
         );
     }
 
-    public function accept(Request $request, Friendship $friendship): JsonResponse
+    public function accept(Friendship $friendship): JsonResponse
     {
         $this->authorize('accept', $friendship);
 
@@ -62,7 +62,7 @@ class FriendshipController extends Controller
         );
     }
 
-    public function reject(Request $request, Friendship $friendship): JsonResponse
+    public function reject(Friendship $friendship): JsonResponse
     {
         $this->authorize('reject', $friendship);
 
@@ -74,7 +74,7 @@ class FriendshipController extends Controller
         );
     }
 
-    public function cancel(Request $request, Friendship $friendship): JsonResponse
+    public function cancel(Friendship $friendship): JsonResponse
     {
         $this->authorize('cancel', $friendship);
 
@@ -86,7 +86,7 @@ class FriendshipController extends Controller
         );
     }
 
-    public function destroy(Request $request, Friendship $friendship): JsonResponse
+    public function destroy(Friendship $friendship): JsonResponse
     {
         $this->authorize('remove', $friendship);
 
