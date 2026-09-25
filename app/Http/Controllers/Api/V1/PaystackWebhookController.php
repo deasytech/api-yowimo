@@ -14,7 +14,12 @@ use Illuminate\Support\Arr;
 
 /**
  * Records every signature-verified Paystack event as an audit trail,
- * idempotently on the provider's own event id.
+ * idempotently on a composite key of the event type and the resource id —
+ * not the resource id alone, since Paystack can send more than one event
+ * type for the same underlying transaction (e.g. charge.success and a later
+ * refund event share the transaction id); keying on the id alone would make
+ * the second delivery collide with the first and get silently dropped as a
+ * "duplicate".
  *
  * Crediting the wallet itself does not happen here: the purchase endpoint
  * already verifies a charge server-to-server against Paystack directly
@@ -37,9 +42,10 @@ class PaystackWebhookController extends Controller
 
         $payload = $request->json()->all();
         $transactionId = Arr::get($payload, 'data.id');
+        $eventType = Arr::get($payload, 'event', '');
 
         if ($transactionId !== null) {
-            $this->recordOnce("paystack_txn_{$transactionId}", Arr::get($payload, 'event', ''), $payload);
+            $this->recordOnce("paystack_{$eventType}_{$transactionId}", $eventType, $payload);
         }
 
         return ApiResponse::success(message: 'Webhook processed.');

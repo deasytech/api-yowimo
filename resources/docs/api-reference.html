@@ -909,6 +909,7 @@
             <h4>Query</h4>
             <p><code>per_page</code> / <code>cursor</code> only &mdash; no filters exist for this resource.</p>
             <div class="note"><b>Two different kinds of number</b><code>price</code> is real money (<code>decimal(8,2)</code> + <code>currency</code>) &mdash; what the player pays. <code>tokens</code> is the integer token count they receive. Don't confuse the two when rendering "$4.99 &rarr; 500 tokens."</div>
+            <div class="note"><b>price/currency vary by viewer's country</b>Yowimo is a Nigerian company: this default price/currency is NGN, and it's what every buyer sees and is charged &mdash; <i>including</i> a buyer with no country on file. The only exception is a buyer whose profile confirms a <code>country_code</code> other than <code>"NG"</code>, who sees that bundle's USD price instead (when the bundle has one; otherwise they see NGN too). Same two keys either way &mdash; render whatever currency comes back rather than assuming NGN or USD, and re-fetch this list if the viewer's country changes mid-session.</div>
             <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span></div>
           </div>
           <div class="endpoint-code">
@@ -964,6 +965,7 @@
             <ul style="color:var(--text-muted); font-size:.9rem; padding-left:1.1rem; margin:.3rem 0;">
               <li>Give at most one of <code>payment_reference</code> / <code>payment_method_id</code>. Give neither to charge the caller's default saved card.</li>
               <li>A <code>payment_reference</code> charge whose resulting authorization is <code>reusable</code> is saved automatically as a new payment method (first one saved becomes the default).</li>
+              <li>The amount/currency charged via the Paystack SDK must exactly match what <code>GET /token-bundles</code> showed this same caller (NGN by default, USD only for a confirmed non-Nigerian profile) &mdash; a mismatch declines with <code>402</code> even if the charge itself succeeded at Paystack.</li>
               <li>Card/payment declined, or no payment method available at all &rarr; <code>402</code>.</li>
               <li>Same idempotency key reused for a different bundle &rarr; <code>409</code>.</li>
             </ul>

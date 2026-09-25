@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Exceptions\Api\AlreadyFriendsException;
 use App\Exceptions\Api\DuplicateFriendRequestException;
+use App\Exceptions\Api\DuplicatePaymentReferenceException;
 use App\Exceptions\Api\DuplicateVoteException;
 use App\Exceptions\Api\GameSessionAlreadyActiveException;
 use App\Exceptions\Api\GameSessionNotActiveException;
@@ -88,6 +89,15 @@ class ApiExceptionRegistrar
             $exceptions,
             IdempotencyKeyConflictException::class,
             fn (IdempotencyKeyConflictException $e) => ApiResponse::error(
+                $e->getMessage(),
+                status: 409
+            )
+        );
+
+        self::registerHandler(
+            $exceptions,
+            DuplicatePaymentReferenceException::class,
+            fn (DuplicatePaymentReferenceException $e) => ApiResponse::error(
                 $e->getMessage(),
                 status: 409
             )

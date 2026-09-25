@@ -2,6 +2,7 @@
 
 use App\Exceptions\Api\AlreadyFriendsException;
 use App\Exceptions\Api\DuplicateFriendRequestException;
+use App\Exceptions\Api\DuplicatePaymentReferenceException;
 use App\Exceptions\Api\DuplicateVoteException;
 use App\Exceptions\Api\IdempotencyKeyConflictException;
 use App\Exceptions\Api\InsufficientWalletBalanceException;
@@ -55,6 +56,7 @@ return Application::configure(basePath: dirname(__DIR__))
             InvalidPaystackWebhookException::class,
             InsufficientWalletBalanceException::class,
             IdempotencyKeyConflictException::class,
+            DuplicatePaymentReferenceException::class,
             PackAlreadyOwnedException::class,
             PaymentDeclinedException::class,
             PartyFullException::class,

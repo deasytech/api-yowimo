@@ -16,7 +16,7 @@ class TokenBundleForm
         return $schema
             ->components([
                 Section::make('Basic Info')
-                    ->description('What this bundle is called, how many tokens it grants, and its price.')
+                    ->description('What this bundle is called, how many tokens it grants, and its price. Priced in Naira by default; add a USD price only for buyers confirmed to be outside Nigeria.')
                     ->icon(Heroicon::OutlinedBanknotes)
                     ->columns(2)
                     ->schema([
@@ -32,13 +32,20 @@ class TokenBundleForm
                             ->numeric()
                             ->required(),
                         TextInput::make('price')
+                            ->label('Price')
                             ->numeric()
                             ->required()
-                            ->prefixIcon(Heroicon::OutlinedCurrencyDollar),
+                            ->prefixIcon(Heroicon::OutlinedBanknotes)
+                            ->helperText('The default price, charged to everyone unless overridden below.'),
                         TextInput::make('currency')
-                            ->default('USD')
+                            ->default('NGN')
                             ->maxLength(3)
                             ->required(),
+                        TextInput::make('price_usd')
+                            ->label('Price (USD)')
+                            ->numeric()
+                            ->prefixIcon(Heroicon::OutlinedCurrencyDollar)
+                            ->helperText('Charged instead of the default price, only to buyers whose profile confirms a country other than Nigeria. Leave blank to charge them the default price too.'),
                         TextInput::make('badge')
                             ->maxLength(255),
                     ]),

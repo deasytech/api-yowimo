@@ -19,6 +19,12 @@ interface PaymentProvider
      * method, or decline. The manual/test driver always approves,
      * regardless of what's given.
      *
+     * $idempotencyKey identifies this logical purchase attempt (not a
+     * gateway reference itself) — a real provider may derive its own
+     * deterministic gateway reference from it for a $paymentMethod charge,
+     * so that retrying the same attempt (e.g. after a dropped connection)
+     * resolves to the original charge instead of charging the card again.
+     *
      * If the charge was made against a fresh reference and the provider
      * returned a reusable authorization for it, the implementation is
      * responsible for saving it as a new payment method itself (e.g. via
@@ -29,5 +35,6 @@ interface PaymentProvider
         TokenBundle $bundle,
         ?PaymentMethod $paymentMethod = null,
         ?string $paymentReference = null,
+        ?string $idempotencyKey = null,
     ): bool;
 }

@@ -4,6 +4,7 @@ namespace App\Services\Purchase;
 
 use App\Enums\WalletTransactionType;
 use App\Events\PurchaseCompleted;
+use App\Exceptions\Api\DuplicatePaymentReferenceException;
 use App\Exceptions\Api\IdempotencyKeyConflictException;
 use App\Exceptions\Api\PaymentDeclinedException;
 use App\Models\PaymentMethod;
@@ -31,6 +32,7 @@ class PurchaseService
      * gateway configured.
      *
      * @throws PaymentDeclinedException if the payment provider declines the charge.
+     * @throws DuplicatePaymentReferenceException if $paymentReference was already used to credit a wallet.
      */
     public function purchase(
         User $user,
@@ -61,19 +63,20 @@ class PurchaseService
                 return $existing;
             }
 
-            // Known gap: a failure between the charge succeeding at Paystack
-            // and this transaction committing would leave no record of it
-            // here, so a client retry (new idempotency key or none at all)
-            // could charge the card again. PaystackPaymentProvider's
-            // charge-by-reference path is naturally guarded against this for
-            // the *client's* retry, since verifying the same reference twice
-            // just confirms the same already-completed charge rather than
-            // creating a new one — but a saved-method charge started fresh
-            // here has no such protection yet. Fix then by passing
-            // $idempotencyKey through as Paystack's own transaction
-            // reference, so a retried saved-method charge resolves to the
-            // original transaction instead of charging again.
-            if (! $this->paymentProvider->charge($user, $bundle, $paymentMethod, $paymentReference)) {
+            // A verified gateway reference is single-use, full stop — even
+            // across different idempotency keys (which only dedupe retries of
+            // the *same* logical attempt, not reuse of a reference that
+            // already credited some wallet, possibly not even this one).
+            // This upfront check is a fast fail; WalletService::credit()'s
+            // unique constraint on payment_reference is the authoritative
+            // guard against the race between two concurrent requests for
+            // different wallets that this lock alone can't cover.
+            if ($paymentReference !== null
+                && WalletTransaction::query()->where('payment_reference', $paymentReference)->exists()) {
+                throw new DuplicatePaymentReferenceException;
+            }
+
+            if (! $this->paymentProvider->charge($user, $bundle, $paymentMethod, $paymentReference, $idempotencyKey)) {
                 throw new PaymentDeclinedException;
             }
 
@@ -84,6 +87,7 @@ class PurchaseService
                 reference: $bundle,
                 description: "Purchased token bundle: {$bundle->name}",
                 idempotencyKey: $idempotencyKey,
+                paymentReference: $paymentReference,
             );
 
             PurchaseCompleted::dispatch($user->id, $bundle->getMorphClass(), $bundle->id, $transaction->id);

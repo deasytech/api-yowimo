@@ -112,7 +112,7 @@ it('rejects a payment_method_id that belongs to another user', function () {
 it('purchases via a real Paystack charge by reference, credits the wallet, and saves the card', function () {
     config(['services.paystack.secret_key' => 'sk_test_fake']);
 
-    $token = $this->clerkToken(['sub' => 'user_purchase_paystack_reference']);
+    $token = $this->clerkToken(['sub' => 'user_purchase_paystack_reference', 'email' => 'reference-buyer@example.com']);
     $bundle = TokenBundle::factory()->create(['tokens' => 500, 'price' => 9.99, 'currency' => 'USD']);
 
     Http::fake([
@@ -121,6 +121,7 @@ it('purchases via a real Paystack charge by reference, credits the wallet, and s
                 'status' => 'success',
                 'amount' => 999,
                 'currency' => 'USD',
+                'customer' => ['email' => 'reference-buyer@example.com'],
                 'authorization' => [
                     'authorization_code' => 'AUTH_e2e_new',
                     'reusable' => true,
@@ -162,6 +163,42 @@ it('purchases via a saved payment method', function () {
         ->assertStatus(201);
 
     expect(Wallet::where('user_id', $user->id)->firstOrFail()->balance)->toBe(200);
+});
+
+it('rejects reusing an already-consumed payment_reference under a different idempotency key', function () {
+    // Without this, a real charge that already credited a wallet could be
+    // resubmitted with a fresh idempotency_key (the idempotency check alone
+    // only dedupes retries of the *same* attempt) and credit again for the
+    // same real-world money.
+    config(['services.paystack.secret_key' => 'sk_test_fake']);
+
+    $token = $this->clerkToken(['sub' => 'user_purchase_reference_reuse', 'email' => 'reuse-buyer@example.com']);
+    $bundle = TokenBundle::factory()->create(['tokens' => 500, 'price' => 9.99, 'currency' => 'USD']);
+
+    Http::fake([
+        'https://api.paystack.co/transaction/verify/*' => Http::response([
+            'data' => [
+                'status' => 'success',
+                'amount' => 999,
+                'currency' => 'USD',
+                'customer' => ['email' => 'reuse-buyer@example.com'],
+            ],
+        ]),
+    ]);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->withHeader('Idempotency-Key', 'purchase_reuse_first_key')
+        ->postJson(purchaseEndpoint($bundle), ['payment_reference' => 'ref_reused'])
+        ->assertStatus(201);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->withHeader('Idempotency-Key', 'purchase_reuse_second_key')
+        ->postJson(purchaseEndpoint($bundle), ['payment_reference' => 'ref_reused'])
+        ->assertStatus(409);
+
+    $user = User::where('clerk_user_id', 'user_purchase_reference_reuse')->firstOrFail();
+    expect(Wallet::where('user_id', $user->id)->firstOrFail()->balance)->toBe(500);
+    expect(WalletTransaction::where('payment_reference', 'ref_reused')->count())->toBe(1);
 });
 
 it('declines and does not credit the wallet when Paystack verification fails', function () {

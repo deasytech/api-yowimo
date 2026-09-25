@@ -25,6 +25,16 @@ class PaymentMethod extends Model
     use HasFactory;
 
     /**
+     * The sensitive token Paystack uses to actually charge the card — never
+     * serialized, even though PaymentMethodResource already omits it
+     * explicitly. Direct attribute access (->authorization_code) is
+     * unaffected; this only guards toArray()/toJson().
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = ['authorization_code'];
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array

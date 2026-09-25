@@ -37,7 +37,7 @@ it('records a signature-verified event', function () {
         ->postJson(API_V1_PAYSTACK_WEBHOOK_ENDPOINT, $payload)
         ->assertStatus(200);
 
-    $event = WebhookEvent::where('event_id', 'paystack_txn_555555')->first();
+    $event = WebhookEvent::where('event_id', 'paystack_charge.success_555555')->first();
     expect($event)->not->toBeNull();
     expect($event->provider)->toBe('paystack');
     expect($event->event_type)->toBe('charge.success');
@@ -50,5 +50,24 @@ it('does not double-record a duplicate webhook delivery', function () {
     $this->withHeader('x-paystack-signature', $signature)->postJson(API_V1_PAYSTACK_WEBHOOK_ENDPOINT, $payload)->assertStatus(200);
     $this->withHeader('x-paystack-signature', $signature)->postJson(API_V1_PAYSTACK_WEBHOOK_ENDPOINT, $payload)->assertStatus(200);
 
-    expect(WebhookEvent::where('event_id', 'paystack_txn_777777')->count())->toBe(1);
+    expect(WebhookEvent::where('event_id', 'paystack_charge.success_777777')->count())->toBe(1);
+});
+
+it('records a second event of a different type on the same resource id, not deduped', function () {
+    // Different event types can legitimately share a resource id (e.g. a
+    // charge and a later refund on the same transaction) — the dedup key
+    // must not collapse them into one.
+    $success = ['event' => 'charge.success', 'data' => ['id' => 888888]];
+    $refund = ['event' => 'refund.processed', 'data' => ['id' => 888888]];
+
+    $this->withHeader('x-paystack-signature', paystackWebhookSignature($success))
+        ->postJson(API_V1_PAYSTACK_WEBHOOK_ENDPOINT, $success)
+        ->assertStatus(200);
+
+    $this->withHeader('x-paystack-signature', paystackWebhookSignature($refund))
+        ->postJson(API_V1_PAYSTACK_WEBHOOK_ENDPOINT, $refund)
+        ->assertStatus(200);
+
+    expect(WebhookEvent::where('event_id', 'paystack_charge.success_888888')->exists())->toBeTrue();
+    expect(WebhookEvent::where('event_id', 'paystack_refund.processed_888888')->exists())->toBeTrue();
 });

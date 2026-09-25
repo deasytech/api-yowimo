@@ -56,18 +56,26 @@ class PaystackClient
     }
 
     /**
-     * Never throws: a bad reference/authorization code, a card decline, or a
-     * network failure are all routine outcomes here (a purchase attempt),
-     * not exceptional ones — the caller (PaystackPaymentProvider) treats any
-     * response without a successful `data.status` as a decline. Paystack
-     * itself returns a non-2xx status (with no `data` key) for a not-found
-     * reference or a malformed authorization code, as opposed to a genuine
-     * card decline, which is a 200 with `data.status: "failed"` — both are
-     * handled uniformly by returning the body (or an empty array) rather
-     * than throwing, so neither ever surfaces as a 500 to the customer.
+     * Never throws for a *completed* request: a bad reference/authorization
+     * code or a genuine card decline are routine outcomes here (a purchase
+     * attempt), not exceptional ones — the caller (PaystackPaymentProvider)
+     * treats any response without a successful `data.status` as a decline.
+     * Paystack itself returns a non-2xx status (with no `data` key) for a
+     * not-found reference or a malformed authorization code, as opposed to a
+     * genuine card decline, which is a 200 with `data.status: "failed"` —
+     * both are handled uniformly by returning the body rather than throwing,
+     * so neither ever surfaces as a 500 to the customer.
+     *
+     * A connection failure is different: we genuinely don't know whether
+     * Paystack processed the request before the connection dropped, so it's
+     * surfaced as PaystackConnectionException rather than folded into a
+     * silent decline — see PaystackPaymentProvider for how that ambiguity is
+     * resolved for a charge attempt specifically.
      *
      * @param  array<string, mixed>  $payload
      * @return array<string, mixed>
+     *
+     * @throws PaystackConnectionException
      */
     private function request(string $method, string $path, array $payload = []): array
     {
@@ -79,7 +87,7 @@ class PaystackClient
         } catch (ConnectionException $e) {
             Log::warning('Paystack request failed to connect.', ['path' => $path, 'error' => $e->getMessage()]);
 
-            return [];
+            throw new PaystackConnectionException($e->getMessage(), previous: $e);
         }
 
         if ($response->failed()) {

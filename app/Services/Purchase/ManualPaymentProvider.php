@@ -18,6 +18,7 @@ class ManualPaymentProvider implements PaymentProvider
         TokenBundle $bundle,
         ?PaymentMethod $paymentMethod = null,
         ?string $paymentReference = null,
+        ?string $idempotencyKey = null,
     ): bool {
         return true;
     }

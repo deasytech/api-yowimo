@@ -36,19 +36,31 @@ class PaymentMethodService
      * since card metadata like the expiry can change). The very first saved
      * method for a user becomes their default automatically.
      *
+     * Returns null, without saving anything, if this authorization is
+     * already saved against a *different* user — Paystack ties an
+     * authorization to one customer, so a mismatch here is never legitimate
+     * and must not silently reassign someone else's saved card.
+     *
      * @param  array<string, mixed>  $authorization
      */
-    public function saveFromAuthorization(User $user, string $provider, array $authorization): PaymentMethod
+    public function saveFromAuthorization(User $user, string $provider, array $authorization): ?PaymentMethod
     {
-        $method = PaymentMethod::query()->firstOrNew([
+        $existing = PaymentMethod::query()
+            ->where('provider', $provider)
+            ->where('authorization_code', $authorization['authorization_code'])
+            ->first();
+
+        if ($existing && $existing->user_id !== $user->id) {
+            return null;
+        }
+
+        $method = $existing ?? new PaymentMethod([
+            'user_id' => $user->id,
             'provider' => $provider,
             'authorization_code' => $authorization['authorization_code'],
         ]);
 
-        $isNew = ! $method->exists;
-
         $method->fill([
-            'user_id' => $user->id,
             'card_type' => $authorization['card_type'] ?? null,
             'last4' => $authorization['last4'] ?? null,
             'exp_month' => $authorization['exp_month'] ?? null,
@@ -56,7 +68,7 @@ class PaymentMethodService
             'bank' => $authorization['bank'] ?? null,
         ]);
 
-        if ($isNew) {
+        if (! $method->exists) {
             $method->is_default = ! $user->paymentMethods()->exists();
         }
 
