@@ -17,6 +17,7 @@ function paystackVerifyUrl(string $reference): string
 }
 
 const PAYSTACK_CHARGE_AUTHORIZATION_URL = 'https://api.paystack.co/transaction/charge_authorization';
+const PAYSTACK_CONNECTION_ERROR_MESSAGE = 'Connection timed out';
 
 it('charges a saved payment method and approves when the amount and currency match', function () {
     $user = User::factory()->create();
@@ -153,7 +154,7 @@ it('resolves a saved-method charge by verifying instead of assuming decline when
     $method = PaymentMethod::factory()->create(['user_id' => $user->id]);
 
     Http::fake([
-        PAYSTACK_CHARGE_AUTHORIZATION_URL => fn () => throw new ConnectionException('Connection timed out'),
+        PAYSTACK_CHARGE_AUTHORIZATION_URL => fn () => throw new ConnectionException(PAYSTACK_CONNECTION_ERROR_MESSAGE),
         'https://api.paystack.co/transaction/verify/*' => Http::response([
             'data' => ['status' => 'success', 'amount' => 999, 'currency' => 'USD'],
         ]),
@@ -167,7 +168,7 @@ it('declines a saved-method charge when both the charge and the fallback verify 
     $bundle = TokenBundle::factory()->create(['price' => 9.99, 'currency' => 'USD']);
     $method = PaymentMethod::factory()->create(['user_id' => $user->id]);
 
-    Http::fake(fn () => throw new ConnectionException('Connection timed out'));
+    Http::fake(fn () => throw new ConnectionException(PAYSTACK_CONNECTION_ERROR_MESSAGE));
 
     expect(app(PaystackPaymentProvider::class)->charge($user, $bundle, paymentMethod: $method, idempotencyKey: 'purchase_unreachable_key'))->toBeFalse();
 });
@@ -338,7 +339,7 @@ it('declines cleanly, without throwing, when Paystack is unreachable', function 
     $user = User::factory()->create();
     $bundle = TokenBundle::factory()->create(['price' => 15, 'currency' => 'USD']);
 
-    Http::fake(fn () => throw new ConnectionException('Connection timed out'));
+    Http::fake(fn () => throw new ConnectionException(PAYSTACK_CONNECTION_ERROR_MESSAGE));
 
     expect(app(PaystackPaymentProvider::class)->charge($user, $bundle, paymentReference: 'ref_unreachable'))->toBeFalse();
 });

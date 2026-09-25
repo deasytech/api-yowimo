@@ -33,9 +33,9 @@ it('lists active token bundles ordered by sort order', function () {
 
 it('shows the default (Naira) price to a buyer with a Nigerian profile', function () {
     $token = $this->clerkToken(['sub' => 'user_bundle_nigeria', 'email' => 'lagos-buyer@example.com']);
-    $this->withHeader('Authorization', "Bearer {$token}")->getJson('/api/v1/users/me')->assertOk();
+    $this->withHeader('Authorization', "Bearer {$token}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
     $this->withHeader('Authorization', "Bearer {$token}")
-        ->patchJson('/api/v1/users/me', ['country_code' => 'NG'])
+        ->patchJson(API_V1_ME_ENDPOINT, ['country_code' => 'NG'])
         ->assertOk();
 
     TokenBundle::factory()->create(['name' => 'Starter', 'price' => 3000, 'currency' => 'NGN', 'price_usd' => 1.99]);
@@ -63,9 +63,9 @@ it('shows the default (Naira) price to a buyer with no country on file', functio
 
 it('shows the USD price to a buyer confirmed to be outside Nigeria', function () {
     $token = $this->clerkToken(['sub' => 'user_bundle_other_country', 'email' => 'ny-buyer@example.com']);
-    $this->withHeader('Authorization', "Bearer {$token}")->getJson('/api/v1/users/me')->assertOk();
+    $this->withHeader('Authorization', "Bearer {$token}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
     $this->withHeader('Authorization', "Bearer {$token}")
-        ->patchJson('/api/v1/users/me', ['country_code' => 'US'])
+        ->patchJson(API_V1_ME_ENDPOINT, ['country_code' => 'US'])
         ->assertOk();
 
     TokenBundle::factory()->create(['name' => 'Starter', 'price' => 3000, 'currency' => 'NGN', 'price_usd' => 1.99]);
@@ -80,9 +80,9 @@ it('shows the USD price to a buyer confirmed to be outside Nigeria', function ()
 
 it('falls back to the default price for a non-Nigerian buyer when no USD price is set', function () {
     $token = $this->clerkToken(['sub' => 'user_bundle_no_usd_price', 'email' => 'ny-buyer2@example.com']);
-    $this->withHeader('Authorization', "Bearer {$token}")->getJson('/api/v1/users/me')->assertOk();
+    $this->withHeader('Authorization', "Bearer {$token}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
     $this->withHeader('Authorization', "Bearer {$token}")
-        ->patchJson('/api/v1/users/me', ['country_code' => 'US'])
+        ->patchJson(API_V1_ME_ENDPOINT, ['country_code' => 'US'])
         ->assertOk();
 
     TokenBundle::factory()->create(['name' => 'Starter', 'price' => 3000, 'currency' => 'NGN', 'price_usd' => null]);
