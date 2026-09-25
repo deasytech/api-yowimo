@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\IndexPartyRequest;
+use App\Http\Requests\Api\V1\LookupPartyRequest;
 use App\Http\Requests\Api\V1\StorePartyRequest;
 use App\Http\Requests\Api\V1\UpdatePartyRequest;
 use App\Http\Resources\Api\V1\PartyResource;
@@ -37,6 +38,19 @@ class PartyController extends Controller
         $party = $this->parties->create($request->user(), $request->validated(), $request->file('cover_image'));
 
         return ApiResponse::success(new PartyResource($party), 'Party created successfully.', 201);
+    }
+
+    /**
+     * Resolves a room code to its party summary — the caller then joins via
+     * the existing POST /parties/{party}/join with the resolved id. Not
+     * gated by the same visibility rule as show(): a valid room code is its
+     * own authorization, private parties included (see PartyService::findByRoomCode()).
+     */
+    public function lookup(LookupPartyRequest $request): JsonResponse
+    {
+        $party = $this->parties->findByRoomCode($request->string('room_code')->toString(), $request->user());
+
+        return ApiResponse::success(new PartyResource($party), 'Party found.');
     }
 
     public function show(int $id, Request $request): JsonResponse

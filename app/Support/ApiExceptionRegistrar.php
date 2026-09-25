@@ -17,6 +17,7 @@ use App\Exceptions\Api\InvalidFriendshipTransitionException;
 use App\Exceptions\Api\InvalidPartyTransitionException;
 use App\Exceptions\Api\InvalidPaystackWebhookException;
 use App\Exceptions\Api\PackAlreadyOwnedException;
+use App\Exceptions\Api\PackNotInGameTypeException;
 use App\Exceptions\Api\PartyFullException;
 use App\Exceptions\Api\PartyGameAlreadyStartedException;
 use App\Exceptions\Api\PartyHostCannotLeaveException;
@@ -164,6 +165,15 @@ class ApiExceptionRegistrar
             $exceptions,
             InvalidPartyTransitionException::class,
             fn (InvalidPartyTransitionException $e) => ApiResponse::error(
+                $e->getMessage(),
+                status: 422
+            )
+        );
+
+        self::registerHandler(
+            $exceptions,
+            PackNotInGameTypeException::class,
+            fn (PackNotInGameTypeException $e) => ApiResponse::error(
                 $e->getMessage(),
                 status: 422
             )

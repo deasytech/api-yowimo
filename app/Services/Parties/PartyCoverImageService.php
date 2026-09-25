@@ -2,6 +2,7 @@
 
 namespace App\Services\Parties;
 
+use App\Exceptions\Api\PartyCoverImageUploadException;
 use App\Filament\Support\ImageOptimizer;
 use App\Filament\Support\ImageUploadField;
 use Illuminate\Http\UploadedFile;
@@ -23,13 +24,16 @@ class PartyCoverImageService
         'image/webp' => 'webp',
     ];
 
-    public function store(UploadedFile $file): ?string
+    /**
+     * @throws PartyCoverImageUploadException if the file's type isn't supported or the disk write fails.
+     */
+    public function store(UploadedFile $file): string
     {
         $mimeType = $file->getMimeType();
         $extension = self::EXTENSION_BY_MIME_TYPE[$mimeType] ?? null;
 
         if ($extension === null) {
-            return null;
+            throw new PartyCoverImageUploadException("Unsupported cover image type: {$mimeType}.");
         }
 
         $path = 'parties/covers/'.Str::ulid().'.'.$extension;
@@ -40,9 +44,21 @@ class PartyCoverImageService
         );
 
         if (! Storage::disk('public')->put($path, $contents, 'public')) {
-            return null;
+            throw new PartyCoverImageUploadException('Failed to store the uploaded cover image.');
         }
 
         return Storage::disk('public')->url($path);
+    }
+
+    /**
+     * Removes a previously stored cover image — used to clean up an upload
+     * that already succeeded when party creation fails afterward, so it
+     * doesn't stay orphaned on disk.
+     */
+    public function delete(string $url): void
+    {
+        Storage::disk('public')->delete(
+            Str::after($url, Storage::disk('public')->url(''))
+        );
     }
 }

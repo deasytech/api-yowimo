@@ -18,11 +18,14 @@ use Illuminate\Support\Facades\DB;
 class PartyMembershipService
 {
     /**
-     * Statuses a party can be joined in.
+     * Statuses a party can be joined in. Also used by PartyService's room
+     * code lookup, so a code for a draft/ended/cancelled party 404s the
+     * same way an unrecognized one does, rather than resolving to a party
+     * the caller can't actually join anyway.
      *
      * @var array<int, PartyStatus>
      */
-    private const JOINABLE_STATUSES = [PartyStatus::Scheduled, PartyStatus::Live];
+    public const JOINABLE_STATUSES = [PartyStatus::Scheduled, PartyStatus::Live];
 
     /**
      * @throws PartyNotJoinableException if the party's current status doesn't allow joining.

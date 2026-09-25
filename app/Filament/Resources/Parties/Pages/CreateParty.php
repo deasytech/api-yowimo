@@ -13,6 +13,14 @@ class CreateParty extends CreateRecord
     protected static string $resource = PartyResource::class;
 
     /**
+     * Wraps create() + afterCreate() (where the host's PartyMember row is
+     * made) in one transaction, so a failure creating that row rolls back
+     * the party record too instead of leaving an orphaned party with no
+     * members.
+     */
+    protected ?bool $hasDatabaseTransactions = true;
+
+    /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
@@ -20,6 +28,14 @@ class CreateParty extends CreateRecord
     {
         $data['room_code'] = app(RoomCodeGenerator::class)->generate();
         $data['players_count'] = 1;
+
+        // The sponsor_name field is only visible in the UI when is_sponsored
+        // is checked; visible() alone doesn't stop a stale value from being
+        // dehydrated, so it's cleared explicitly here rather than trusting
+        // the submitted payload.
+        if (! ($data['is_sponsored'] ?? false)) {
+            $data['sponsor_name'] = null;
+        }
 
         return $data;
     }

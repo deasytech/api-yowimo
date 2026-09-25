@@ -8,7 +8,9 @@ use App\Enums\PartyVisibility;
 use App\Filament\Support\ImageUploadField;
 use App\Models\GameType;
 use App\Models\Pack;
+use App\Models\Party;
 use App\Models\User;
+use Closure;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
@@ -17,6 +19,8 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 
@@ -47,11 +51,28 @@ class PartyForm
                         Select::make('game_type_id')
                             ->label('Game type')
                             ->options(fn () => GameType::query()->pluck('name', 'id'))
-                            ->searchable(),
+                            ->searchable()
+                            ->live()
+                            ->disabled(fn (?Party $record) => $record?->gameSessions()->exists() ?? false)
+                            ->afterStateUpdated(fn (Set $set) => $set('pack_id', null))
+                            ->helperText('Locked once a game session has started for this party.'),
                         Select::make('pack_id')
                             ->label('Pack')
-                            ->options(fn () => Pack::query()->pluck('name', 'id'))
-                            ->searchable(),
+                            ->options(fn (Get $get) => Pack::query()
+                                ->when($get('game_type_id'), fn ($query, $gameTypeId) => $query->where('game_type_id', $gameTypeId))
+                                ->pluck('name', 'id'))
+                            ->searchable()
+                            ->disabled(fn (?Party $record) => $record?->gameSessions()->exists() ?? false)
+                            ->rule(fn (Get $get): Closure => function (string $attribute, mixed $value, Closure $fail) use ($get) {
+                                if (blank($value) || blank($get('game_type_id'))) {
+                                    return;
+                                }
+
+                                if (! Pack::where('id', $value)->where('game_type_id', $get('game_type_id'))->exists()) {
+                                    $fail('The selected pack does not belong to the selected game type.');
+                                }
+                            })
+                            ->helperText('Only shows packs for the selected game type; locked once a game session has started.'),
                         TextInput::make('room_code')
                             ->label('Room code')
                             ->maxLength(10)
@@ -124,6 +145,8 @@ class PartyForm
                         ImageUploadField::make('cover_image_url', 'parties'),
                         TagsInput::make('tags')
                             ->helperText('Up to 5 tags, max 20 characters each.')
+                            ->rules(['array', 'max:5'])
+                            ->nestedRecursiveRules(['max:20'])
                             ->columnSpanFull(),
                         TagsInput::make('gradient')
                             ->helperText('Hex color stops, e.g. #7A1EFF')

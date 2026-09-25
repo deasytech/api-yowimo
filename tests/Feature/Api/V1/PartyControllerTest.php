@@ -305,6 +305,70 @@ it('returns 404 for a party that does not exist', function () {
         ->assertStatus(404);
 });
 
+it('resolves a room code to its party, including a private one', function () {
+    // room_code itself is conditionally hidden from the response for a
+    // non-host viewer of a private party (PartyResource's existing rule) —
+    // the point being tested here is that the *lookup* isn't blocked by
+    // that same visibility rule, not that the code is echoed back.
+    $token = $this->clerkToken();
+    $party = Party::factory()->create([
+        'visibility' => PartyVisibility::Private,
+        'status' => PartyStatus::Live,
+        'room_code' => 'ABC234',
+    ]);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->getJson(API_V1_PARTIES_ENDPOINT.'/lookup?room_code=ABC234')
+        ->assertStatus(200)
+        ->assertJsonPath('data.id', $party->id)
+        ->assertJsonPath('data.title', $party->title);
+});
+
+it('resolves a room code case-insensitively', function () {
+    $token = $this->clerkToken();
+    $party = Party::factory()->create(['status' => PartyStatus::Live, 'room_code' => 'XYZ789']);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->getJson(API_V1_PARTIES_ENDPOINT.'/lookup?room_code=xyz789')
+        ->assertStatus(200)
+        ->assertJsonPath('data.id', $party->id);
+});
+
+it('returns 404 for a room code that does not exist', function () {
+    $token = $this->clerkToken();
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->getJson(API_V1_PARTIES_ENDPOINT.'/lookup?room_code=NOPE00')
+        ->assertStatus(404);
+});
+
+it('returns 404 for a room code belonging to a draft party', function () {
+    $token = $this->clerkToken();
+    Party::factory()->create(['status' => PartyStatus::Draft, 'room_code' => 'DRAFT1']);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->getJson(API_V1_PARTIES_ENDPOINT.'/lookup?room_code=DRAFT1')
+        ->assertStatus(404);
+});
+
+it('returns 404 for a room code belonging to an ended party', function () {
+    $token = $this->clerkToken();
+    Party::factory()->create(['status' => PartyStatus::Ended, 'room_code' => 'ENDED1']);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->getJson(API_V1_PARTIES_ENDPOINT.'/lookup?room_code=ENDED1')
+        ->assertStatus(404);
+});
+
+it('rejects a room code lookup with no room_code given', function () {
+    $token = $this->clerkToken();
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->getJson(API_V1_PARTIES_ENDPOINT.'/lookup')
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('room_code');
+});
+
 it('lets the host set the game type and pack after creating the party without one', function () {
     $hostToken = $this->clerkToken(['sub' => 'user_update_host']);
     $host = provisionUserFromToken($this, $hostToken, 'user_update_host');

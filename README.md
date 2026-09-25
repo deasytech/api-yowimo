@@ -47,7 +47,9 @@ composer run setup
 
 At minimum, set these in `.env` before the API will authenticate real requests:
 
-- `CLERK_ISSUER`, `CLERK_JWKS_URL`, `CLERK_WEBHOOK_SECRET`, `CLERK_SECRET_KEY` — Clerk auth (see comments in `.env.example`)
+- `CLERK_ISSUER`, `CLERK_JWKS_URL` — verify Clerk-issued JWTs on incoming API requests
+- `CLERK_WEBHOOK_SECRET` — verifies the signature of incoming Clerk (Svix) webhooks
+- `CLERK_SECRET_KEY` — Backend API secret key, used only for server-to-server Clerk API calls (e.g. `clerk:sync-users`) — never exposed to a client
 - `DB_*` — a MySQL database (defaults to a local `yowimo` database)
 - `REDIS_*` — required for queues (Horizon) and cache
 

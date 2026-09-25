@@ -85,6 +85,21 @@ it('throttles the party-actions limiter per user', function () {
         ->assertStatus(429);
 });
 
+it('throttles the room-code-lookup limiter per user', function () {
+    $token = $this->clerkToken(['sub' => 'user_throttle_lookup']);
+    $party = Party::factory()->create(['status' => PartyStatus::Live, 'room_code' => 'LOOKUP']);
+
+    for ($i = 0; $i < 10; $i++) {
+        $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson("/api/v1/parties/lookup?room_code={$party->room_code}")
+            ->assertStatus(200);
+    }
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->getJson("/api/v1/parties/lookup?room_code={$party->room_code}")
+        ->assertStatus(429);
+});
+
 it('throttles the friend-requests limiter per user', function () {
     $sender = $this->clerkToken(['sub' => 'user_throttle_friend_sender']);
     $this->withHeader('Authorization', "Bearer {$sender}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
