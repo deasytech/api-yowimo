@@ -31,13 +31,8 @@ class TokenBundlesTable
                     ->numeric()
                     ->suffix(' tokens'),
                 TextColumn::make('price')
-                    ->money(fn ($record) => $record->currency ?? 'NGN')
+                    ->money(fn ($record) => $record->currency ?? 'USD')
                     ->sortable(),
-                TextColumn::make('price_usd')
-                    ->label('Price (USD)')
-                    ->money('USD')
-                    ->placeholder('Not set')
-                    ->toggleable(),
                 TextColumn::make('badge'),
                 IconColumn::make('is_featured')
                     ->boolean(),

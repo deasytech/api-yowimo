@@ -13,8 +13,6 @@ use App\Http\Controllers\Api\V1\PackPurchaseController;
 use App\Http\Controllers\Api\V1\PartyController;
 use App\Http\Controllers\Api\V1\PartyLikeController;
 use App\Http\Controllers\Api\V1\PartyMembershipController;
-use App\Http\Controllers\Api\V1\PaymentMethodController;
-use App\Http\Controllers\Api\V1\PaystackWebhookController;
 use App\Http\Controllers\Api\V1\PushTokenController;
 use App\Http\Controllers\Api\V1\TokenBundleController;
 use App\Http\Controllers\Api\V1\TokenBundlePurchaseController;
@@ -39,10 +37,6 @@ Route::prefix('v1')->group(function () {
 
         Route::get('/wallet', [WalletController::class, 'show']);
         Route::get('/wallet/transactions', [WalletController::class, 'transactions']);
-
-        Route::get('/wallet/payment-methods', [PaymentMethodController::class, 'index']);
-        Route::patch('/wallet/payment-methods/{paymentMethod}/default', [PaymentMethodController::class, 'setDefault'])->middleware('throttle:purchases');
-        Route::delete('/wallet/payment-methods/{paymentMethod}', [PaymentMethodController::class, 'destroy'])->middleware('throttle:purchases');
 
         Route::get('/badges', [BadgeController::class, 'index']);
         Route::get('/users/me/badges', [BadgeController::class, 'mine']);
@@ -77,7 +71,6 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::post('/webhooks/clerk', ClerkWebhookController::class)->middleware('throttle:webhooks');
-    Route::post('/webhooks/paystack', PaystackWebhookController::class)->middleware('throttle:webhooks');
 
     Route::get('/health', [HealthController::class, 'show'])->middleware('throttle:api');
 });
