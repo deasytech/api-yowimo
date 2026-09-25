@@ -118,6 +118,20 @@ function pickTurnTokens(User $host, string $hostToken, string $freshVoterToken, 
         : [$freshVoterToken, $hostToken];
 }
 
+/**
+ * Casts a vote as whichever of host/voter does not own the turn, and asserts
+ * the expected outcome — the shared tail of every test that just wants to
+ * know whether a non-owner's vote is accepted or rejected in a given state.
+ */
+function voteAsOtherPartyMemberAndExpectStatus(TestCase $test, User $host, string $hostToken, string $freshVoterToken, int $turnOwnerId, int $sessionId, int $turnId, int $expectedStatus): void
+{
+    [, $voterToken] = pickTurnTokens($host, $hostToken, $freshVoterToken, $turnOwnerId);
+
+    $test->withHeader('Authorization', "Bearer {$voterToken}")
+        ->postJson(voteEndpoint($sessionId, $turnId), ['category' => 'winner'])
+        ->assertStatus($expectedStatus);
+}
+
 it('rejects casting a vote with no bearer token', function () {
     [, , , $sessionId, $turnId] = startVoteTestSession(
         $this,
@@ -215,11 +229,7 @@ it('rejects voting on a turn after the game has already completed', function () 
         ->assertStatus(200)
         ->assertJsonPath('data.status', 'completed');
 
-    [, $voterToken] = pickTurnTokens($host, $hostToken, $this->clerkToken(['sub' => 'user_vote_voter_ended']), $turnOwnerId);
-
-    $this->withHeader('Authorization', "Bearer {$voterToken}")
-        ->postJson(voteEndpoint($sessionId, $turnId), ['category' => 'winner'])
-        ->assertStatus(422);
+    voteAsOtherPartyMemberAndExpectStatus($this, $host, $hostToken, $this->clerkToken(['sub' => 'user_vote_voter_ended']), $turnOwnerId, $sessionId, $turnId, 422);
 });
 
 it('rejects voting on a turn that has not completed yet', function () {
@@ -231,11 +241,7 @@ it('rejects voting on a turn that has not completed yet', function () {
         'user_vote_voter_incomplete',
     );
 
-    [, $voterToken] = pickTurnTokens($host, $hostToken, $this->clerkToken(['sub' => 'user_vote_voter_incomplete']), $turnOwnerId);
-
-    $this->withHeader('Authorization', "Bearer {$voterToken}")
-        ->postJson(voteEndpoint($sessionId, $turnId), ['category' => 'winner'])
-        ->assertStatus(422);
+    voteAsOtherPartyMemberAndExpectStatus($this, $host, $hostToken, $this->clerkToken(['sub' => 'user_vote_voter_incomplete']), $turnOwnerId, $sessionId, $turnId, 422);
 });
 
 it('rejects casting the same category of vote twice on the same turn', function () {
