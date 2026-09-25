@@ -3,9 +3,13 @@
 use App\Enums\PartyMode;
 use App\Enums\PartyStatus;
 use App\Enums\PartyVisibility;
+use App\Models\GameSession;
 use App\Models\GameType;
+use App\Models\Pack;
 use App\Models\Party;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\Support\FakesClerk;
 use Tests\TestCase;
 
@@ -99,6 +103,63 @@ it('creates an online party with a generated room code and live status', functio
 
     $host = User::where('clerk_user_id', 'user_create_online')->firstOrFail();
     expect(Party::where('room_code', $roomCode)->first()->host_id)->toBe($host->id);
+});
+
+it('creates a party with an uploaded cover image that appears in the discover feed', function () {
+    Storage::fake('public');
+    $token = $this->clerkToken(['sub' => 'user_create_with_image']);
+
+    $response = $this->withHeader('Authorization', "Bearer {$token}")
+        ->post(API_V1_PARTIES_ENDPOINT, [
+            'title' => 'Party With A Cover',
+            'mode' => 'online',
+            'visibility' => 'public',
+            'cover_image' => UploadedFile::fake()->image('cover.jpg'),
+        ])
+        ->assertStatus(201);
+
+    $coverImageUrl = $response->json('data.cover_image_url');
+    expect($coverImageUrl)->not->toBeNull();
+
+    $party = Party::where('title', 'Party With A Cover')->firstOrFail();
+    expect($party->cover_image_url)->toBe($coverImageUrl);
+
+    Storage::disk('public')->assertExists(
+        str($coverImageUrl)->after('/storage/')->toString()
+    );
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->getJson(API_V1_PARTIES_ENDPOINT)
+        ->assertStatus(200)
+        ->assertJsonPath('data.0.cover_image_url', $coverImageUrl);
+});
+
+it('rejects a non-image file as the cover image', function () {
+    Storage::fake('public');
+    $token = $this->clerkToken();
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->post(API_V1_PARTIES_ENDPOINT, [
+            'title' => 'Party With A Bad Cover',
+            'mode' => 'online',
+            'visibility' => 'public',
+            'cover_image' => UploadedFile::fake()->create('malicious.svg', 10, 'image/svg+xml'),
+        ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('cover_image');
+});
+
+it('creates a party with no cover image when none is provided', function () {
+    $token = $this->clerkToken();
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->postJson(API_V1_PARTIES_ENDPOINT, [
+            'title' => 'Party With No Cover',
+            'mode' => 'online',
+            'visibility' => 'public',
+        ])
+        ->assertStatus(201)
+        ->assertJsonPath('data.cover_image_url', null);
 });
 
 it('creates a draft party when save_as_draft is true', function () {
@@ -242,4 +303,87 @@ it('returns 404 for a party that does not exist', function () {
     $this->withHeader('Authorization', "Bearer {$token}")
         ->getJson(API_V1_PARTIES_ENDPOINT.'/999999')
         ->assertStatus(404);
+});
+
+it('lets the host set the game type and pack after creating the party without one', function () {
+    $hostToken = $this->clerkToken(['sub' => 'user_update_host']);
+    $host = provisionUserFromToken($this, $hostToken, 'user_update_host');
+    $party = Party::factory()->create(['host_id' => $host->id, 'game_type_id' => null, 'pack_id' => null]);
+
+    $gameType = GameType::factory()->create();
+    $pack = Pack::factory()->create(['game_type_id' => $gameType->id]);
+
+    $this->withHeader('Authorization', "Bearer {$hostToken}")
+        ->patchJson(API_V1_PARTIES_ENDPOINT."/{$party->id}", [
+            'game_type_id' => $gameType->id,
+            'pack_id' => $pack->id,
+        ])
+        ->assertStatus(200)
+        ->assertJsonPath('data.game_type.id', $gameType->id)
+        ->assertJsonPath('data.pack.id', $pack->id);
+
+    expect($party->fresh()->pack_id)->toBe($pack->id);
+});
+
+it('lets the host clear the pack selection by setting it back to null', function () {
+    $hostToken = $this->clerkToken(['sub' => 'user_update_clear_host']);
+    $host = provisionUserFromToken($this, $hostToken, 'user_update_clear_host');
+    $party = Party::factory()->create(['host_id' => $host->id, 'pack_id' => Pack::factory()->create()->id]);
+
+    $this->withHeader('Authorization', "Bearer {$hostToken}")
+        ->patchJson(API_V1_PARTIES_ENDPOINT."/{$party->id}", ['pack_id' => null])
+        ->assertStatus(200)
+        ->assertJsonPath('data.pack', null);
+
+    expect($party->fresh()->pack_id)->toBeNull();
+});
+
+it('forbids a non-host from updating the party', function () {
+    $hostToken = $this->clerkToken(['sub' => 'user_update_forbidden_host']);
+    $host = provisionUserFromToken($this, $hostToken, 'user_update_forbidden_host');
+    $party = Party::factory()->create(['host_id' => $host->id]);
+
+    $otherToken = $this->clerkToken(['sub' => 'user_update_forbidden_other']);
+    $this->app->make('auth')->forgetGuards();
+
+    $this->withHeader('Authorization', "Bearer {$otherToken}")
+        ->patchJson(API_V1_PARTIES_ENDPOINT."/{$party->id}", ['pack_id' => Pack::factory()->create()->id])
+        ->assertStatus(403);
+});
+
+it('rejects changing the pack once a game session has already started for the party', function () {
+    $hostToken = $this->clerkToken(['sub' => 'user_update_started_host']);
+    $host = provisionUserFromToken($this, $hostToken, 'user_update_started_host');
+    $party = Party::factory()->create(['host_id' => $host->id]);
+    GameSession::factory()->create(['party_id' => $party->id]);
+
+    $newPack = Pack::factory()->create();
+
+    $this->withHeader('Authorization', "Bearer {$hostToken}")
+        ->patchJson(API_V1_PARTIES_ENDPOINT."/{$party->id}", ['pack_id' => $newPack->id])
+        ->assertStatus(409);
+
+    expect($party->fresh()->pack_id)->not->toBe($newPack->id);
+});
+
+it('allows updating unrelated fields even after a game session has started', function () {
+    $hostToken = $this->clerkToken(['sub' => 'user_update_started_noop_host']);
+    $host = provisionUserFromToken($this, $hostToken, 'user_update_started_noop_host');
+    $party = Party::factory()->create(['host_id' => $host->id]);
+    GameSession::factory()->create(['party_id' => $party->id]);
+
+    $this->withHeader('Authorization', "Bearer {$hostToken}")
+        ->patchJson(API_V1_PARTIES_ENDPOINT."/{$party->id}", [])
+        ->assertStatus(200);
+});
+
+it('rejects an invalid pack id when updating a party', function () {
+    $hostToken = $this->clerkToken(['sub' => 'user_update_invalid_pack_host']);
+    $host = provisionUserFromToken($this, $hostToken, 'user_update_invalid_pack_host');
+    $party = Party::factory()->create(['host_id' => $host->id]);
+
+    $this->withHeader('Authorization', "Bearer {$hostToken}")
+        ->patchJson(API_V1_PARTIES_ENDPOINT."/{$party->id}", ['pack_id' => 999999])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('pack_id');
 });

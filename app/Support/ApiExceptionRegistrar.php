@@ -18,6 +18,7 @@ use App\Exceptions\Api\InvalidPartyTransitionException;
 use App\Exceptions\Api\InvalidPaystackWebhookException;
 use App\Exceptions\Api\PackAlreadyOwnedException;
 use App\Exceptions\Api\PartyFullException;
+use App\Exceptions\Api\PartyGameAlreadyStartedException;
 use App\Exceptions\Api\PartyHostCannotLeaveException;
 use App\Exceptions\Api\PartyNotJoinableException;
 use App\Exceptions\Api\PaymentDeclinedException;
@@ -165,6 +166,15 @@ class ApiExceptionRegistrar
             fn (InvalidPartyTransitionException $e) => ApiResponse::error(
                 $e->getMessage(),
                 status: 422
+            )
+        );
+
+        self::registerHandler(
+            $exceptions,
+            PartyGameAlreadyStartedException::class,
+            fn (PartyGameAlreadyStartedException $e) => ApiResponse::error(
+                $e->getMessage(),
+                status: 409
             )
         );
     }

@@ -29,6 +29,7 @@ class StorePartyRequest extends FormRequest
             'max_players' => ['sometimes', 'integer', 'min:2', 'max:200'],
             'starts_at' => ['sometimes', 'nullable', 'date', 'after_or_equal:now'],
             'save_as_draft' => ['sometimes', 'boolean'],
+            'cover_image' => ['sometimes', 'nullable', 'image', 'mimes:jpeg,png,webp', 'max:8192'],
             'location' => ['required_if:mode,hybrid,in_person', 'nullable', 'array'],
             'location.venue_name' => ['sometimes', 'nullable', 'string', 'max:150'],
             'location.address' => ['sometimes', 'nullable', 'string', 'max:255'],

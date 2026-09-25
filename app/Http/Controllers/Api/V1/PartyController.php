@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\IndexPartyRequest;
 use App\Http\Requests\Api\V1\StorePartyRequest;
+use App\Http\Requests\Api\V1\UpdatePartyRequest;
 use App\Http\Resources\Api\V1\PartyResource;
 use App\Models\Party;
 use App\Services\Parties\PartyService;
@@ -33,7 +34,7 @@ class PartyController extends Controller
     {
         $this->authorize('create', Party::class);
 
-        $party = $this->parties->create($request->user(), $request->validated());
+        $party = $this->parties->create($request->user(), $request->validated(), $request->file('cover_image'));
 
         return ApiResponse::success(new PartyResource($party), 'Party created successfully.', 201);
     }
@@ -45,5 +46,16 @@ class PartyController extends Controller
         $this->authorize('view', $party);
 
         return ApiResponse::success(new PartyResource($party), 'Party retrieved successfully.');
+    }
+
+    public function update(int $id, UpdatePartyRequest $request): JsonResponse
+    {
+        $party = Party::findOrFail($id);
+
+        $this->authorize('update', $party);
+
+        $party = $this->parties->update($party, $request->validated());
+
+        return ApiResponse::success(new PartyResource($party), 'Party updated successfully.');
     }
 }

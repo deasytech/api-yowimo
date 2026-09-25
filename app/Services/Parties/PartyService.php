@@ -5,17 +5,23 @@ namespace App\Services\Parties;
 use App\Enums\PartyStatus;
 use App\Enums\PartyVisibility;
 use App\Events\PartyCreated;
+use App\Exceptions\Api\PartyGameAlreadyStartedException;
 use App\Models\Party;
 use App\Models\PartyMember;
 use App\Models\User;
 use Illuminate\Database\QueryException;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\CursorPaginator;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class PartyService
 {
-    public function __construct(private readonly RoomCodeGenerator $roomCodes) {}
+    public function __construct(
+        private readonly RoomCodeGenerator $roomCodes,
+        private readonly PartyCoverImageService $coverImages,
+    ) {}
 
     /**
      * List public, discoverable parties for the Discover feed.
@@ -62,11 +68,16 @@ class PartyService
     /**
      * @param  array<string, mixed>  $data
      */
-    public function create(User $host, array $data): Party
+    public function create(User $host, array $data, ?UploadedFile $coverImage = null): Party
     {
-        return DB::transaction(function () use ($host, $data) {
+        // Uploaded once here, not inside attemptInsert(): that can run twice
+        // on a room-code retry, which would otherwise re-optimize and store
+        // the same image twice and orphan the first copy.
+        $coverImageUrl = $coverImage ? $this->coverImages->store($coverImage) : null;
+
+        return DB::transaction(function () use ($host, $data, $coverImageUrl) {
             try {
-                $party = $this->attemptInsert($host, $data, $this->roomCodes->generate());
+                $party = $this->attemptInsert($host, $data, $this->roomCodes->generate(), $coverImageUrl);
             } catch (QueryException $exception) {
                 if (! $this->isRoomCodeUniqueViolation($exception)) {
                     throw $exception;
@@ -77,7 +88,7 @@ class PartyService
                 // its own nested transaction/savepoint so the failed first
                 // insert is rolled back cleanly instead of aborting the
                 // outer transaction before the retry runs.
-                $party = $this->attemptInsert($host, $data, $this->roomCodes->generate());
+                $party = $this->attemptInsert($host, $data, $this->roomCodes->generate(), $coverImageUrl);
             }
 
             return $party->load(['host', 'gameType', 'pack']);
@@ -87,15 +98,15 @@ class PartyService
     /**
      * @param  array<string, mixed>  $data
      */
-    private function attemptInsert(User $host, array $data, string $roomCode): Party
+    private function attemptInsert(User $host, array $data, string $roomCode, ?string $coverImageUrl): Party
     {
-        return DB::transaction(fn () => $this->insertParty($host, $data, $roomCode));
+        return DB::transaction(fn () => $this->insertParty($host, $data, $roomCode, $coverImageUrl));
     }
 
     /**
      * @param  array<string, mixed>  $data
      */
-    private function insertParty(User $host, array $data, string $roomCode): Party
+    private function insertParty(User $host, array $data, string $roomCode, ?string $coverImageUrl): Party
     {
         $party = Party::create([
             'host_id' => $host->id,
@@ -112,6 +123,7 @@ class PartyService
             'starts_at' => $data['starts_at'] ?? null,
             'location' => $data['location'] ?? null,
             'tags' => $data['tags'] ?? [],
+            'cover_image_url' => $coverImageUrl,
         ]);
 
         PartyMember::create([
@@ -123,6 +135,31 @@ class PartyService
         PartyCreated::dispatch($party->id, $host->id);
 
         return $party;
+    }
+
+    /**
+     * Sets the party's game type/pack selection — the only way to fill this
+     * in when it wasn't chosen at creation, since both are optional there.
+     * Only settable while no game session has started yet: once turns/rounds
+     * have been dealt from the original pack, changing it retroactively
+     * would be inconsistent with data already created.
+     *
+     * @param  array<string, mixed>  $data
+     *
+     * @throws PartyGameAlreadyStartedException if a game session already exists for this party.
+     */
+    public function update(Party $party, array $data): Party
+    {
+        $changes = Arr::only($data, ['game_type_id', 'pack_id']);
+
+        if ($changes !== [] && $party->gameSessions()->exists()) {
+            throw new PartyGameAlreadyStartedException;
+        }
+
+        $party->fill($changes);
+        $party->save();
+
+        return $party->load(['host', 'gameType', 'pack']);
     }
 
     private function isRoomCodeUniqueViolation(QueryException $exception): bool

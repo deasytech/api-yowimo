@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Parties\Tables;
 use App\Enums\PartyStatus;
 use App\Enums\PartyVisibility;
 use App\Filament\Support\BadgeColors;
+use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontWeight;
 use Filament\Tables\Columns\TextColumn;
@@ -60,6 +61,7 @@ class PartiesTable
             ])
             ->recordActions([
                 ViewAction::make(),
+                EditAction::make(),
             ])
             ->toolbarActions([]);
     }

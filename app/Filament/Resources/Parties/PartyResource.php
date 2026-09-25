@@ -2,8 +2,11 @@
 
 namespace App\Filament\Resources\Parties;
 
+use App\Filament\Resources\Parties\Pages\CreateParty;
+use App\Filament\Resources\Parties\Pages\EditParty;
 use App\Filament\Resources\Parties\Pages\ListParties;
 use App\Filament\Resources\Parties\Pages\ViewParty;
+use App\Filament\Resources\Parties\Schemas\PartyForm;
 use App\Filament\Resources\Parties\Schemas\PartyInfolist;
 use App\Filament\Resources\Parties\Tables\PartiesTable;
 use App\Models\Party;
@@ -24,6 +27,11 @@ class PartyResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
+    public static function form(Schema $schema): Schema
+    {
+        return PartyForm::configure($schema);
+    }
+
     public static function infolist(Schema $schema): Schema
     {
         return PartyInfolist::configure($schema);
@@ -41,14 +49,21 @@ class PartyResource extends Resource
         ];
     }
 
+    /**
+     * Party's model policy also governs the public API, where "update" is
+     * host-only (see PartyPolicy::update()) — that restriction doesn't apply
+     * here, since reaching this resource at all already requires
+     * User::canAccessPanel() (is_admin). These overrides bypass the shared
+     * policy for the admin panel specifically, rather than loosening it.
+     */
     public static function canCreate(): bool
     {
-        return false;
+        return true;
     }
 
     public static function canEdit(Model $record): bool
     {
-        return false;
+        return true;
     }
 
     public static function canDelete(Model $record): bool
@@ -65,7 +80,9 @@ class PartyResource extends Resource
     {
         return [
             'index' => ListParties::route('/'),
+            'create' => CreateParty::route('/create'),
             'view' => ViewParty::route('/{record}'),
+            'edit' => EditParty::route('/{record}/edit'),
         ];
     }
 }
