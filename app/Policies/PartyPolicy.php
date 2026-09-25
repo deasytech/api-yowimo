@@ -25,19 +25,11 @@ class PartyPolicy
      */
     public function view(?User $user, Party $party): bool
     {
-        if ($user && $party->host_id === $user->id) {
+        if (($user && $party->host_id === $user->id) || $party->isMemberOf($user)) {
             return true;
         }
 
-        if ($party->isMemberOf($user)) {
-            return true;
-        }
-
-        if ($party->status === PartyStatus::Draft) {
-            return false;
-        }
-
-        return $party->visibility === PartyVisibility::Public;
+        return $party->status !== PartyStatus::Draft && $party->visibility === PartyVisibility::Public;
     }
 
     /**

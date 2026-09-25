@@ -29,6 +29,15 @@ function provisionUserFromToken(TestCase $test, string $token, string $sub): Use
     return User::where('clerk_user_id', $sub)->firstOrFail();
 }
 
+function createMembershipForUser(User $user, string $partyTitle, bool $left = false): Party
+{
+    $party = Party::factory()->create(['title' => $partyTitle]);
+    $factory = $left ? PartyMember::factory()->left() : PartyMember::factory();
+    $factory->create(['party_id' => $party->id, 'user_id' => $user->id]);
+
+    return $party;
+}
+
 it('rejects requests with no bearer token', function () {
     $this->getJson(API_V1_PARTIES_ENDPOINT)->assertStatus(401);
     $this->postJson(API_V1_PARTIES_ENDPOINT, [])->assertStatus(401);
@@ -496,7 +505,8 @@ it('lists every party the caller hosts, any status, filterable by status', funct
     $hostToken = $this->clerkToken(['sub' => 'user_hosted_list']);
     $host = provisionUserFromToken($this, $hostToken, 'user_hosted_list');
 
-    Party::factory()->create(['host_id' => $host->id, 'status' => PartyStatus::Draft, 'title' => 'My Draft', 'visibility' => PartyVisibility::Private]);
+    $draftTitle = 'My Draft';
+    Party::factory()->create(['host_id' => $host->id, 'status' => PartyStatus::Draft, 'title' => $draftTitle, 'visibility' => PartyVisibility::Private]);
     Party::factory()->create(['host_id' => $host->id, 'status' => PartyStatus::Ended, 'title' => 'My Ended']);
     $otherHost = User::factory()->create();
     Party::factory()->create(['host_id' => $otherHost->id, 'status' => PartyStatus::Draft, 'title' => 'Not Mine']);
@@ -506,14 +516,14 @@ it('lists every party the caller hosts, any status, filterable by status', funct
         ->assertStatus(200);
 
     $titles = collect($response->json('data'))->pluck('title');
-    expect($titles)->toContain('My Draft')->toContain('My Ended')->not->toContain('Not Mine');
+    expect($titles)->toContain($draftTitle)->toContain('My Ended')->not->toContain('Not Mine');
 
     $filtered = $this->withHeader('Authorization', "Bearer {$hostToken}")
         ->getJson('/api/v1/users/me/parties/hosted?status=draft')
         ->assertStatus(200);
 
     expect($filtered->json('data'))->toHaveCount(1);
-    $filtered->assertJsonPath('data.0.title', 'My Draft');
+    $filtered->assertJsonPath('data.0.title', $draftTitle);
 });
 
 it('rejects requests to the hosted parties endpoint with no bearer token', function () {
@@ -524,11 +534,11 @@ it('lists every party the caller has ever joined, current and past, excluding se
     $token = $this->clerkToken(['sub' => 'user_joined_list']);
     $user = provisionUserFromToken($this, $token, 'user_joined_list');
 
-    $activeParty = Party::factory()->create(['title' => 'Still In This One']);
-    PartyMember::factory()->create(['party_id' => $activeParty->id, 'user_id' => $user->id]);
+    $activeTitle = 'Still In This One';
+    createMembershipForUser($user, $activeTitle);
 
-    $leftParty = Party::factory()->create(['title' => 'Left This One']);
-    PartyMember::factory()->left()->create(['party_id' => $leftParty->id, 'user_id' => $user->id]);
+    $leftTitle = 'Left This One';
+    createMembershipForUser($user, $leftTitle, left: true);
 
     $ownParty = Party::factory()->create(['host_id' => $user->id, 'title' => 'My Own Party']);
     PartyMember::factory()->create(['party_id' => $ownParty->id, 'user_id' => $user->id]);
@@ -540,13 +550,13 @@ it('lists every party the caller has ever joined, current and past, excluding se
     $entries = collect($response->json('data'));
     $titles = $entries->pluck('party.title');
 
-    expect($titles)->toContain('Still In This One')->toContain('Left This One')->not->toContain('My Own Party');
+    expect($titles)->toContain($activeTitle)->toContain($leftTitle)->not->toContain('My Own Party');
 
-    $activeEntry = $entries->firstWhere('party.title', 'Still In This One');
+    $activeEntry = $entries->firstWhere('party.title', $activeTitle);
     expect($activeEntry['membership_status'])->toBe('active');
     expect($activeEntry['left_at'])->toBeNull();
 
-    $leftEntry = $entries->firstWhere('party.title', 'Left This One');
+    $leftEntry = $entries->firstWhere('party.title', $leftTitle);
     expect($leftEntry['membership_status'])->toBe('left');
     expect($leftEntry['left_at'])->not->toBeNull();
 });
@@ -555,11 +565,8 @@ it('filters the joined parties list by membership_status', function () {
     $token = $this->clerkToken(['sub' => 'user_joined_filter']);
     $user = provisionUserFromToken($this, $token, 'user_joined_filter');
 
-    $activeParty = Party::factory()->create(['title' => 'Active Membership']);
-    PartyMember::factory()->create(['party_id' => $activeParty->id, 'user_id' => $user->id]);
-
-    $leftParty = Party::factory()->create(['title' => 'Left Membership']);
-    PartyMember::factory()->left()->create(['party_id' => $leftParty->id, 'user_id' => $user->id]);
+    createMembershipForUser($user, 'Active Membership');
+    createMembershipForUser($user, 'Left Membership', left: true);
 
     $response = $this->withHeader('Authorization', "Bearer {$token}")
         ->getJson('/api/v1/users/me/parties/joined?membership_status=left')
