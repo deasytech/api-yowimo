@@ -19,6 +19,7 @@ use LogicException;
     'reference_type',
     'reference_id',
     'idempotency_key',
+    'payment_reference',
     'description',
     'metadata',
 ])]

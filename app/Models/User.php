@@ -98,6 +98,14 @@ class User extends Authenticatable implements FilamentUser, HasName
     }
 
     /**
+     * @return HasMany<PaymentMethod, $this>
+     */
+    public function paymentMethods(): HasMany
+    {
+        return $this->hasMany(PaymentMethod::class);
+    }
+
+    /**
      * @return HasMany<Friendship, $this>
      */
     public function sentFriendRequests(): HasMany

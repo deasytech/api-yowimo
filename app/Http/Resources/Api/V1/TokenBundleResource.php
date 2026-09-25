@@ -14,13 +14,20 @@ class TokenBundleResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        // Nigerian buyers see (and are later charged) the NGN price when
+        // one is set for this bundle; everyone else sees the default
+        // price/currency. Same `price`/`currency` keys either way, so this
+        // isn't a new field for API consumers to handle — just a value that
+        // now varies by viewer.
+        $price = $this->resource->priceFor($request->user());
+
         return [
             'id' => $this->id,
             'slug' => $this->slug,
             'name' => $this->name,
             'tokens' => $this->tokens,
-            'price' => (float) $this->price,
-            'currency' => $this->currency,
+            'price' => $price['amount'],
+            'currency' => $price['currency'],
             'badge' => $this->badge,
             'gradient' => $this->gradient ?? [],
             'is_featured' => $this->is_featured,
