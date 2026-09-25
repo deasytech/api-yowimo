@@ -274,22 +274,30 @@ it('blocks the host from leaving their own party', function () {
     expect(PartyMember::where('party_id', $party->id)->count())->toBe($party->fresh()->players_count);
 });
 
-it('lets the host start their draft party', function () {
-    [$host, $hostToken] = provisionPartyHost($this, $this->clerkToken(['sub' => 'user_host_start']), 'user_host_start');
+it('lets the host transition their party via start/end', function (string $action, PartyStatus $fromStatus, PartyStatus $toStatus, string $toStatusValue) {
+    [$host, $hostToken] = provisionPartyHost($this, $this->clerkToken(['sub' => "user_host_{$action}"]), "user_host_{$action}");
 
     $party = Party::factory()->create([
         'host_id' => $host->id,
         'visibility' => PartyVisibility::Public,
-        'status' => PartyStatus::Draft,
+        'status' => $fromStatus,
     ]);
 
-    $this->withHeader('Authorization', "Bearer {$hostToken}")
-        ->postJson(startEndpoint($party))
-        ->assertStatus(200)
-        ->assertJsonPath('data.status', 'live');
+    $endpoint = match ($action) {
+        'start' => startEndpoint($party),
+        'end' => endEndpoint($party),
+    };
 
-    expect($party->fresh()->status)->toBe(PartyStatus::Live);
-});
+    $this->withHeader('Authorization', "Bearer {$hostToken}")
+        ->postJson($endpoint)
+        ->assertStatus(200)
+        ->assertJsonPath('data.status', $toStatusValue);
+
+    expect($party->fresh()->status)->toBe($toStatus);
+})->with([
+    ['start', PartyStatus::Draft, PartyStatus::Live, 'live'],
+    ['end', PartyStatus::Live, PartyStatus::Ended, 'ended'],
+]);
 
 it('forbids a non-host from performing a host-only party action', function (string $action, PartyStatus $status) {
     $host = User::factory()->create();
@@ -317,50 +325,27 @@ it('forbids a non-host from performing a host-only party action', function (stri
     ['cancel', PartyStatus::Draft],
 ]);
 
-it('rejects starting a party that is already live', function () {
-    [$host, $hostToken] = provisionPartyHost($this, $this->clerkToken(['sub' => 'user_host_start_live']), 'user_host_start_live');
+it('rejects a start/end action from the wrong party status', function (string $action, PartyStatus $status) {
+    [$host, $hostToken] = provisionPartyHost($this, $this->clerkToken(['sub' => "user_host_{$action}_wrong_status"]), "user_host_{$action}_wrong_status");
 
     $party = Party::factory()->create([
         'host_id' => $host->id,
         'visibility' => PartyVisibility::Public,
-        'status' => PartyStatus::Live,
+        'status' => $status,
     ]);
 
+    $endpoint = match ($action) {
+        'start' => startEndpoint($party),
+        'end' => endEndpoint($party),
+    };
+
     $this->withHeader('Authorization', "Bearer {$hostToken}")
-        ->postJson(startEndpoint($party))
+        ->postJson($endpoint)
         ->assertStatus(422);
-});
-
-it('lets the host end their live party', function () {
-    [$host, $hostToken] = provisionPartyHost($this, $this->clerkToken(['sub' => 'user_host_end']), 'user_host_end');
-
-    $party = Party::factory()->create([
-        'host_id' => $host->id,
-        'visibility' => PartyVisibility::Public,
-        'status' => PartyStatus::Live,
-    ]);
-
-    $this->withHeader('Authorization', "Bearer {$hostToken}")
-        ->postJson(endEndpoint($party))
-        ->assertStatus(200)
-        ->assertJsonPath('data.status', 'ended');
-
-    expect($party->fresh()->status)->toBe(PartyStatus::Ended);
-});
-
-it('rejects ending a party that is not live', function () {
-    [$host, $hostToken] = provisionPartyHost($this, $this->clerkToken(['sub' => 'user_host_end_draft']), 'user_host_end_draft');
-
-    $party = Party::factory()->create([
-        'host_id' => $host->id,
-        'visibility' => PartyVisibility::Public,
-        'status' => PartyStatus::Draft,
-    ]);
-
-    $this->withHeader('Authorization', "Bearer {$hostToken}")
-        ->postJson(endEndpoint($party))
-        ->assertStatus(422);
-});
+})->with([
+    ['start', PartyStatus::Live],
+    ['end', PartyStatus::Draft],
+]);
 
 it('lets the host cancel their draft party', function (PartyStatus $status) {
     [$host, $hostToken] = provisionPartyHost($this, $this->clerkToken(['sub' => 'user_host_cancel_'.$status->value]), 'user_host_cancel_'.$status->value);
