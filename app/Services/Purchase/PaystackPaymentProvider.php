@@ -107,7 +107,16 @@ class PaystackPaymentProvider implements PaymentProvider
             return $this->verifyReference($reference, $price);
         }
 
-        return $this->matchesExpectedCharge($response['data'] ?? [], $price);
+        if ($this->matchesExpectedCharge($response['data'] ?? [], $price)) {
+            return true;
+        }
+
+        // The synchronous response didn't confirm success outright (e.g. a
+        // non-final status rather than a definitive decline) — the
+        // reference is deterministic for this attempt, so verifying it
+        // resolves whether it actually completed instead of assuming
+        // decline from a response that may not be the final word.
+        return $this->verifyReference($reference, $price);
     }
 
     /**

@@ -163,6 +163,44 @@ it('resolves a saved-method charge by verifying instead of assuming decline when
     expect(app(PaystackPaymentProvider::class)->charge($user, $bundle, paymentMethod: $method, idempotencyKey: 'purchase_dropped_key'))->toBeTrue();
 });
 
+it('resolves a saved-method charge by verifying when the synchronous response does not confirm success', function () {
+    // A charge_authorization call can complete without an outright
+    // "success" (e.g. a non-final status) — verifying by reference
+    // resolves whether it actually went through instead of assuming
+    // decline from a response that isn't the final word.
+    $user = User::factory()->create();
+    $bundle = TokenBundle::factory()->create(['price' => 9.99, 'currency' => 'USD']);
+    $method = PaymentMethod::factory()->create(['user_id' => $user->id]);
+
+    Http::fake([
+        PAYSTACK_CHARGE_AUTHORIZATION_URL => Http::response([
+            'data' => ['status' => 'pending', 'amount' => 999, 'currency' => 'USD'],
+        ]),
+        'https://api.paystack.co/transaction/verify/*' => Http::response([
+            'data' => ['status' => 'success', 'amount' => 999, 'currency' => 'USD'],
+        ]),
+    ]);
+
+    expect(app(PaystackPaymentProvider::class)->charge($user, $bundle, paymentMethod: $method, idempotencyKey: 'purchase_pending_key'))->toBeTrue();
+});
+
+it('declines a saved-method charge when both the synchronous response and the fallback verify fail', function () {
+    $user = User::factory()->create();
+    $bundle = TokenBundle::factory()->create(['price' => 9.99, 'currency' => 'USD']);
+    $method = PaymentMethod::factory()->create(['user_id' => $user->id]);
+
+    Http::fake([
+        PAYSTACK_CHARGE_AUTHORIZATION_URL => Http::response([
+            'data' => ['status' => 'failed', 'amount' => 999, 'currency' => 'USD'],
+        ]),
+        'https://api.paystack.co/transaction/verify/*' => Http::response([
+            'data' => ['status' => 'failed', 'amount' => 999, 'currency' => 'USD'],
+        ]),
+    ]);
+
+    expect(app(PaystackPaymentProvider::class)->charge($user, $bundle, paymentMethod: $method, idempotencyKey: 'purchase_declined_key'))->toBeFalse();
+});
+
 it('declines a saved-method charge when both the charge and the fallback verify cannot connect', function () {
     $user = User::factory()->create();
     $bundle = TokenBundle::factory()->create(['price' => 9.99, 'currency' => 'USD']);
