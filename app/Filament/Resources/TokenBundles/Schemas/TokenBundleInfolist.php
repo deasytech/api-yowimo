@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\TokenBundles\Schemas;
 
-use Filament\Infolists\Components\IconEntry;
+use App\Filament\Support\InfolistSections;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -35,27 +35,9 @@ class TokenBundleInfolist
                         TextEntry::make('badge'),
                     ]),
 
-                Section::make('Visibility & Ordering')
-                    ->icon(Heroicon::OutlinedEye)
-                    ->columns(3)
-                    ->schema([
-                        IconEntry::make('is_featured')
-                            ->boolean(),
-                        IconEntry::make('is_active')
-                            ->boolean(),
-                        TextEntry::make('sort_order'),
-                    ]),
+                InfolistSections::visibilityAndOrdering(),
 
-                Section::make('Timestamps')
-                    ->icon(Heroicon::OutlinedClock)
-                    ->columns(2)
-                    ->collapsible()
-                    ->schema([
-                        TextEntry::make('created_at')
-                            ->dateTime(),
-                        TextEntry::make('updated_at')
-                            ->dateTime(),
-                    ]),
+                InfolistSections::timestamps(),
             ]);
     }
 }

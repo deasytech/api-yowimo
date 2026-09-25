@@ -1878,12 +1878,12 @@
   var base = window.location.origin + '/api/v1';
   if (base !== PLACEHOLDER) {
     document.querySelectorAll('pre').forEach(function(pre){
-      if (pre.innerHTML.indexOf(PLACEHOLDER) !== -1) {
+      if (pre.innerHTML.includes(PLACEHOLDER)) {
         pre.innerHTML = pre.innerHTML.split(PLACEHOLDER).join(base);
       }
-      var raw = pre.getAttribute('data-raw');
-      if (raw && raw.indexOf(PLACEHOLDER) !== -1) {
-        pre.setAttribute('data-raw', raw.split(PLACEHOLDER).join(base));
+      var raw = pre.dataset.raw;
+      if (raw && raw.includes(PLACEHOLDER)) {
+        pre.dataset.raw = raw.split(PLACEHOLDER).join(base);
       }
     });
     document.querySelectorAll('.base-url').forEach(function(el){
@@ -1911,8 +1911,8 @@
       var links = g.querySelectorAll('.nav-link');
       var groupHasMatch = false;
       links.forEach(function(a){
-        var hay = (a.getAttribute('data-search') || '') + ' ' + a.textContent;
-        var match = q === '' || hay.toLowerCase().indexOf(q) !== -1;
+        var hay = (a.dataset.search || '') + ' ' + a.textContent;
+        var match = q === '' || hay.toLowerCase().includes(q);
         a.style.display = match ? '' : 'none';
         if (match) groupHasMatch = true;
       });
@@ -1925,7 +1925,7 @@
   document.querySelectorAll('.copy-btn').forEach(function(btn){
     btn.addEventListener('click', function(){
       var pre = btn.closest('.code-block').querySelector('pre');
-      var text = pre.getAttribute('data-raw') || pre.textContent;
+      var text = pre.dataset.raw || pre.textContent;
       function done(){ var old = btn.textContent; btn.textContent = 'Copied'; setTimeout(function(){ btn.textContent = old; }, 1200); }
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(done).catch(function(){ fallbackCopy(text); done(); });
@@ -1939,7 +1939,7 @@
     ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
     document.body.appendChild(ta); ta.select();
     try { document.execCommand('copy'); } catch(e){}
-    document.body.removeChild(ta);
+    ta.remove();
   }
 
   var navLinks = Array.prototype.slice.call(document.querySelectorAll('.nav-link'));

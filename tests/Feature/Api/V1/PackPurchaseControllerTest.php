@@ -8,6 +8,8 @@ use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use Tests\Support\FakesClerk;
 
+const PREVIEW_CARD_TEXT = 'Preview truth?';
+
 uses(FakesClerk::class);
 
 beforeEach(function () {
@@ -134,7 +136,7 @@ it('returns 404 when purchasing an unknown pack', function () {
 it('only returns preview cards to a viewer who has not purchased the pack', function () {
     $token = $this->clerkToken(['sub' => 'user_pack_viewer_not_owner']);
     $pack = Pack::factory()->create();
-    PackCard::factory()->preview()->create(['pack_id' => $pack->id, 'text' => 'Preview truth?']);
+    PackCard::factory()->preview()->create(['pack_id' => $pack->id, 'text' => PREVIEW_CARD_TEXT]);
     PackCard::factory()->create(['pack_id' => $pack->id, 'is_preview' => false, 'text' => 'Full dare.']);
 
     $response = $this->withHeader('Authorization', "Bearer {$token}")
@@ -143,7 +145,7 @@ it('only returns preview cards to a viewer who has not purchased the pack', func
 
     $response->assertJsonPath('data.owned_by_me', false);
     expect($response->json('data.preview_cards'))->toHaveCount(1);
-    $response->assertJsonPath('data.preview_cards.0.text', 'Preview truth?');
+    $response->assertJsonPath('data.preview_cards.0.text', PREVIEW_CARD_TEXT);
 });
 
 it('returns full pack content once the viewer owns the pack', function () {
@@ -152,7 +154,7 @@ it('returns full pack content once the viewer owns the pack', function () {
     $pack = Pack::factory()->create();
     PackPurchase::factory()->create(['pack_id' => $pack->id, 'user_id' => $user->id]);
 
-    PackCard::factory()->preview()->create(['pack_id' => $pack->id, 'text' => 'Preview truth?']);
+    PackCard::factory()->preview()->create(['pack_id' => $pack->id, 'text' => PREVIEW_CARD_TEXT]);
     PackCard::factory()->create(['pack_id' => $pack->id, 'is_preview' => false, 'text' => 'Full dare.']);
 
     $response = $this->withHeader('Authorization', "Bearer {$token}")

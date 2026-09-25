@@ -10,7 +10,7 @@ class FriendshipPolicy
     /**
      * Determine whether the user can view their own friends/pending requests lists.
      */
-    public function viewAny(User $user): bool
+    public function viewAny(): bool
     {
         return true;
     }
@@ -18,7 +18,7 @@ class FriendshipPolicy
     /**
      * Determine whether the user can send a friend request.
      */
-    public function create(User $user): bool
+    public function create(): bool
     {
         return true;
     }

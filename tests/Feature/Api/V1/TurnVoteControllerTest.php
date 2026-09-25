@@ -59,18 +59,69 @@ function makePartyForVoteTest(User $host, User $otherMember): Party
     return $party;
 }
 
-it('rejects casting a vote with no bearer token', function () {
-    [$host, $hostToken] = provisionVoteTestUser($this, $this->clerkToken(['sub' => 'user_vote_host_401']), 'user_vote_host_401');
-    [$voter] = provisionVoteTestUser($this, $this->clerkToken(['sub' => 'user_vote_voter_401']), 'user_vote_voter_401');
+/**
+ * Provisions a host+voter pair, creates a live party for them, and starts a
+ * game session — the common setup every vote test needs before it can act on
+ * the first turn. clerkToken() is protected and unreachable from this free
+ * function, so callers must generate both tokens themselves and pass them in.
+ *
+ * @return array{0: User, 1: string, 2: User, 3: int, 4: int, 5: int} [$host, $hostToken, $voter, $sessionId, $turnId, $turnOwnerId]
+ */
+function startVoteTestSession(TestCase $test, string $hostToken, string $hostSub, string $voterToken, string $voterSub): array
+{
+    [$host, $hostToken] = provisionVoteTestUser($test, $hostToken, $hostSub);
+    [$voter] = provisionVoteTestUser($test, $voterToken, $voterSub);
     $party = makePartyForVoteTest($host, $voter);
 
-    $this->app->make('auth')->forgetGuards();
-    $start = $this->withHeader('Authorization', "Bearer {$hostToken}")
+    app('auth')->forgetGuards();
+    $start = $test->withHeader('Authorization', "Bearer {$hostToken}")
         ->postJson("/api/v1/parties/{$party->id}/game/start", ['rounds' => 5])
         ->assertStatus(200);
 
-    $sessionId = $start->json('data.id');
-    $turnId = $start->json('data.current_turn.id');
+    return [
+        $host,
+        $hostToken,
+        $voter,
+        $start->json('data.id'),
+        $start->json('data.current_turn.id'),
+        $start->json('data.current_turn.user_id'),
+    ];
+}
+
+/**
+ * Advances the current turn (host-triggered), so it becomes eligible for
+ * voting.
+ */
+function completeCurrentTurn(TestCase $test, string $hostToken, int $sessionId): void
+{
+    $test->withHeader('Authorization', "Bearer {$hostToken}")
+        ->postJson("/api/v1/game/{$sessionId}/next-turn")
+        ->assertStatus(200);
+}
+
+/**
+ * Sorts an already-generated fresh voter token and the host token into
+ * [$ownerToken, $otherToken], depending on which of them owns the turn.
+ * clerkToken() is protected and unreachable from this free function, so
+ * callers must generate the fresh voter token themselves and pass it in.
+ *
+ * @return array{0: string, 1: string} [$ownerToken, $otherToken]
+ */
+function pickTurnTokens(User $host, string $hostToken, string $freshVoterToken, int $turnOwnerId): array
+{
+    return $turnOwnerId === $host->id
+        ? [$hostToken, $freshVoterToken]
+        : [$freshVoterToken, $hostToken];
+}
+
+it('rejects casting a vote with no bearer token', function () {
+    [$host, $hostToken, , $sessionId, $turnId] = startVoteTestSession(
+        $this,
+        $this->clerkToken(['sub' => 'user_vote_host_401']),
+        'user_vote_host_401',
+        $this->clerkToken(['sub' => 'user_vote_voter_401']),
+        'user_vote_voter_401',
+    );
 
     // The `clerk` guard caches its resolved user for the app instance's
     // lifetime; force it to re-resolve so the missing header is actually honored.
@@ -82,27 +133,18 @@ it('rejects casting a vote with no bearer token', function () {
 });
 
 it('lets a fellow party member cast a vote on a completed turn and credits XP to the turn player', function () {
-    [$host, $hostToken] = provisionVoteTestUser($this, $this->clerkToken(['sub' => 'user_vote_host_success']), 'user_vote_host_success');
-    [$voter] = provisionVoteTestUser($this, $this->clerkToken(['sub' => 'user_vote_voter_success']), 'user_vote_voter_success');
-    $party = makePartyForVoteTest($host, $voter);
+    [$host, $hostToken, , $sessionId, $turnId, $turnOwnerId] = startVoteTestSession(
+        $this,
+        $this->clerkToken(['sub' => 'user_vote_host_success']),
+        'user_vote_host_success',
+        $this->clerkToken(['sub' => 'user_vote_voter_success']),
+        'user_vote_voter_success',
+    );
+    completeCurrentTurn($this, $hostToken, $sessionId);
 
+    $freshVoterToken = $this->clerkToken(['sub' => 'user_vote_voter_success']);
     $this->app->make('auth')->forgetGuards();
-    $start = $this->withHeader('Authorization', "Bearer {$hostToken}")
-        ->postJson("/api/v1/parties/{$party->id}/game/start", ['rounds' => 5])
-        ->assertStatus(200);
-
-    $sessionId = $start->json('data.id');
-    $turnId = $start->json('data.current_turn.id');
-    $turnOwnerId = $start->json('data.current_turn.user_id');
-
-    $this->withHeader('Authorization', "Bearer {$hostToken}")
-        ->postJson("/api/v1/game/{$sessionId}/next-turn")
-        ->assertStatus(200);
-
-    $voterToken = $turnOwnerId === $host->id
-        ? $this->clerkToken(['sub' => 'user_vote_voter_success'])
-        : $hostToken;
-    $this->app->make('auth')->forgetGuards();
+    [, $voterToken] = pickTurnTokens($host, $hostToken, $freshVoterToken, $turnOwnerId);
 
     $this->withHeader('Authorization', "Bearer {$voterToken}")
         ->postJson(voteEndpoint($sessionId, $turnId), ['category' => 'winner'])
@@ -117,27 +159,18 @@ it('lets a fellow party member cast a vote on a completed turn and credits XP to
 });
 
 it('forbids the turn player from voting on their own turn', function () {
-    [$host, $hostToken] = provisionVoteTestUser($this, $this->clerkToken(['sub' => 'user_vote_host_self']), 'user_vote_host_self');
-    [$voter] = provisionVoteTestUser($this, $this->clerkToken(['sub' => 'user_vote_voter_self']), 'user_vote_voter_self');
-    $party = makePartyForVoteTest($host, $voter);
+    [$host, $hostToken, , $sessionId, $turnId, $turnOwnerId] = startVoteTestSession(
+        $this,
+        $this->clerkToken(['sub' => 'user_vote_host_self']),
+        'user_vote_host_self',
+        $this->clerkToken(['sub' => 'user_vote_voter_self']),
+        'user_vote_voter_self',
+    );
+    completeCurrentTurn($this, $hostToken, $sessionId);
 
+    $freshVoterToken = $this->clerkToken(['sub' => 'user_vote_voter_self']);
     $this->app->make('auth')->forgetGuards();
-    $start = $this->withHeader('Authorization', "Bearer {$hostToken}")
-        ->postJson("/api/v1/parties/{$party->id}/game/start", ['rounds' => 5])
-        ->assertStatus(200);
-
-    $sessionId = $start->json('data.id');
-    $turnId = $start->json('data.current_turn.id');
-    $turnOwnerId = $start->json('data.current_turn.user_id');
-
-    $this->withHeader('Authorization', "Bearer {$hostToken}")
-        ->postJson("/api/v1/game/{$sessionId}/next-turn")
-        ->assertStatus(200);
-
-    $ownerToken = $turnOwnerId === $host->id
-        ? $hostToken
-        : $this->clerkToken(['sub' => 'user_vote_voter_self']);
-    $this->app->make('auth')->forgetGuards();
+    [$ownerToken] = pickTurnTokens($host, $hostToken, $freshVoterToken, $turnOwnerId);
 
     $this->withHeader('Authorization', "Bearer {$ownerToken}")
         ->postJson(voteEndpoint($sessionId, $turnId), ['category' => 'winner'])
@@ -145,21 +178,14 @@ it('forbids the turn player from voting on their own turn', function () {
 });
 
 it('forbids a non-party-member from voting', function () {
-    [$host, $hostToken] = provisionVoteTestUser($this, $this->clerkToken(['sub' => 'user_vote_host_outsider']), 'user_vote_host_outsider');
-    [$voter] = provisionVoteTestUser($this, $this->clerkToken(['sub' => 'user_vote_voter_outsider']), 'user_vote_voter_outsider');
-    $party = makePartyForVoteTest($host, $voter);
-
-    $this->app->make('auth')->forgetGuards();
-    $start = $this->withHeader('Authorization', "Bearer {$hostToken}")
-        ->postJson("/api/v1/parties/{$party->id}/game/start", ['rounds' => 5])
-        ->assertStatus(200);
-
-    $sessionId = $start->json('data.id');
-    $turnId = $start->json('data.current_turn.id');
-
-    $this->withHeader('Authorization', "Bearer {$hostToken}")
-        ->postJson("/api/v1/game/{$sessionId}/next-turn")
-        ->assertStatus(200);
+    [, $hostToken, , $sessionId, $turnId] = startVoteTestSession(
+        $this,
+        $this->clerkToken(['sub' => 'user_vote_host_outsider']),
+        'user_vote_host_outsider',
+        $this->clerkToken(['sub' => 'user_vote_voter_outsider']),
+        'user_vote_voter_outsider',
+    );
+    completeCurrentTurn($this, $hostToken, $sessionId);
 
     $outsiderToken = $this->clerkToken(['sub' => 'user_vote_outsider']);
     $this->app->make('auth')->forgetGuards();
@@ -170,25 +196,18 @@ it('forbids a non-party-member from voting', function () {
 });
 
 it('rejects voting on a turn after the game has already completed', function () {
-    [$host, $hostToken] = provisionVoteTestUser($this, $this->clerkToken(['sub' => 'user_vote_host_ended']), 'user_vote_host_ended');
-    [$voter] = provisionVoteTestUser($this, $this->clerkToken(['sub' => 'user_vote_voter_ended']), 'user_vote_voter_ended');
-    $party = makePartyForVoteTest($host, $voter);
+    [$host, $hostToken, , $sessionId, $turnId, $turnOwnerId] = startVoteTestSession(
+        $this,
+        $this->clerkToken(['sub' => 'user_vote_host_ended']),
+        'user_vote_host_ended',
+        $this->clerkToken(['sub' => 'user_vote_voter_ended']),
+        'user_vote_voter_ended',
+    );
 
-    $this->app->make('auth')->forgetGuards();
     // The minimum allowed rounds count (5) with 2 members means 10 turns
     // total; ten next-turn calls complete the whole game.
-    $start = $this->withHeader('Authorization', "Bearer {$hostToken}")
-        ->postJson("/api/v1/parties/{$party->id}/game/start", ['rounds' => 5])
-        ->assertStatus(200);
-
-    $sessionId = $start->json('data.id');
-    $turnId = $start->json('data.current_turn.id');
-    $turnOwnerId = $start->json('data.current_turn.user_id');
-
     for ($i = 0; $i < 9; $i++) {
-        $this->withHeader('Authorization', "Bearer {$hostToken}")
-            ->postJson("/api/v1/game/{$sessionId}/next-turn")
-            ->assertStatus(200);
+        completeCurrentTurn($this, $hostToken, $sessionId);
     }
 
     $this->withHeader('Authorization', "Bearer {$hostToken}")
@@ -196,10 +215,9 @@ it('rejects voting on a turn after the game has already completed', function () 
         ->assertStatus(200)
         ->assertJsonPath('data.status', 'completed');
 
-    $voterToken = $turnOwnerId === $host->id
-        ? $this->clerkToken(['sub' => 'user_vote_voter_ended'])
-        : $hostToken;
+    $freshVoterToken = $this->clerkToken(['sub' => 'user_vote_voter_ended']);
     $this->app->make('auth')->forgetGuards();
+    [, $voterToken] = pickTurnTokens($host, $hostToken, $freshVoterToken, $turnOwnerId);
 
     $this->withHeader('Authorization', "Bearer {$voterToken}")
         ->postJson(voteEndpoint($sessionId, $turnId), ['category' => 'winner'])
@@ -207,23 +225,17 @@ it('rejects voting on a turn after the game has already completed', function () 
 });
 
 it('rejects voting on a turn that has not completed yet', function () {
-    [$host, $hostToken] = provisionVoteTestUser($this, $this->clerkToken(['sub' => 'user_vote_host_incomplete']), 'user_vote_host_incomplete');
-    [$voter] = provisionVoteTestUser($this, $this->clerkToken(['sub' => 'user_vote_voter_incomplete']), 'user_vote_voter_incomplete');
-    $party = makePartyForVoteTest($host, $voter);
+    [$host, $hostToken, , $sessionId, $turnId, $turnOwnerId] = startVoteTestSession(
+        $this,
+        $this->clerkToken(['sub' => 'user_vote_host_incomplete']),
+        'user_vote_host_incomplete',
+        $this->clerkToken(['sub' => 'user_vote_voter_incomplete']),
+        'user_vote_voter_incomplete',
+    );
 
+    $freshVoterToken = $this->clerkToken(['sub' => 'user_vote_voter_incomplete']);
     $this->app->make('auth')->forgetGuards();
-    $start = $this->withHeader('Authorization', "Bearer {$hostToken}")
-        ->postJson("/api/v1/parties/{$party->id}/game/start", ['rounds' => 5])
-        ->assertStatus(200);
-
-    $sessionId = $start->json('data.id');
-    $turnId = $start->json('data.current_turn.id');
-    $turnOwnerId = $start->json('data.current_turn.user_id');
-
-    $voterToken = $turnOwnerId === $host->id
-        ? $this->clerkToken(['sub' => 'user_vote_voter_incomplete'])
-        : $hostToken;
-    $this->app->make('auth')->forgetGuards();
+    [, $voterToken] = pickTurnTokens($host, $hostToken, $freshVoterToken, $turnOwnerId);
 
     $this->withHeader('Authorization', "Bearer {$voterToken}")
         ->postJson(voteEndpoint($sessionId, $turnId), ['category' => 'winner'])
@@ -231,27 +243,18 @@ it('rejects voting on a turn that has not completed yet', function () {
 });
 
 it('rejects casting the same category of vote twice on the same turn', function () {
-    [$host, $hostToken] = provisionVoteTestUser($this, $this->clerkToken(['sub' => 'user_vote_host_dup']), 'user_vote_host_dup');
-    [$voter] = provisionVoteTestUser($this, $this->clerkToken(['sub' => 'user_vote_voter_dup']), 'user_vote_voter_dup');
-    $party = makePartyForVoteTest($host, $voter);
+    [$host, $hostToken, , $sessionId, $turnId, $turnOwnerId] = startVoteTestSession(
+        $this,
+        $this->clerkToken(['sub' => 'user_vote_host_dup']),
+        'user_vote_host_dup',
+        $this->clerkToken(['sub' => 'user_vote_voter_dup']),
+        'user_vote_voter_dup',
+    );
+    completeCurrentTurn($this, $hostToken, $sessionId);
 
+    $freshVoterToken = $this->clerkToken(['sub' => 'user_vote_voter_dup']);
     $this->app->make('auth')->forgetGuards();
-    $start = $this->withHeader('Authorization', "Bearer {$hostToken}")
-        ->postJson("/api/v1/parties/{$party->id}/game/start", ['rounds' => 5])
-        ->assertStatus(200);
-
-    $sessionId = $start->json('data.id');
-    $turnId = $start->json('data.current_turn.id');
-    $turnOwnerId = $start->json('data.current_turn.user_id');
-
-    $this->withHeader('Authorization', "Bearer {$hostToken}")
-        ->postJson("/api/v1/game/{$sessionId}/next-turn")
-        ->assertStatus(200);
-
-    $voterToken = $turnOwnerId === $host->id
-        ? $this->clerkToken(['sub' => 'user_vote_voter_dup'])
-        : $hostToken;
-    $this->app->make('auth')->forgetGuards();
+    [, $voterToken] = pickTurnTokens($host, $hostToken, $freshVoterToken, $turnOwnerId);
 
     $this->withHeader('Authorization', "Bearer {$voterToken}")
         ->postJson(voteEndpoint($sessionId, $turnId), ['category' => 'winner'])
@@ -263,21 +266,14 @@ it('rejects casting the same category of vote twice on the same turn', function 
 });
 
 it('rejects an invalid vote category', function () {
-    [$host, $hostToken] = provisionVoteTestUser($this, $this->clerkToken(['sub' => 'user_vote_host_invalid']), 'user_vote_host_invalid');
-    [$voter] = provisionVoteTestUser($this, $this->clerkToken(['sub' => 'user_vote_voter_invalid']), 'user_vote_voter_invalid');
-    $party = makePartyForVoteTest($host, $voter);
-
-    $this->app->make('auth')->forgetGuards();
-    $start = $this->withHeader('Authorization', "Bearer {$hostToken}")
-        ->postJson("/api/v1/parties/{$party->id}/game/start", ['rounds' => 5])
-        ->assertStatus(200);
-
-    $sessionId = $start->json('data.id');
-    $turnId = $start->json('data.current_turn.id');
-
-    $this->withHeader('Authorization', "Bearer {$hostToken}")
-        ->postJson("/api/v1/game/{$sessionId}/next-turn")
-        ->assertStatus(200);
+    [, $hostToken, , $sessionId, $turnId] = startVoteTestSession(
+        $this,
+        $this->clerkToken(['sub' => 'user_vote_host_invalid']),
+        'user_vote_host_invalid',
+        $this->clerkToken(['sub' => 'user_vote_voter_invalid']),
+        'user_vote_voter_invalid',
+    );
+    completeCurrentTurn($this, $hostToken, $sessionId);
 
     $this->withHeader('Authorization', "Bearer {$hostToken}")
         ->postJson(voteEndpoint($sessionId, $turnId), ['category' => 'not-a-category'])

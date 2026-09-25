@@ -32,7 +32,7 @@ class PartyMembershipController extends Controller
         return ApiResponse::success(new PartyResource($party), 'Left party successfully.');
     }
 
-    public function start(Request $request, Party $party): JsonResponse
+    public function start(Party $party): JsonResponse
     {
         $this->authorize('start', $party);
 
@@ -41,7 +41,7 @@ class PartyMembershipController extends Controller
         return ApiResponse::success(new PartyResource($party), 'Party started successfully.');
     }
 
-    public function end(Request $request, Party $party): JsonResponse
+    public function end(Party $party): JsonResponse
     {
         $this->authorize('end', $party);
 

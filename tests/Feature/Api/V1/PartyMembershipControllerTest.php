@@ -178,7 +178,7 @@ it('does not go below zero when leaving without having joined', function () {
 
 it('blocks the host from leaving their own party', function () {
     $hostToken = $this->clerkToken(['sub' => 'user_host_leave_block']);
-    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson('/api/v1/users/me')->assertOk();
+    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
     $host = User::where('clerk_user_id', 'user_host_leave_block')->firstOrFail();
 
     $party = Party::factory()->create([
@@ -199,7 +199,7 @@ it('blocks the host from leaving their own party', function () {
 
 it('lets the host start their draft party', function () {
     $hostToken = $this->clerkToken(['sub' => 'user_host_start']);
-    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson('/api/v1/users/me')->assertOk();
+    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
     $host = User::where('clerk_user_id', 'user_host_start')->firstOrFail();
 
     $party = Party::factory()->create([
@@ -235,7 +235,7 @@ it('forbids a non-host from starting a party', function () {
 
 it('rejects starting a party that is already live', function () {
     $hostToken = $this->clerkToken(['sub' => 'user_host_start_live']);
-    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson('/api/v1/users/me')->assertOk();
+    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
     $host = User::where('clerk_user_id', 'user_host_start_live')->firstOrFail();
 
     $party = Party::factory()->create([
@@ -251,7 +251,7 @@ it('rejects starting a party that is already live', function () {
 
 it('lets the host end their live party', function () {
     $hostToken = $this->clerkToken(['sub' => 'user_host_end']);
-    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson('/api/v1/users/me')->assertOk();
+    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
     $host = User::where('clerk_user_id', 'user_host_end')->firstOrFail();
 
     $party = Party::factory()->create([
@@ -287,7 +287,7 @@ it('forbids a non-host from ending a party', function () {
 
 it('rejects ending a party that is not live', function () {
     $hostToken = $this->clerkToken(['sub' => 'user_host_end_draft']);
-    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson('/api/v1/users/me')->assertOk();
+    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
     $host = User::where('clerk_user_id', 'user_host_end_draft')->firstOrFail();
 
     $party = Party::factory()->create([

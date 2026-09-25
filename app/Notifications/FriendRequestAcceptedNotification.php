@@ -4,47 +4,19 @@ namespace App\Notifications;
 
 use App\Models\Friendship;
 use App\Models\User;
-use App\Notifications\Channels\FcmChannel;
-use App\Notifications\Channels\InAppChannel;
+use App\Notifications\Concerns\DeliversViaFcmAndInApp;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
-use Kreait\Firebase\Messaging\CloudMessage;
-use Kreait\Firebase\Messaging\Notification as FcmNotification;
 
 class FriendRequestAcceptedNotification extends Notification implements ShouldQueue
 {
-    use Queueable;
+    use DeliversViaFcmAndInApp, Queueable;
 
     public function __construct(
         public readonly Friendship $friendship,
         public readonly User $accepter,
     ) {}
-
-    /**
-     * @return array<int, string>
-     */
-    public function via(object $notifiable): array
-    {
-        return [FcmChannel::class, InAppChannel::class];
-    }
-
-    public function toFcm(object $notifiable): CloudMessage
-    {
-        $payload = $this->payload();
-
-        return CloudMessage::new()
-            ->withNotification(FcmNotification::create($payload['title'], $payload['body']))
-            ->withData(['type' => $payload['type'], ...array_map('strval', $payload['metadata'])]);
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function toInApp(object $notifiable): array
-    {
-        return $this->payload();
-    }
 
     /**
      * Shared title/body/type/metadata for both the FCM and in-app channels —

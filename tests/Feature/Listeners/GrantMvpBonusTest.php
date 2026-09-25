@@ -71,7 +71,7 @@ it('awards the MVP bonus to every player tied for the highest XP when nobody vot
     $service = app(GameSessionService::class);
     $session = $service->start($host, $party, 1);
 
-    foreach ($session->turn_order as $ignored) {
+    for ($turn = 0; $turn < count($session->turn_order); $turn++) {
         $session = $service->nextTurn($session->fresh());
     }
 

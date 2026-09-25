@@ -53,7 +53,7 @@ it('rejects starting a game with no bearer token', function () {
 
 it('lets the host start a game session for a live party', function () {
     $hostToken = $this->clerkToken(['sub' => 'user_game_host']);
-    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson('/api/v1/users/me')->assertOk();
+    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
     $host = User::where('clerk_user_id', 'user_game_host')->firstOrFail();
 
     $party = makeLivePartyForController($host, 3);
@@ -70,7 +70,7 @@ it('lets the host start a game session for a live party', function () {
 
 it('lets the host configure the rounds count when starting', function () {
     $hostToken = $this->clerkToken(['sub' => 'user_game_host_rounds']);
-    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson('/api/v1/users/me')->assertOk();
+    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
     $host = User::where('clerk_user_id', 'user_game_host_rounds')->firstOrFail();
 
     $party = makeLivePartyForController($host);
@@ -83,7 +83,7 @@ it('lets the host configure the rounds count when starting', function () {
 
 it('rejects an invalid rounds value', function () {
     $hostToken = $this->clerkToken(['sub' => 'user_game_host_bad_rounds']);
-    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson('/api/v1/users/me')->assertOk();
+    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
     $host = User::where('clerk_user_id', 'user_game_host_bad_rounds')->firstOrFail();
 
     $party = makeLivePartyForController($host);
@@ -106,7 +106,7 @@ it('forbids a non-host from starting a game', function () {
 
 it('rejects starting a game twice for the same party', function () {
     $hostToken = $this->clerkToken(['sub' => 'user_game_host_twice']);
-    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson('/api/v1/users/me')->assertOk();
+    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
     $host = User::where('clerk_user_id', 'user_game_host_twice')->firstOrFail();
 
     $party = makeLivePartyForController($host);
@@ -119,7 +119,7 @@ it('rejects starting a game twice for the same party', function () {
 
 it('lets the host advance to the next turn', function () {
     $hostToken = $this->clerkToken(['sub' => 'user_game_host_advance']);
-    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson('/api/v1/users/me')->assertOk();
+    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
     $host = User::where('clerk_user_id', 'user_game_host_advance')->firstOrFail();
 
     $party = makeLivePartyForController($host, 3);
@@ -138,7 +138,7 @@ it('lets the host advance to the next turn', function () {
 
 it('forbids a non-host from advancing the turn', function () {
     $hostToken = $this->clerkToken(['sub' => 'user_game_host_advance_forbid']);
-    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson('/api/v1/users/me')->assertOk();
+    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
     $host = User::where('clerk_user_id', 'user_game_host_advance_forbid')->firstOrFail();
 
     $party = makeLivePartyForController($host, 2);
@@ -160,7 +160,7 @@ it('forbids a non-host from advancing the turn', function () {
 
 it('rejects advancing a completed session', function () {
     $hostToken = $this->clerkToken(['sub' => 'user_game_host_completed']);
-    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson('/api/v1/users/me')->assertOk();
+    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
     $host = User::where('clerk_user_id', 'user_game_host_completed')->firstOrFail();
 
     $party = makeLivePartyForController($host, 1);

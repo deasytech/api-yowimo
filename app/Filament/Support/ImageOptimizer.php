@@ -32,11 +32,10 @@ class ImageOptimizer
 
     public static function optimize(string $contents, ?string $mimeType): string
     {
-        if (! in_array($mimeType, self::SUPPORTED_MIME_TYPES, true)) {
-            return $contents;
-        }
+        $unsupported = ! in_array($mimeType, self::SUPPORTED_MIME_TYPES, true)
+            || ($mimeType === self::MIME_WEBP && ! function_exists('imagecreatefromwebp'));
 
-        if ($mimeType === self::MIME_WEBP && ! function_exists('imagecreatefromwebp')) {
+        if ($unsupported) {
             return $contents;
         }
 

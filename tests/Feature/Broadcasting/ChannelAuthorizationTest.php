@@ -33,7 +33,7 @@ beforeEach(function () {
     // channel closures against the `reverb` driver instance above, leaving it
     // with zero channels and making every subscription 403 regardless of the
     // closures' actual logic.
-    require base_path('routes/channels.php');
+    require base_path('routes/channels.php'); // NOSONAR php:S2003 - require_once would no-op here; see comment above.
 });
 
 function authenticateAsClerkUser(string $sub): User

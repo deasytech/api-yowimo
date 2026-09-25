@@ -23,7 +23,7 @@ it('rejects notification requests with no bearer token', function () {
 it('lists the authenticated user\'s notifications newest first with pagination meta', function () {
     $token = $this->clerkToken(['sub' => 'user_notif_list']);
 
-    $this->withHeader('Authorization', "Bearer {$token}")->getJson('/api/v1/users/me')->assertOk();
+    $this->withHeader('Authorization', "Bearer {$token}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
     $user = User::where('clerk_user_id', 'user_notif_list')->firstOrFail();
 
     $older = Notification::factory()->create(['user_id' => $user->id, 'created_at' => now()->subMinute()]);
@@ -50,8 +50,7 @@ it('lists the authenticated user\'s notifications newest first with pagination m
 it('does not include another user\'s notifications in the list', function () {
     $token = $this->clerkToken(['sub' => 'user_notif_scope']);
 
-    $this->withHeader('Authorization', "Bearer {$token}")->getJson('/api/v1/users/me')->assertOk();
-    $user = User::where('clerk_user_id', 'user_notif_scope')->firstOrFail();
+    $this->withHeader('Authorization', "Bearer {$token}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
 
     $other = User::factory()->create();
     Notification::factory()->create(['user_id' => $other->id]);
@@ -66,7 +65,7 @@ it('does not include another user\'s notifications in the list', function () {
 it('marks a single notification as read', function () {
     $token = $this->clerkToken(['sub' => 'user_notif_read']);
 
-    $this->withHeader('Authorization', "Bearer {$token}")->getJson('/api/v1/users/me')->assertOk();
+    $this->withHeader('Authorization', "Bearer {$token}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
     $user = User::where('clerk_user_id', 'user_notif_read')->firstOrFail();
     $notification = Notification::factory()->create(['user_id' => $user->id, 'read_at' => null]);
 
@@ -81,7 +80,7 @@ it('marks a single notification as read', function () {
 it('404s marking a notification read when it belongs to another user', function () {
     $token = $this->clerkToken(['sub' => 'user_notif_read_denied']);
 
-    $this->withHeader('Authorization', "Bearer {$token}")->getJson('/api/v1/users/me')->assertOk();
+    $this->withHeader('Authorization', "Bearer {$token}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
 
     $other = User::factory()->create();
     $notification = Notification::factory()->create(['user_id' => $other->id, 'read_at' => null]);
@@ -96,7 +95,7 @@ it('404s marking a notification read when it belongs to another user', function 
 it('marks all of the authenticated user\'s notifications as read', function () {
     $token = $this->clerkToken(['sub' => 'user_notif_read_all']);
 
-    $this->withHeader('Authorization', "Bearer {$token}")->getJson('/api/v1/users/me')->assertOk();
+    $this->withHeader('Authorization', "Bearer {$token}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
     $user = User::where('clerk_user_id', 'user_notif_read_all')->firstOrFail();
 
     $first = Notification::factory()->create(['user_id' => $user->id, 'read_at' => null]);
