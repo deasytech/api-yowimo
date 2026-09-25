@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\IndexHostedPartyRequest;
+use App\Http\Requests\Api\V1\IndexJoinedPartyRequest;
 use App\Http\Requests\Api\V1\IndexPartyRequest;
 use App\Http\Requests\Api\V1\LookupPartyRequest;
 use App\Http\Requests\Api\V1\StorePartyRequest;
 use App\Http\Requests\Api\V1\UpdatePartyRequest;
+use App\Http\Resources\Api\V1\PartyMembershipResource;
 use App\Http\Resources\Api\V1\PartyResource;
 use App\Models\Party;
 use App\Services\Parties\PartyService;
@@ -71,5 +74,35 @@ class PartyController extends Controller
         $party = $this->parties->update($party, $request->validated());
 
         return ApiResponse::success(new PartyResource($party), 'Party updated successfully.');
+    }
+
+    /**
+     * Every party the caller hosts, any status/visibility — the host's own
+     * management view, not the public discover feed.
+     */
+    public function hosted(IndexHostedPartyRequest $request): JsonResponse
+    {
+        $parties = $this->parties->listHostedBy($request->user(), $request->validated());
+
+        return ApiResponse::paginated(
+            PartyResource::collection($parties),
+            $parties,
+            'Hosted parties retrieved successfully.'
+        );
+    }
+
+    /**
+     * Every party the caller has ever been a member of (not host) — current
+     * and past, each entry carrying its own membership record.
+     */
+    public function joined(IndexJoinedPartyRequest $request): JsonResponse
+    {
+        $memberships = $this->parties->listJoinedBy($request->user(), $request->validated());
+
+        return ApiResponse::paginated(
+            PartyMembershipResource::collection($memberships),
+            $memberships,
+            'Joined parties retrieved successfully.'
+        );
     }
 }

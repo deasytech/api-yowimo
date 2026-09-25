@@ -1252,6 +1252,94 @@
       <!-- ============ PARTIES ============ -->
       <section class="group-head" id="parties"><h2>Parties</h2><p>Create, discover, and run the lifecycle of a party room.</p></section>
 
+      <section class="endpoint" id="get-users-me-parties-hosted">
+        <div class="endpoint-head"><span class="method get">GET</span><code class="path">/users/me/parties/hosted</code></div>
+        <p class="desc">Every party the caller hosts, any status/visibility &mdash; the host's own management view, not the public discover feed (which only ever shows public, non-draft parties).</p>
+        <div class="meta-line"><span><b>Rate limit</b> api</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <h4>Query</h4>
+            <table class="params">
+              <tr><th>Field</th><th>Rules</th></tr>
+              <tr><td class="field">status</td><td class="rule">optional &mdash; <code>draft</code> &middot; <code>scheduled</code> &middot; <code>live</code> &middot; <code>ended</code> &middot; <code>cancelled</code></td></tr>
+              <tr><td class="field">per_page / cursor</td><td class="rule">pagination</td></tr>
+            </table>
+            <div class="note"><b>Bucketing is client-side</b>There's no separate "upcoming/past/canceled" endpoint or field &mdash; group on <code>status</code> yourself: <code>scheduled</code> (and <code>live</code>, if you want running parties surfaced as upcoming too) for Upcoming, <code>ended</code> for Past, <code>cancelled</code> for Canceled.</div>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">422</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='curl "https://api.yowimo.com/api/v1/users/me/parties/hosted?status=scheduled" \
+  -H "Authorization: Bearer $TOKEN"'><span class="tok-flag">curl</span> <span class="tok-str">"https://api.yowimo.com/api/v1/users/me/parties/hosted?status=scheduled"</span> \
+  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span></pre>
+            </div>
+            <div class="code-block"><div class="code-head"><span>Shape</span></div><pre>Cursor-paginated <span class="tok-str">PartyResource</span> array &mdash; same shape as <span class="tok-str">GET /parties/{id}</span>, message "Hosted parties retrieved successfully."</pre></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="get-users-me-parties-joined">
+        <div class="endpoint-head"><span class="method get">GET</span><code class="path">/users/me/parties/joined</code></div>
+        <p class="desc">Every party the caller has ever been a <i>member</i> of (not host) &mdash; current and past. Excludes parties the caller hosts (see <code>hosted</code> above); a host is technically their own first member, but that'd just duplicate the two lists.</p>
+        <div class="meta-line"><span><b>Rate limit</b> api</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <h4>Query</h4>
+            <table class="params">
+              <tr><th>Field</th><th>Rules</th></tr>
+              <tr><td class="field">membership_status</td><td class="rule">optional &mdash; <code>active</code> &middot; <code>left</code> &middot; <code>removed</code></td></tr>
+              <tr><td class="field">per_page / cursor</td><td class="rule">pagination</td></tr>
+            </table>
+            <div class="note"><b>Each entry is a membership, not a bare party</b>The membership record (<code>membership_status</code>, <code>joined_at</code>, <code>left_at</code>) is separate from the party's own <code>status</code> field, nested under <code>party</code>. For bucketing: Canceled here means <code>membership_status: "left"</code> <i>or</i> the party's own <code>status: "cancelled"</code> &mdash; check both.</div>
+            <div class="note"><b>removed isn't reachable yet</b>The schema supports it (for a future host-initiated kick), but nothing currently sets it &mdash; every non-active entry today is <code>left</code>.</div>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">422</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": true,
+  "message": "Joined parties retrieved successfully.",
+  "data": [
+    {
+      "membership_status": "active",
+      "joined_at": "2026-09-20T18:00:00Z",
+      "left_at": null,
+      "party": { "id": 902, "title": "Friday chaos", "status": "live", "...": "..." }
+    },
+    {
+      "membership_status": "left",
+      "joined_at": "2026-09-01T18:00:00Z",
+      "left_at": "2026-09-01T20:15:00Z",
+      "party": { "id": 811, "title": "Book Club Bonus Round", "status": "ended", "...": "..." }
+    }
+  ],
+  "meta": { "per_page": 20, "has_more_pages": false, "next_cursor": null, "prev_cursor": null }
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>,
+  <span class="tok-key">"message"</span>: <span class="tok-str">"Joined parties retrieved successfully."</span>,
+  <span class="tok-key">"data"</span>: [
+    {
+      <span class="tok-key">"membership_status"</span>: <span class="tok-str">"active"</span>,
+      <span class="tok-key">"joined_at"</span>: <span class="tok-str">"2026-09-20T18:00:00Z"</span>,
+      <span class="tok-key">"left_at"</span>: <span class="tok-null">null</span>,
+      <span class="tok-key">"party"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">902</span>, <span class="tok-key">"title"</span>: <span class="tok-str">"Friday chaos"</span>, <span class="tok-key">"status"</span>: <span class="tok-str">"live"</span>, <span class="tok-key">"..."</span>: <span class="tok-str">"..."</span> }
+    },
+    {
+      <span class="tok-key">"membership_status"</span>: <span class="tok-str">"left"</span>,
+      <span class="tok-key">"joined_at"</span>: <span class="tok-str">"2026-09-01T18:00:00Z"</span>,
+      <span class="tok-key">"left_at"</span>: <span class="tok-str">"2026-09-01T20:15:00Z"</span>,
+      <span class="tok-key">"party"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">811</span>, <span class="tok-key">"title"</span>: <span class="tok-str">"Book Club Bonus Round"</span>, <span class="tok-key">"status"</span>: <span class="tok-str">"ended"</span>, <span class="tok-key">"..."</span>: <span class="tok-str">"..."</span> }
+    }
+  ],
+  <span class="tok-key">"meta"</span>: { <span class="tok-key">"per_page"</span>: <span class="tok-num">20</span>, <span class="tok-key">"has_more_pages"</span>: <span class="tok-bool">false</span>, <span class="tok-key">"next_cursor"</span>: <span class="tok-null">null</span>, <span class="tok-key">"prev_cursor"</span>: <span class="tok-null">null</span> }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section class="endpoint" id="get-parties">
         <div class="endpoint-head"><span class="method get">GET</span><code class="path">/parties</code></div>
         <p class="desc">The public discover feed.</p>
@@ -1375,10 +1463,11 @@
             <h4>Visibility rules</h4>
             <ul style="color:var(--text-muted); font-size:.9rem; padding-left:1.1rem; margin:.3rem 0;">
               <li>Host always sees their own party, any status.</li>
+              <li>Any <b style="color:var(--text)">current (active)</b> member can also always view it, regardless of visibility &mdash; otherwise a member of a private party could never reopen its lobby after leaving the app and coming back. A <i>former</i> member (left/removed) loses this.</li>
               <li>A <code>draft</code> party is visible to nobody else &mdash; not 404, <b style="color:var(--text)">403</b>.</li>
               <li>Otherwise visible only if <code>visibility=public</code>.</li>
             </ul>
-            <div class="note"><b>room_code can be entirely absent</b>Present via a conditional field &mdash; shown to the host, or when the party is public. In the (policy-blocked) private+non-host case the key is omitted from the JSON, not <code>null</code>. Check with <code>"room_code" in data</code>, not a falsy check.</div>
+            <div class="note"><b>room_code can be entirely absent</b>Present via a conditional field &mdash; shown to the host, or when the party is public. In the blocked case the key is omitted from the JSON, not <code>null</code>. Check with <code>"room_code" in data</code>, not a falsy check.</div>
             <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403 draft/private, not yours</span><span class="status-pill err">404</span></div>
           </div>
           <div class="endpoint-code">
@@ -1543,22 +1632,38 @@
 
       <section class="endpoint" id="post-parties-join">
         <div class="endpoint-head"><span class="method post">POST</span><code class="path">/parties/{party}/join</code></div>
-        <p class="desc">Join as a member. Idempotent if already a member.</p>
+        <p class="desc">Join as a member. Idempotent if already an active member. Rejoining after having left reuses your original membership record rather than creating a new one.</p>
         <div class="meta-line"><span><b>Rate limit</b> party-actions (30/min)</span></div>
         <div class="endpoint-grid">
           <div class="endpoint-docs">
+            <h4>Body</h4>
+            <table class="params"><tr><th>Field</th><th>Rules</th></tr><tr><td class="field">room_code<span class="opt">required for a private party</span></td><td class="rule">string, max 10</td></tr></table>
             <h4>Fails when</h4>
             <table class="params">
               <tr><th>Condition</th><th>Status</th></tr>
+              <tr><td class="field">private party, room_code missing/wrong</td><td class="rule">403</td></tr>
               <tr><td class="field">status not scheduled/live</td><td class="rule">422</td></tr>
               <tr><td class="field">players_count &ge; max_players</td><td class="rule">409 full</td></tr>
             </table>
-            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403</span><span class="status-pill err">404</span><span class="status-pill err">409 full</span><span class="status-pill err">422 not joinable</span><span class="status-pill err">429</span></div>
+            <div class="note"><b>Public vs. private authorization</b>A public party can be joined by anyone by id alone. A private party requires proof of invitation &mdash; <code>room_code</code> must exactly match (case-insensitive), the same code <code>GET /parties/lookup</code> resolves. Knowing the numeric id alone (e.g. by guessing a sequential one) is not sufficient for a private party.</div>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403 private, no/wrong room_code</span><span class="status-pill err">404</span><span class="status-pill err">409 full</span><span class="status-pill err">422 not joinable</span><span class="status-pill err">429</span></div>
           </div>
-          <div class="endpoint-code"><div class="code-block"><div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
-            <pre data-raw='curl -X POST https://api.yowimo.com/api/v1/parties/902/join \
+          <div class="endpoint-code">
+            <div class="code-block"><div class="code-head"><span>cURL &mdash; public party</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='curl -X POST https://api.yowimo.com/api/v1/parties/902/join \
   -H "Authorization: Bearer $TOKEN"'><span class="tok-flag">curl -X POST</span> https://api.yowimo.com/api/v1/parties/902/join \
-  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span></pre></div></div>
+  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span></pre>
+            </div>
+            <div class="code-block"><div class="code-head"><span>cURL &mdash; private party</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='curl -X POST https://api.yowimo.com/api/v1/parties/902/join \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d &#39;{"room_code":"9F3K2A"}&#39;'><span class="tok-flag">curl -X POST</span> https://api.yowimo.com/api/v1/parties/902/join \
+  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span> \
+  -H <span class="tok-str">"Content-Type: application/json"</span> \
+  -d <span class="tok-str">'{"room_code":"9F3K2A"}'</span></pre>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -1569,6 +1674,7 @@
         <div class="endpoint-grid">
           <div class="endpoint-docs">
             <div class="note"><b>The host can't leave their own party</b>Returns <code>409</code>, message "The host cannot leave their own party. End the party instead." Leaving when you're not a member is a silent no-op (still 200).</div>
+            <div class="note"><b>History, not deletion</b>Your membership record isn't removed &mdash; it's marked <code>membership_status: "left"</code> with <code>left_at</code> set, so it still shows up in <code>GET /users/me/parties/joined</code>. Rejoining later reuses this same record.</div>
             <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403</span><span class="status-pill err">404</span><span class="status-pill err">409 host</span><span class="status-pill err">429</span></div>
           </div>
           <div class="endpoint-code"><div class="code-block"><div class="code-head"><span>Shape</span></div><pre>Full <span class="tok-str">PartyResource</span>, message "Left party successfully."</pre></div></div>
@@ -1595,6 +1701,19 @@
         <div class="endpoint-grid">
           <div class="endpoint-docs"><div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403</span><span class="status-pill err">404</span><span class="status-pill err">422 wasn't live</span><span class="status-pill err">429</span></div></div>
           <div class="endpoint-code"><div class="code-block"><div class="code-head"><span>Shape</span></div><pre>Full <span class="tok-str">PartyResource</span> with <span class="tok-key">status</span>: <span class="tok-str">"ended"</span>.</pre></div></div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="post-parties-cancel">
+        <div class="endpoint-head"><span class="method post">POST</span><code class="path">/parties/{party}/cancel</code></div>
+        <p class="desc">Cancel a party before it goes live &mdash; the moderation/change-of-plans path, distinct from ending one that already ran. Host only.</p>
+        <div class="meta-line"><span><b>Rate limit</b> party-actions (30/min)</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <div class="note"><b>Only from draft or scheduled</b>A <code>live</code> or already-<code>ended</code>/<code>cancelled</code> party can't be cancelled &mdash; use <code>end</code> for a live one. No effect on membership rows; they're untouched.</div>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403 non-host</span><span class="status-pill err">404</span><span class="status-pill err">422 wrong status</span><span class="status-pill err">429</span></div>
+          </div>
+          <div class="endpoint-code"><div class="code-block"><div class="code-head"><span>Shape</span></div><pre>Full <span class="tok-str">PartyResource</span> with <span class="tok-key">status</span>: <span class="tok-str">"cancelled"</span>, message "Party cancelled successfully."</pre></div></div>
         </div>
       </section>
 

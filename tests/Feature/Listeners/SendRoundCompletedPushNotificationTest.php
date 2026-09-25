@@ -53,3 +53,18 @@ it('notifies every party member when a round completes', function () {
 
     Notification::assertSentTo($host, RoundCompletedNotification::class, fn ($notification) => $notification->round->id === $round->id && $notification->gameSession->id === $session->id);
 });
+
+it('does not notify a member who has since left the party', function () {
+    [$host, $party] = createLiveGameSessionForRoundNotification();
+    $formerMember = User::factory()->create();
+    PartyMember::factory()->left()->create(['party_id' => $party->id, 'user_id' => $formerMember->id]);
+
+    $service = app(GameSessionService::class);
+    $session = $service->start($host, $party, 5);
+
+    Notification::fake();
+
+    $service->nextTurn($session);
+
+    Notification::assertNothingSentTo($formerMember);
+});

@@ -2,6 +2,7 @@
 
 use App\Enums\GameSessionStatus;
 use App\Enums\PackCardKind;
+use App\Enums\PartyMemberStatus;
 use App\Enums\PartyStatus;
 use App\Exceptions\Api\GameSessionAlreadyActiveException;
 use App\Exceptions\Api\GameSessionNotActiveException;
@@ -57,6 +58,17 @@ it('starts a session with a shuffled turn order covering every member and deals 
     expect($turn->position)->toBe(0);
     expect($turn->user_id)->toBe($session->turn_order[0]);
     expect($turn->packCard->kind)->toBe(PackCardKind::Truth);
+});
+
+it('excludes a member who has since left the party from the turn order', function () {
+    $party = makeLivePartyWithMembers(4);
+    $formerMember = PartyMember::where('party_id', $party->id)->where('user_id', '!=', $party->host_id)->first();
+    $formerMember->update(['status' => PartyMemberStatus::Left, 'left_at' => now()]);
+
+    $session = app(GameSessionService::class)->start($party->host, $party);
+
+    expect($session->turn_order)->toHaveCount(3);
+    expect($session->turn_order)->not->toContain($formerMember->user_id);
 });
 
 it('rejects starting a game for a party that is not live', function () {

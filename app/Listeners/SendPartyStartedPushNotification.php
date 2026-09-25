@@ -2,6 +2,7 @@
 
 namespace App\Listeners;
 
+use App\Enums\PartyMemberStatus;
 use App\Events\PartyStarted;
 use App\Models\Party;
 use App\Models\PartyMember;
@@ -22,6 +23,7 @@ class SendPartyStartedPushNotification implements ShouldQueue
 
         $userIds = PartyMember::where('party_id', $party->id)
             ->where('user_id', '!=', $party->host_id)
+            ->where('status', PartyMemberStatus::Active)
             ->pluck('user_id');
         $users = User::whereIn('id', $userIds)->get();
 

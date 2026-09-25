@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Parties\Pages;
 
+use App\Enums\PartyMemberStatus;
 use App\Events\PartyCreated;
 use App\Filament\Resources\Parties\PartyResource;
 use App\Models\PartyMember;
@@ -50,6 +51,7 @@ class CreateParty extends CreateRecord
         PartyMember::create([
             'party_id' => $this->record->id,
             'user_id' => $this->record->host_id,
+            'status' => PartyMemberStatus::Active,
             'joined_at' => now(),
         ]);
 

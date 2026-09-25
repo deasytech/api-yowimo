@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\JoinPartyRequest;
 use App\Http\Resources\Api\V1\PartyResource;
 use App\Models\Party;
 use App\Services\Parties\PartyMembershipService;
@@ -14,9 +15,9 @@ class PartyMembershipController extends Controller
 {
     public function __construct(private readonly PartyMembershipService $memberships) {}
 
-    public function join(Request $request, Party $party): JsonResponse
+    public function join(JoinPartyRequest $request, Party $party): JsonResponse
     {
-        $this->authorize('join', $party);
+        $this->authorize('join', [$party, $request->validated('room_code')]);
 
         $party = $this->memberships->join($request->user(), $party);
 
@@ -48,5 +49,14 @@ class PartyMembershipController extends Controller
         $party = $this->memberships->end($party);
 
         return ApiResponse::success(new PartyResource($party), 'Party ended successfully.');
+    }
+
+    public function cancel(Party $party): JsonResponse
+    {
+        $this->authorize('cancel', $party);
+
+        $party = $this->memberships->cancel($party);
+
+        return ApiResponse::success(new PartyResource($party), 'Party cancelled successfully.');
     }
 }

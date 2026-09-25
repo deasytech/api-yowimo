@@ -7,6 +7,7 @@ use App\Models\GameSession;
 use App\Models\GameType;
 use App\Models\Pack;
 use App\Models\Party;
+use App\Models\PartyMember;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -450,4 +451,124 @@ it('rejects an invalid pack id when updating a party', function () {
         ->patchJson(API_V1_PARTIES_ENDPOINT."/{$party->id}", ['pack_id' => 999999])
         ->assertStatus(422)
         ->assertJsonValidationErrors('pack_id');
+});
+
+it('lets an active member view a private party they belong to', function () {
+    $hostToken = $this->clerkToken(['sub' => 'user_private_view_host']);
+    $host = provisionUserFromToken($this, $hostToken, 'user_private_view_host');
+    $party = Party::factory()->create([
+        'host_id' => $host->id,
+        'visibility' => PartyVisibility::Private,
+        'status' => PartyStatus::Live,
+    ]);
+
+    $this->app->make('auth')->forgetGuards();
+    $memberToken = $this->clerkToken(['sub' => 'user_private_view_member']);
+    $member = provisionUserFromToken($this, $memberToken, 'user_private_view_member');
+    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $member->id]);
+
+    $this->app->make('auth')->forgetGuards();
+
+    $this->withHeader('Authorization', "Bearer {$memberToken}")
+        ->getJson(API_V1_PARTIES_ENDPOINT."/{$party->id}")
+        ->assertStatus(200)
+        ->assertJsonPath('data.id', $party->id);
+});
+
+it('forbids a former member from viewing a private party after leaving', function () {
+    $host = User::factory()->create();
+    $party = Party::factory()->create([
+        'host_id' => $host->id,
+        'visibility' => PartyVisibility::Private,
+        'status' => PartyStatus::Live,
+    ]);
+
+    $formerMemberToken = $this->clerkToken(['sub' => 'user_private_view_former_member']);
+    $formerMember = provisionUserFromToken($this, $formerMemberToken, 'user_private_view_former_member');
+    PartyMember::factory()->left()->create(['party_id' => $party->id, 'user_id' => $formerMember->id]);
+
+    $this->withHeader('Authorization', "Bearer {$formerMemberToken}")
+        ->getJson(API_V1_PARTIES_ENDPOINT."/{$party->id}")
+        ->assertStatus(403);
+});
+
+it('lists every party the caller hosts, any status, filterable by status', function () {
+    $hostToken = $this->clerkToken(['sub' => 'user_hosted_list']);
+    $host = provisionUserFromToken($this, $hostToken, 'user_hosted_list');
+
+    Party::factory()->create(['host_id' => $host->id, 'status' => PartyStatus::Draft, 'title' => 'My Draft', 'visibility' => PartyVisibility::Private]);
+    Party::factory()->create(['host_id' => $host->id, 'status' => PartyStatus::Ended, 'title' => 'My Ended']);
+    $otherHost = User::factory()->create();
+    Party::factory()->create(['host_id' => $otherHost->id, 'status' => PartyStatus::Draft, 'title' => 'Not Mine']);
+
+    $response = $this->withHeader('Authorization', "Bearer {$hostToken}")
+        ->getJson('/api/v1/users/me/parties/hosted')
+        ->assertStatus(200);
+
+    $titles = collect($response->json('data'))->pluck('title');
+    expect($titles)->toContain('My Draft')->toContain('My Ended')->not->toContain('Not Mine');
+
+    $filtered = $this->withHeader('Authorization', "Bearer {$hostToken}")
+        ->getJson('/api/v1/users/me/parties/hosted?status=draft')
+        ->assertStatus(200);
+
+    expect($filtered->json('data'))->toHaveCount(1);
+    $filtered->assertJsonPath('data.0.title', 'My Draft');
+});
+
+it('rejects requests to the hosted parties endpoint with no bearer token', function () {
+    $this->getJson('/api/v1/users/me/parties/hosted')->assertStatus(401);
+});
+
+it('lists every party the caller has ever joined, current and past, excluding self-hosted parties', function () {
+    $token = $this->clerkToken(['sub' => 'user_joined_list']);
+    $user = provisionUserFromToken($this, $token, 'user_joined_list');
+
+    $activeParty = Party::factory()->create(['title' => 'Still In This One']);
+    PartyMember::factory()->create(['party_id' => $activeParty->id, 'user_id' => $user->id]);
+
+    $leftParty = Party::factory()->create(['title' => 'Left This One']);
+    PartyMember::factory()->left()->create(['party_id' => $leftParty->id, 'user_id' => $user->id]);
+
+    $ownParty = Party::factory()->create(['host_id' => $user->id, 'title' => 'My Own Party']);
+    PartyMember::factory()->create(['party_id' => $ownParty->id, 'user_id' => $user->id]);
+
+    $response = $this->withHeader('Authorization', "Bearer {$token}")
+        ->getJson('/api/v1/users/me/parties/joined')
+        ->assertStatus(200);
+
+    $entries = collect($response->json('data'));
+    $titles = $entries->pluck('party.title');
+
+    expect($titles)->toContain('Still In This One')->toContain('Left This One')->not->toContain('My Own Party');
+
+    $activeEntry = $entries->firstWhere('party.title', 'Still In This One');
+    expect($activeEntry['membership_status'])->toBe('active');
+    expect($activeEntry['left_at'])->toBeNull();
+
+    $leftEntry = $entries->firstWhere('party.title', 'Left This One');
+    expect($leftEntry['membership_status'])->toBe('left');
+    expect($leftEntry['left_at'])->not->toBeNull();
+});
+
+it('filters the joined parties list by membership_status', function () {
+    $token = $this->clerkToken(['sub' => 'user_joined_filter']);
+    $user = provisionUserFromToken($this, $token, 'user_joined_filter');
+
+    $activeParty = Party::factory()->create(['title' => 'Active Membership']);
+    PartyMember::factory()->create(['party_id' => $activeParty->id, 'user_id' => $user->id]);
+
+    $leftParty = Party::factory()->create(['title' => 'Left Membership']);
+    PartyMember::factory()->left()->create(['party_id' => $leftParty->id, 'user_id' => $user->id]);
+
+    $response = $this->withHeader('Authorization', "Bearer {$token}")
+        ->getJson('/api/v1/users/me/parties/joined?membership_status=left')
+        ->assertStatus(200);
+
+    expect($response->json('data'))->toHaveCount(1);
+    $response->assertJsonPath('data.0.party.title', 'Left Membership');
+});
+
+it('rejects requests to the joined parties endpoint with no bearer token', function () {
+    $this->getJson('/api/v1/users/me/parties/joined')->assertStatus(401);
 });

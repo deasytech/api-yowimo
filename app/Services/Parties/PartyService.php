@@ -2,6 +2,7 @@
 
 namespace App\Services\Parties;
 
+use App\Enums\PartyMemberStatus;
 use App\Enums\PartyStatus;
 use App\Enums\PartyVisibility;
 use App\Events\PartyCreated;
@@ -37,7 +38,7 @@ class PartyService
             ->with(['host', 'gameType', 'pack'])
             ->when($viewer, fn ($query) => $query->withExists([
                 'likes as viewer_has_liked' => fn ($query) => $query->where('user_id', $viewer->id),
-                'members as viewer_is_member' => fn ($query) => $query->where('user_id', $viewer->id),
+                'activeMembers as viewer_is_member' => fn ($query) => $query->where('user_id', $viewer->id),
             ]))
             ->where('visibility', PartyVisibility::Public)
             ->whereIn('status', PartyStatus::publiclyVisible())
@@ -57,13 +58,57 @@ class PartyService
             );
     }
 
+    /**
+     * Every party the user hosts, any status/visibility — unlike list(),
+     * this is the host's own management view, not the public discover feed.
+     *
+     * @param  array{status?: string|null, per_page?: int|null, cursor?: string|null}  $filters
+     */
+    public function listHostedBy(User $host, array $filters): CursorPaginator
+    {
+        return Party::query()
+            ->with(['host', 'gameType', 'pack'])
+            ->where('host_id', $host->id)
+            ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->cursorPaginate(
+                perPage: min($filters['per_page'] ?? 20, 50),
+                cursor: $filters['cursor'] ?? null,
+            );
+    }
+
+    /**
+     * Every party the user has ever been a member of (not host) — current
+     * and past, via the membership row itself rather than the party, so the
+     * response carries membership_status/joined_at/left_at alongside it.
+     * Excludes parties the user hosts, since those already appear in
+     * listHostedBy() and a host is also technically their own first member.
+     *
+     * @param  array{membership_status?: string|null, per_page?: int|null, cursor?: string|null}  $filters
+     */
+    public function listJoinedBy(User $user, array $filters): CursorPaginator
+    {
+        return PartyMember::query()
+            ->with(['party.host', 'party.gameType', 'party.pack'])
+            ->where('user_id', $user->id)
+            ->whereHas('party', fn ($query) => $query->where('host_id', '!=', $user->id))
+            ->when($filters['membership_status'] ?? null, fn ($query, $status) => $query->where('status', $status))
+            ->orderByDesc('joined_at')
+            ->orderByDesc('id')
+            ->cursorPaginate(
+                perPage: min($filters['per_page'] ?? 20, 50),
+                cursor: $filters['cursor'] ?? null,
+            );
+    }
+
     public function find(int $id, ?User $viewer): Party
     {
         return Party::query()
             ->with(['host', 'gameType', 'pack'])
             ->when($viewer, fn ($query) => $query->withExists([
                 'likes as viewer_has_liked' => fn ($query) => $query->where('user_id', $viewer->id),
-                'members as viewer_is_member' => fn ($query) => $query->where('user_id', $viewer->id),
+                'activeMembers as viewer_is_member' => fn ($query) => $query->where('user_id', $viewer->id),
             ]))
             ->findOrFail($id);
     }
@@ -84,7 +129,7 @@ class PartyService
             ->with(['host', 'gameType', 'pack'])
             ->when($viewer, fn ($query) => $query->withExists([
                 'likes as viewer_has_liked' => fn ($query) => $query->where('user_id', $viewer->id),
-                'members as viewer_is_member' => fn ($query) => $query->where('user_id', $viewer->id),
+                'activeMembers as viewer_is_member' => fn ($query) => $query->where('user_id', $viewer->id),
             ]))
             ->where('room_code', strtoupper(trim($roomCode)))
             ->whereIn('status', PartyMembershipService::JOINABLE_STATUSES)
@@ -170,6 +215,7 @@ class PartyService
         PartyMember::create([
             'party_id' => $party->id,
             'user_id' => $host->id,
+            'status' => PartyMemberStatus::Active,
             'joined_at' => now(),
         ]);
 

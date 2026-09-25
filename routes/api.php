@@ -46,6 +46,8 @@ Route::prefix('v1')->group(function () {
 
         Route::get('/badges', [BadgeController::class, 'index']);
         Route::get('/users/me/badges', [BadgeController::class, 'mine']);
+        Route::get('/users/me/parties/hosted', [PartyController::class, 'hosted']);
+        Route::get('/users/me/parties/joined', [PartyController::class, 'joined']);
 
         Route::get('/parties', [PartyController::class, 'index']);
         Route::post('/parties', [PartyController::class, 'store']);
@@ -58,6 +60,7 @@ Route::prefix('v1')->group(function () {
         Route::delete('/parties/{party}/leave', [PartyMembershipController::class, 'leave'])->middleware('throttle:party-actions');
         Route::post('/parties/{party}/start', [PartyMembershipController::class, 'start'])->middleware('throttle:party-actions');
         Route::post('/parties/{party}/end', [PartyMembershipController::class, 'end'])->middleware('throttle:party-actions');
+        Route::post('/parties/{party}/cancel', [PartyMembershipController::class, 'cancel'])->middleware('throttle:party-actions');
         Route::post('/parties/{party}/game/start', [GameSessionController::class, 'start'])->middleware('throttle:party-actions');
         Route::post('/game/{gameSession}/next-turn', [GameSessionController::class, 'nextTurn'])->middleware('throttle:party-actions');
         Route::post('/game/{gameSession}/turns/{turn}/vote', [TurnVoteController::class, 'store'])->middleware('throttle:party-actions');

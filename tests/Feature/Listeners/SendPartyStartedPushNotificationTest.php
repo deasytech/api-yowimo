@@ -39,3 +39,17 @@ it('notifies non-host party members when a party starts, but not the host', func
     Notification::assertSentTo($member, PartyStartedNotification::class, fn ($notification) => $notification->party->id === $party->id);
     Notification::assertNothingSentTo($host);
 });
+
+it('does not notify a member who has since left the party', function () {
+    Notification::fake();
+
+    $host = User::factory()->create();
+    $party = Party::factory()->create(['host_id' => $host->id, 'status' => PartyStatus::Scheduled]);
+    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $host->id]);
+    $formerMember = User::factory()->create();
+    PartyMember::factory()->left()->create(['party_id' => $party->id, 'user_id' => $formerMember->id]);
+
+    app(PartyMembershipService::class)->start($party);
+
+    Notification::assertNothingSentTo($formerMember);
+});

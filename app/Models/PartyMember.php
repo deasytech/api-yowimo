@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PartyMemberStatus;
 use Database\Factories\PartyMemberFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,7 +12,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'party_id',
     'user_id',
+    'status',
     'joined_at',
+    'left_at',
 ])]
 class PartyMember extends Model
 {
@@ -24,7 +27,9 @@ class PartyMember extends Model
     protected function casts(): array
     {
         return [
+            'status' => PartyMemberStatus::class,
             'joined_at' => 'datetime',
+            'left_at' => 'datetime',
         ];
     }
 

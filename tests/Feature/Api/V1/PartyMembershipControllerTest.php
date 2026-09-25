@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\PartyMemberStatus;
 use App\Enums\PartyStatus;
 use App\Enums\PartyVisibility;
 use App\Models\Party;
@@ -32,6 +33,11 @@ function startEndpoint(Party $party): string
 function endEndpoint(Party $party): string
 {
     return "/api/v1/parties/{$party->id}/end";
+}
+
+function cancelEndpoint(Party $party): string
+{
+    return "/api/v1/parties/{$party->id}/cancel";
 }
 
 /**
@@ -122,14 +128,17 @@ it('rejects joining a party that is not in a joinable status', function (PartySt
     ]);
     PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $host->id]);
 
+    // A public party is always joinable-in-principle (join()'s policy check
+    // passes); it's the party's current status that rejects the attempt
+    // here, uniformly across every non-joinable status.
     $this->withHeader('Authorization', "Bearer {$token}")
         ->postJson(joinEndpoint($party))
-        ->assertStatus($status === PartyStatus::Draft ? 403 : 422);
+        ->assertStatus(422);
 
     expect(PartyMember::where('party_id', $party->id)->count())->toBe($party->fresh()->players_count);
 })->with([PartyStatus::Ended, PartyStatus::Cancelled, PartyStatus::Draft]);
 
-it('forbids joining a private party the user cannot view', function () {
+it('forbids joining a private party with no room code', function () {
     $host = User::factory()->create();
     $party = Party::factory()->create([
         'host_id' => $host->id,
@@ -148,6 +157,67 @@ it('forbids joining a private party the user cannot view', function () {
     expect(PartyMember::where('party_id', $party->id)->count())->toBe($party->fresh()->players_count);
 });
 
+it('forbids joining a private party with the wrong room code', function () {
+    $host = User::factory()->create();
+    $party = Party::factory()->create([
+        'host_id' => $host->id,
+        'visibility' => PartyVisibility::Private,
+        'status' => PartyStatus::Live,
+        'players_count' => 1,
+        'room_code' => 'RIGHT1',
+    ]);
+    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $host->id]);
+
+    $token = $this->clerkToken(['sub' => 'user_join_private_wrong_code']);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->postJson(joinEndpoint($party), ['room_code' => 'WRONG1'])
+        ->assertStatus(403);
+});
+
+it('lets a user join a private party with the correct room code', function () {
+    $host = User::factory()->create();
+    $party = Party::factory()->create([
+        'host_id' => $host->id,
+        'visibility' => PartyVisibility::Private,
+        'status' => PartyStatus::Live,
+        'players_count' => 1,
+        'room_code' => 'INVITE',
+    ]);
+    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $host->id]);
+
+    $token = $this->clerkToken(['sub' => 'user_join_private_invited']);
+
+    // Case-insensitive, matching the room-code lookup endpoint's behavior.
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->postJson(joinEndpoint($party), ['room_code' => 'invite'])
+        ->assertStatus(200)
+        ->assertJsonPath('data.joined_by_me', true);
+});
+
+it('reuses the same membership row on rejoin after leaving, preserving history', function () {
+    $token = $this->clerkToken(['sub' => 'user_rejoiner']);
+    $party = makeLivePartyWithHostMember();
+
+    $this->withHeader('Authorization', "Bearer {$token}")->postJson(joinEndpoint($party))->assertStatus(200);
+    $this->withHeader('Authorization', "Bearer {$token}")->deleteJson(leaveEndpoint($party))->assertStatus(200);
+
+    $user = User::where('clerk_user_id', 'user_rejoiner')->firstOrFail();
+    $membership = PartyMember::where('party_id', $party->id)->where('user_id', $user->id)->firstOrFail();
+    expect($membership->status)->toBe(PartyMemberStatus::Left);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->postJson(joinEndpoint($party))
+        ->assertStatus(200)
+        ->assertJsonPath('data.joined_by_me', true);
+
+    expect(PartyMember::where('party_id', $party->id)->where('user_id', $user->id)->count())->toBe(1);
+    $membership->refresh();
+    expect($membership->status)->toBe(PartyMemberStatus::Active);
+    expect($membership->left_at)->toBeNull();
+    expect($party->fresh()->players_count)->toBe(2);
+});
+
 it('leaves a party and decrements players_count', function () {
     $token = $this->clerkToken(['sub' => 'user_leaver']);
     $party = makeLivePartyWithHostMember();
@@ -160,10 +230,13 @@ it('leaves a party and decrements players_count', function () {
         ->assertJsonPath('data.players_count', 1)
         ->assertJsonPath('data.joined_by_me', false);
 
+    // The membership row survives as history (status: left), not deleted —
+    // only the active-membership count/roster shrinks.
     $user = User::where('clerk_user_id', 'user_leaver')->firstOrFail();
-    expect(PartyMember::where('party_id', $party->id)->where('user_id', $user->id)->exists())->toBeFalse();
+    $membership = PartyMember::where('party_id', $party->id)->where('user_id', $user->id)->firstOrFail();
+    expect($membership->status)->toBe(PartyMemberStatus::Left);
+    expect($membership->left_at)->not->toBeNull();
     expect($party->fresh()->players_count)->toBe(1);
-    expect(PartyMember::where('party_id', $party->id)->count())->toBe($party->fresh()->players_count);
 });
 
 it('does not go below zero when leaving without having joined', function () {
@@ -295,4 +368,54 @@ it('rejects ending a party that is not live', function () {
     $this->withHeader('Authorization', "Bearer {$hostToken}")
         ->postJson(endEndpoint($party))
         ->assertStatus(422);
+});
+
+it('lets the host cancel their draft party', function (PartyStatus $status) {
+    [$host, $hostToken] = provisionPartyHost($this, $this->clerkToken(['sub' => 'user_host_cancel_'.$status->value]), 'user_host_cancel_'.$status->value);
+
+    $party = Party::factory()->create([
+        'host_id' => $host->id,
+        'visibility' => PartyVisibility::Public,
+        'status' => $status,
+    ]);
+
+    $this->withHeader('Authorization', "Bearer {$hostToken}")
+        ->postJson(cancelEndpoint($party))
+        ->assertStatus(200)
+        ->assertJsonPath('data.status', 'cancelled');
+
+    expect($party->fresh()->status)->toBe(PartyStatus::Cancelled);
+})->with([PartyStatus::Draft, PartyStatus::Scheduled]);
+
+it('forbids a non-host from cancelling a party', function () {
+    $host = User::factory()->create();
+    $party = Party::factory()->create([
+        'host_id' => $host->id,
+        'visibility' => PartyVisibility::Public,
+        'status' => PartyStatus::Draft,
+    ]);
+
+    $token = $this->clerkToken(['sub' => 'user_non_host_cancel']);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->postJson(cancelEndpoint($party))
+        ->assertStatus(403);
+
+    expect($party->fresh()->status)->toBe(PartyStatus::Draft);
+});
+
+it('rejects cancelling a party that is already live', function () {
+    [$host, $hostToken] = provisionPartyHost($this, $this->clerkToken(['sub' => 'user_host_cancel_live']), 'user_host_cancel_live');
+
+    $party = Party::factory()->create([
+        'host_id' => $host->id,
+        'visibility' => PartyVisibility::Public,
+        'status' => PartyStatus::Live,
+    ]);
+
+    $this->withHeader('Authorization', "Bearer {$hostToken}")
+        ->postJson(cancelEndpoint($party))
+        ->assertStatus(422);
+
+    expect($party->fresh()->status)->toBe(PartyStatus::Live);
 });
