@@ -92,6 +92,8 @@ class PartyMembershipService
         }
 
         DB::transaction(function () use ($user, $party) {
+            $party = Party::query()->whereKey($party->id)->lockForUpdate()->firstOrFail();
+
             $membership = PartyMember::query()
                 ->where('party_id', $party->id)
                 ->where('user_id', $user->id)

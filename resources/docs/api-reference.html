@@ -311,20 +311,26 @@
       </div>
       <div class="nav-group" data-group="parties">
         <div class="nav-group-title">Parties</div>
+        <a class="nav-link" data-search="get users me parties hosted management" href="#get-users-me-parties-hosted"><span class="m get">GET</span><span class="p">/users/me/parties/hosted</span></a>
+        <a class="nav-link" data-search="get users me parties joined membership history" href="#get-users-me-parties-joined"><span class="m get">GET</span><span class="p">/users/me/parties/joined</span></a>
         <a class="nav-link" data-search="get parties discover feed list" href="#get-parties"><span class="m get">GET</span><span class="p">/parties</span></a>
         <a class="nav-link" data-search="post parties create" href="#post-parties"><span class="m post">POST</span><span class="p">/parties</span></a>
         <a class="nav-link" data-search="get parties id show detail" href="#get-parties-id"><span class="m get">GET</span><span class="p">/parties/{id}</span></a>
+        <a class="nav-link" data-search="get parties lookup room code join" href="#get-parties-lookup"><span class="m get">GET</span><span class="p">/parties/lookup</span></a>
+        <a class="nav-link" data-search="patch parties id game type pack" href="#patch-parties-id"><span class="m patch">PATCH</span><span class="p">/parties/{id}</span></a>
         <a class="nav-link" data-search="post parties like" href="#post-parties-like"><span class="m post">POST</span><span class="p">/parties/{party}/like</span></a>
         <a class="nav-link" data-search="delete parties unlike" href="#delete-parties-like"><span class="m delete">DEL</span><span class="p">/parties/{party}/like</span></a>
-        <a class="nav-link" data-search="post parties join" href="#post-parties-join"><span class="m post">POST</span><span class="p">/parties/{party}/join</span></a>
+        <a class="nav-link" data-search="post parties join room code" href="#post-parties-join"><span class="m post">POST</span><span class="p">/parties/{party}/join</span></a>
         <a class="nav-link" data-search="delete parties leave" href="#delete-parties-leave"><span class="m delete">DEL</span><span class="p">/parties/{party}/leave</span></a>
         <a class="nav-link" data-search="post parties start host" href="#post-parties-start"><span class="m post">POST</span><span class="p">/parties/{party}/start</span></a>
         <a class="nav-link" data-search="post parties end host" href="#post-parties-end"><span class="m post">POST</span><span class="p">/parties/{party}/end</span></a>
+        <a class="nav-link" data-search="post parties cancel host moderation" href="#post-parties-cancel"><span class="m post">POST</span><span class="p">/parties/{party}/cancel</span></a>
       </div>
       <div class="nav-group" data-group="gamesessions">
         <div class="nav-group-title">Game Sessions</div>
         <a class="nav-link" data-search="post game start session" href="#post-game-start"><span class="m post">POST</span><span class="p">/parties/{party}/game/start</span></a>
         <a class="nav-link" data-search="post game next-turn advance" href="#post-game-next-turn"><span class="m post">POST</span><span class="p">/game/{id}/next-turn</span></a>
+        <a class="nav-link" data-search="post game turns vote winner funny creativity" href="#post-game-turns-vote"><span class="m post">POST</span><span class="p">/game/{id}/turns/{id}/vote</span></a>
       </div>
       <div class="nav-group" data-group="pushtokens">
         <div class="nav-group-title">Push Tokens</div>
@@ -1354,7 +1360,7 @@
               <tr><td class="field">search</td><td class="rule">optional &mdash; matches title or host username</td></tr>
               <tr><td class="field">per_page / cursor</td><td class="rule">pagination</td></tr>
             </table>
-            <div class="note"><b>There is no "my parties" endpoint</b>This feed hardcodes <code>visibility=public AND status IN (scheduled, live)</code>. It never returns drafts, private parties, or ended/cancelled ones &mdash; not even the caller's own. Track a player's own parties client-side (from create/join responses) until such an endpoint exists.</div>
+            <div class="note"><b>Not for "my parties"</b>This feed hardcodes <code>visibility=public AND status IN (scheduled, live)</code>. It never returns drafts, private parties, or ended/cancelled ones &mdash; not even the caller's own. For a player's own parties, use <code>GET /users/me/parties/hosted</code> and <code>GET /users/me/parties/joined</code> instead.</div>
             <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">422</span></div>
           </div>
           <div class="endpoint-code">
@@ -1462,12 +1468,12 @@
           <div class="endpoint-docs">
             <h4>Visibility rules</h4>
             <ul style="color:var(--text-muted); font-size:.9rem; padding-left:1.1rem; margin:.3rem 0;">
-              <li>Host always sees their own party, any status.</li>
-              <li>Any <b style="color:var(--text)">current (active)</b> member can also always view it, regardless of visibility &mdash; otherwise a member of a private party could never reopen its lobby after leaving the app and coming back. A <i>former</i> member (left/removed) loses this.</li>
-              <li>A <code>draft</code> party is visible to nobody else &mdash; not 404, <b style="color:var(--text)">403</b>.</li>
+              <li>Host always sees their own party, any status &mdash; including <code>draft</code>.</li>
+              <li>Any <b style="color:var(--text)">current (active)</b> member can also always view it, regardless of status or visibility &mdash; so a member can see a <code>draft</code> too, and otherwise a member of a private party could never reopen its lobby after leaving the app and coming back. A <i>former</i> member (left/removed) loses this.</li>
+              <li>Otherwise, a <code>draft</code> party is visible to nobody else &mdash; not 404, <b style="color:var(--text)">403</b>.</li>
               <li>Otherwise visible only if <code>visibility=public</code>.</li>
             </ul>
-            <div class="note"><b>room_code can be entirely absent</b>Present via a conditional field &mdash; shown to the host, or when the party is public. In the blocked case the key is omitted from the JSON, not <code>null</code>. Check with <code>"room_code" in data</code>, not a falsy check.</div>
+            <div class="note"><b>room_code can be entirely absent</b>Present via a conditional field &mdash; shown to the host, or when the party is public. A non-host member of a <i>private</i> party can view the party but does not get <code>room_code</code> back in the response. In the blocked case the key is omitted from the JSON, not <code>null</code>. Check with <code>"room_code" in data</code>, not a falsy check.</div>
             <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403 draft/private, not yours</span><span class="status-pill err">404</span></div>
           </div>
           <div class="endpoint-code">
