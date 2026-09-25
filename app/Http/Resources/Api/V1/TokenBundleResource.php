@@ -10,17 +10,24 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class TokenBundleResource extends JsonResource
 {
     /**
+     * `price`/`currency` are resolved per-viewer: the default (NGN, in
+     * practice) for everyone, except a buyer confirmed to be outside
+     * Nigeria sees `price_usd`/USD when this bundle has one set. See
+     * TokenBundle::priceFor() for the exact rule — this always mirrors it.
+     *
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
     {
+        $price = $this->resource->priceFor($request->user());
+
         return [
             'id' => $this->id,
             'slug' => $this->slug,
             'name' => $this->name,
             'tokens' => $this->tokens,
-            'price' => (float) $this->price,
-            'currency' => $this->currency,
+            'price' => $price['amount'],
+            'currency' => $price['currency'],
             'badge' => $this->badge,
             'gradient' => $this->gradient ?? [],
             'is_featured' => $this->is_featured,

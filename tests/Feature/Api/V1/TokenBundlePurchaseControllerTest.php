@@ -1,9 +1,11 @@
 <?php
 
+use App\Models\PaymentMethod;
 use App\Models\TokenBundle;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
+use Illuminate\Support\Facades\Http;
 use Tests\Support\FakesClerk;
 
 uses(FakesClerk::class);
@@ -93,4 +95,130 @@ it('returns 404 when purchasing an unknown token bundle', function () {
         ->withHeader('Idempotency-Key', 'purchase_unknown_key')
         ->postJson('/api/v1/token-bundles/999999/purchase')
         ->assertStatus(404);
+});
+
+it('rejects a payment_method_id that belongs to another user', function () {
+    $token = $this->clerkToken(['sub' => 'user_purchase_other_method']);
+    $bundle = TokenBundle::factory()->create();
+    $otherUsersMethod = PaymentMethod::factory()->create();
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->withHeader('Idempotency-Key', 'purchase_other_method_key')
+        ->postJson(purchaseEndpoint($bundle), ['payment_method_id' => $otherUsersMethod->id])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('payment_method_id');
+});
+
+it('purchases via a real Paystack charge by reference, credits the wallet, and saves the card', function () {
+    config(['services.paystack.secret_key' => 'sk_test_fake']);
+
+    $token = $this->clerkToken(['sub' => 'user_purchase_paystack_reference', 'email' => 'reference-buyer@example.com']);
+    $bundle = TokenBundle::factory()->create(['tokens' => 500, 'price' => 9.99, 'currency' => 'USD']);
+
+    Http::fake([
+        'https://api.paystack.co/transaction/verify/*' => Http::response([
+            'data' => [
+                'status' => 'success',
+                'amount' => 999,
+                'currency' => 'USD',
+                'customer' => ['email' => 'reference-buyer@example.com'],
+                'authorization' => [
+                    'authorization_code' => 'AUTH_e2e_new',
+                    'reusable' => true,
+                    'last4' => '4242',
+                ],
+            ],
+        ]),
+    ]);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->withHeader('Idempotency-Key', 'purchase_paystack_reference_key')
+        ->postJson(purchaseEndpoint($bundle), ['payment_reference' => 'ref_e2e_123'])
+        ->assertStatus(201)
+        ->assertJsonPath('data.amount', 500);
+
+    $user = User::where('clerk_user_id', 'user_purchase_paystack_reference')->firstOrFail();
+    expect(Wallet::where('user_id', $user->id)->firstOrFail()->balance)->toBe(500);
+    expect(PaymentMethod::where('user_id', $user->id)->where('authorization_code', 'AUTH_e2e_new')->exists())->toBeTrue();
+});
+
+it('purchases via a saved payment method', function () {
+    config(['services.paystack.secret_key' => 'sk_test_fake']);
+
+    $token = $this->clerkToken(['sub' => 'user_purchase_paystack_saved']);
+    $bundle = TokenBundle::factory()->create(['tokens' => 200, 'price' => 4.99, 'currency' => 'USD']);
+    $this->withHeader('Authorization', "Bearer {$token}")->getJson('/api/v1/users/me')->assertOk();
+    $user = User::where('clerk_user_id', 'user_purchase_paystack_saved')->firstOrFail();
+    $method = PaymentMethod::factory()->create(['user_id' => $user->id]);
+
+    Http::fake([
+        'https://api.paystack.co/transaction/charge_authorization' => Http::response([
+            'data' => ['status' => 'success', 'amount' => 499, 'currency' => 'USD'],
+        ]),
+    ]);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->withHeader('Idempotency-Key', 'purchase_paystack_saved_key')
+        ->postJson(purchaseEndpoint($bundle), ['payment_method_id' => $method->id])
+        ->assertStatus(201);
+
+    expect(Wallet::where('user_id', $user->id)->firstOrFail()->balance)->toBe(200);
+});
+
+it('rejects reusing an already-consumed payment_reference under a different idempotency key', function () {
+    // Without this, a real charge that already credited a wallet could be
+    // resubmitted with a fresh idempotency_key (the idempotency check alone
+    // only dedupes retries of the *same* attempt) and credit again for the
+    // same real-world money.
+    config(['services.paystack.secret_key' => 'sk_test_fake']);
+
+    $token = $this->clerkToken(['sub' => 'user_purchase_reference_reuse', 'email' => 'reuse-buyer@example.com']);
+    $bundle = TokenBundle::factory()->create(['tokens' => 500, 'price' => 9.99, 'currency' => 'USD']);
+
+    Http::fake([
+        'https://api.paystack.co/transaction/verify/*' => Http::response([
+            'data' => [
+                'status' => 'success',
+                'amount' => 999,
+                'currency' => 'USD',
+                'customer' => ['email' => 'reuse-buyer@example.com'],
+            ],
+        ]),
+    ]);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->withHeader('Idempotency-Key', 'purchase_reuse_first_key')
+        ->postJson(purchaseEndpoint($bundle), ['payment_reference' => 'ref_reused'])
+        ->assertStatus(201);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->withHeader('Idempotency-Key', 'purchase_reuse_second_key')
+        ->postJson(purchaseEndpoint($bundle), ['payment_reference' => 'ref_reused'])
+        ->assertStatus(409);
+
+    $user = User::where('clerk_user_id', 'user_purchase_reference_reuse')->firstOrFail();
+    expect(Wallet::where('user_id', $user->id)->firstOrFail()->balance)->toBe(500);
+    expect(WalletTransaction::where('payment_reference', 'ref_reused')->count())->toBe(1);
+});
+
+it('declines and does not credit the wallet when Paystack verification fails', function () {
+    config(['services.paystack.secret_key' => 'sk_test_fake']);
+
+    $token = $this->clerkToken(['sub' => 'user_purchase_paystack_declined']);
+    $bundle = TokenBundle::factory()->create(['tokens' => 500, 'price' => 9.99, 'currency' => 'USD']);
+
+    Http::fake([
+        'https://api.paystack.co/transaction/verify/*' => Http::response([
+            'data' => ['status' => 'failed', 'amount' => 999, 'currency' => 'USD'],
+        ]),
+    ]);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->withHeader('Idempotency-Key', 'purchase_paystack_declined_key')
+        ->postJson(purchaseEndpoint($bundle), ['payment_reference' => 'ref_declined'])
+        ->assertStatus(402);
+
+    $user = User::where('clerk_user_id', 'user_purchase_paystack_declined')->firstOrFail();
+    expect(Wallet::where('user_id', $user->id)->first()?->balance ?? 0)->toBe(0);
+    expect(WalletTransaction::where('idempotency_key', 'purchase_paystack_declined_key')->exists())->toBeFalse();
 });

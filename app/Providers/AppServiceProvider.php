@@ -9,6 +9,7 @@ use App\Services\Clerk\ClerkJwtVerifier;
 use App\Services\Clerk\ClerkUserProvisioner;
 use App\Services\Purchase\ManualPaymentProvider;
 use App\Services\Purchase\PaymentProvider;
+use App\Services\Purchase\PaystackPaymentProvider;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -22,7 +23,18 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->bind(PaymentProvider::class, ManualPaymentProvider::class);
+        // Falls back to the manual/test driver until PAYSTACK_SECRET_KEY is
+        // set in any given environment (mirrors AIProvider's OpenAI-key gate
+        // below), so purchases keep working locally/in CI with no real
+        // gateway configured. Resolved lazily (not decided once at register()
+        // time) so tests can toggle config('services.paystack.secret_key')
+        // and get the matching driver.
+        $this->app->bind(
+            PaymentProvider::class,
+            fn ($app) => config('services.paystack.secret_key')
+                ? $app->make(PaystackPaymentProvider::class)
+                : $app->make(ManualPaymentProvider::class),
+        );
         $this->app->bind(AIProvider::class, OpenAiProvider::class);
     }
 

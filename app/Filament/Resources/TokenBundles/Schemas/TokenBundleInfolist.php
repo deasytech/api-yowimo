@@ -26,8 +26,12 @@ class TokenBundleInfolist
                             ->numeric()
                             ->suffix(' tokens'),
                         TextEntry::make('price')
-                            ->money(fn ($record) => $record->currency ?? 'USD'),
+                            ->money(fn ($record) => $record->currency ?? 'NGN'),
                         TextEntry::make('currency'),
+                        TextEntry::make('price_usd')
+                            ->label('Price (USD)')
+                            ->money('USD')
+                            ->placeholder('Not set — non-Nigerian buyers are charged the price above too.'),
                         TextEntry::make('badge'),
                     ]),
 
