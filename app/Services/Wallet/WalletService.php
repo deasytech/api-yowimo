@@ -141,37 +141,7 @@ class WalletService
                     'description' => $description,
                 ]);
             } catch (QueryException $exception) {
-                if ($paymentReference !== null && $this->isPaymentReferenceUniqueViolation($exception)) {
-                    // A different attempt — possibly a different wallet
-                    // entirely — already claimed this exact gateway
-                    // reference. Unlike an idempotency_key collision, this
-                    // is never safe to resolve by returning the other
-                    // entry: it would either hand back an unrelated user's
-                    // transaction or silently double-credit a single
-                    // real-world charge that got resubmitted under a new
-                    // idempotency_key.
-                    throw new DuplicatePaymentReferenceException;
-                }
-
-                if ($idempotencyKey === null || ! $this->isIdempotencyKeyUniqueViolation($exception)) {
-                    throw $exception;
-                }
-
-                // Concurrent retry of the same operation (e.g. a webhook); return
-                // the entry that won the race instead of applying it twice. Scoped
-                // to this wallet — the unique constraint is per-wallet, so this
-                // can only be this user's own prior entry.
-                $existing = WalletTransaction::query()
-                    ->where('wallet_id', $wallet->id)
-                    ->where('idempotency_key', $idempotencyKey)
-                    ->firstOrFail();
-
-                if ($existing->reference_type !== $reference?->getMorphClass()
-                    || (string) $existing->reference_id !== (string) $reference?->getKey()) {
-                    throw new IdempotencyKeyConflictException;
-                }
-
-                return $existing;
+                return $this->resolveCreateConflict($exception, $wallet, $reference, $idempotencyKey, $paymentReference);
             }
 
             $wallet->update(['balance' => $newBalance]);
@@ -182,6 +152,49 @@ class WalletService
 
             return $transaction;
         });
+    }
+
+    /**
+     * Resolves a unique-constraint violation on WalletTransaction::create():
+     * either a genuine conflict to reject, or a concurrent retry of the same
+     * operation (e.g. a webhook) whose already-created entry is returned
+     * instead of applying it twice.
+     */
+    private function resolveCreateConflict(
+        QueryException $exception,
+        Wallet $wallet,
+        ?Model $reference,
+        ?string $idempotencyKey,
+        ?string $paymentReference,
+    ): WalletTransaction {
+        if ($paymentReference !== null && $this->isPaymentReferenceUniqueViolation($exception)) {
+            // A different attempt — possibly a different wallet entirely —
+            // already claimed this exact gateway reference. Unlike an
+            // idempotency_key collision, this is never safe to resolve by
+            // returning the other entry: it would either hand back an
+            // unrelated user's transaction or silently double-credit a
+            // single real-world charge that got resubmitted under a new
+            // idempotency_key.
+            throw new DuplicatePaymentReferenceException;
+        }
+
+        if ($idempotencyKey === null || ! $this->isIdempotencyKeyUniqueViolation($exception)) {
+            throw $exception;
+        }
+
+        // Scoped to this wallet — the unique constraint is per-wallet, so
+        // this can only be this user's own prior entry.
+        $existing = WalletTransaction::query()
+            ->where('wallet_id', $wallet->id)
+            ->where('idempotency_key', $idempotencyKey)
+            ->firstOrFail();
+
+        if ($existing->reference_type !== $reference?->getMorphClass()
+            || (string) $existing->reference_id !== (string) $reference?->getKey()) {
+            throw new IdempotencyKeyConflictException;
+        }
+
+        return $existing;
     }
 
     private function isUserIdUniqueViolation(QueryException $exception): bool

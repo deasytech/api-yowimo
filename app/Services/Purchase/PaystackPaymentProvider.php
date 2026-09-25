@@ -51,35 +51,34 @@ class PaystackPaymentProvider implements PaymentProvider
      */
     private function chargeByReference(User $user, string $reference, array $price): bool
     {
-        try {
-            $response = $this->client->verifyTransaction($reference);
-        } catch (PaystackConnectionException) {
-            // Verifying has no side effect, so declining and letting the
-            // client retry the whole purchase call (same idempotency key,
-            // same reference) is always safe here — unlike a saved-method
-            // charge, there's no risk of double-charging a card by trying
-            // again.
+        $data = $this->verifyTransactionData($reference);
+
+        if ($data === null || ! $this->matchesExpectedCharge($data, $price) || ! $this->belongsToUser($data, $user)) {
             return false;
         }
 
-        $data = $response['data'] ?? [];
+        return $this->saveReusableAuthorizationIfAny($user, $data);
+    }
 
-        if (! $this->matchesExpectedCharge($data, $price) || ! $this->belongsToUser($data, $user)) {
-            return false;
-        }
-
+    /**
+     * Saves a reusable authorization from a verified charge as a new
+     * payment method, if the transaction returned one. Declines (rather
+     * than crediting anyway) if that authorization is already saved to a
+     * *different* user — a real charge that doesn't belong to $user
+     * shouldn't be possible once belongsToUser() has passed, but this
+     * refuses to silently reassign someone else's card either way.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function saveReusableAuthorizationIfAny(User $user, array $data): bool
+    {
         $authorization = $data['authorization'] ?? null;
 
-        if (($authorization['reusable'] ?? false)
-            && $this->paymentMethods->saveFromAuthorization($user, self::PROVIDER_NAME, $authorization) === null) {
-            // The authorization is already saved against a *different*
-            // user — a real charge that doesn't belong to $user shouldn't
-            // be possible once belongsToUser() has passed, but treat it as
-            // declined rather than silently reassigning someone else's card.
-            return false;
+        if (! ($authorization['reusable'] ?? false)) {
+            return true;
         }
 
-        return true;
+        return $this->paymentMethods->saveFromAuthorization($user, self::PROVIDER_NAME, $authorization) !== null;
     }
 
     /**
@@ -116,13 +115,30 @@ class PaystackPaymentProvider implements PaymentProvider
      */
     private function verifyReference(string $reference, array $price): bool
     {
+        $data = $this->verifyTransactionData($reference);
+
+        return $data !== null && $this->matchesExpectedCharge($data, $price);
+    }
+
+    /**
+     * Verifies a transaction and returns its `data`, or null if the
+     * connection to Paystack itself failed — as opposed to a completed
+     * verification of a not-found/failed transaction, which still returns
+     * an array (possibly empty). Declining and letting the client retry the
+     * whole purchase call is always safe on a connection failure here,
+     * since verifying has no side effect.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function verifyTransactionData(string $reference): ?array
+    {
         try {
             $response = $this->client->verifyTransaction($reference);
         } catch (PaystackConnectionException) {
-            return false;
+            return null;
         }
 
-        return $this->matchesExpectedCharge($response['data'] ?? [], $price);
+        return $response['data'] ?? [];
     }
 
     /**

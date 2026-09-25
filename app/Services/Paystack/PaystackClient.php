@@ -5,7 +5,6 @@ namespace App\Services\Paystack;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use RuntimeException;
 
 /**
  * Lean HTTP-facade wrapper around the Paystack REST API (no SDK package),
@@ -106,7 +105,7 @@ class PaystackClient
         $secretKey = config('services.paystack.secret_key');
 
         if (! $secretKey) {
-            throw new RuntimeException('Paystack secret key is not configured.');
+            throw new PaystackNotConfiguredException('Paystack secret key is not configured.');
         }
 
         return $secretKey;
