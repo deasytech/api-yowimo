@@ -14,6 +14,7 @@ use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\Response;
 use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
@@ -61,9 +62,17 @@ class PartyResource extends Resource
         return true;
     }
 
-    public static function canEdit(Model $record): bool
+    /**
+     * The table's EditAction (and ListRecords' header actions) authorize
+     * through this response — via Pages\Page::getDefaultActionAuthorizationResponse() —
+     * not through canEdit(), so overriding canEdit() alone leaves the edit
+     * button hidden whenever the API's host-only PartyPolicy::update()
+     * denies the admin (i.e. for every party they don't host).
+     * Resource::canEdit() delegates here, so both paths stay allowed.
+     */
+    public static function getEditAuthorizationResponse(Model $record): Response
     {
-        return true;
+        return Response::allow();
     }
 
     public static function canDelete(Model $record): bool

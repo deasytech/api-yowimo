@@ -3,6 +3,7 @@
 use App\Enums\PartyStatus;
 use App\Filament\Resources\Parties\Pages\CreateParty;
 use App\Filament\Resources\Parties\Pages\EditParty;
+use App\Filament\Resources\Parties\Pages\ListParties;
 use App\Models\GameSession;
 use App\Models\GameType;
 use App\Models\Pack;
@@ -157,6 +158,13 @@ it('locks the game type and pack once a game session exists, even if a change is
     expect($party->refresh())
         ->game_type_id->toBe($gameType->id)
         ->pack_id->toBe($pack->id);
+});
+
+it('shows the edit action in the list table for parties the admin does not host', function () {
+    $party = Party::factory()->create(['host_id' => User::factory()->create()->id]);
+
+    Livewire::test(ListParties::class)
+        ->assertTableActionVisible('edit', $party);
 });
 
 it('clears sponsor_name when is_sponsored is unchecked on create', function () {

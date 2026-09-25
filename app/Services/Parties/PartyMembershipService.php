@@ -2,6 +2,7 @@
 
 namespace App\Services\Parties;
 
+use App\Enums\PartyMemberStatus;
 use App\Enums\PartyStatus;
 use App\Events\PartyMemberJoined;
 use App\Events\PartyMemberLeft;
@@ -28,6 +29,11 @@ class PartyMembershipService
     public const JOINABLE_STATUSES = [PartyStatus::Scheduled, PartyStatus::Live];
 
     /**
+     * A rejoin (having previously left) reuses the same row rather than
+     * inserting a new one — party_members has a unique (party_id, user_id)
+     * constraint precisely so membership history survives as one row per
+     * person per party, not one per join/leave cycle.
+     *
      * @throws PartyNotJoinableException if the party's current status doesn't allow joining.
      * @throws PartyFullException if the party is already at capacity.
      */
@@ -36,7 +42,9 @@ class PartyMembershipService
         DB::transaction(function () use ($user, $party) {
             $party = Party::query()->whereKey($party->id)->lockForUpdate()->firstOrFail();
 
-            if (PartyMember::query()->where('party_id', $party->id)->where('user_id', $user->id)->exists()) {
+            $membership = PartyMember::query()->where('party_id', $party->id)->where('user_id', $user->id)->first();
+
+            if ($membership && $membership->status === PartyMemberStatus::Active) {
                 return;
             }
 
@@ -48,11 +56,20 @@ class PartyMembershipService
                 throw new PartyFullException;
             }
 
-            PartyMember::create([
-                'party_id' => $party->id,
-                'user_id' => $user->id,
-                'joined_at' => now(),
-            ]);
+            if ($membership) {
+                $membership->update([
+                    'status' => PartyMemberStatus::Active,
+                    'joined_at' => now(),
+                    'left_at' => null,
+                ]);
+            } else {
+                PartyMember::create([
+                    'party_id' => $party->id,
+                    'user_id' => $user->id,
+                    'status' => PartyMemberStatus::Active,
+                    'joined_at' => now(),
+                ]);
+            }
 
             $party->increment('players_count');
 
@@ -63,6 +80,9 @@ class PartyMembershipService
     }
 
     /**
+     * Marks the membership as left rather than deleting it, so history
+     * (joined_at/left_at) survives for the joined-parties list.
+     *
      * @throws PartyHostCannotLeaveException if the host tries to leave their own party.
      */
     public function leave(User $user, Party $party): Party
@@ -72,19 +92,40 @@ class PartyMembershipService
         }
 
         DB::transaction(function () use ($user, $party) {
-            $deleted = PartyMember::query()
+            $party = Party::query()->whereKey($party->id)->lockForUpdate()->firstOrFail();
+
+            $membership = PartyMember::query()
                 ->where('party_id', $party->id)
                 ->where('user_id', $user->id)
-                ->delete();
+                ->where('status', PartyMemberStatus::Active)
+                ->first();
 
-            if ($deleted > 0) {
-                if ($party->players_count > 0) {
-                    $party->decrement('players_count');
-                }
-
-                PartyMemberLeft::dispatch($party->id, $user->id);
+            if (! $membership) {
+                return;
             }
+
+            $membership->update(['status' => PartyMemberStatus::Left, 'left_at' => now()]);
+
+            if ($party->players_count > 0) {
+                $party->decrement('players_count');
+            }
+
+            PartyMemberLeft::dispatch($party->id, $user->id);
         });
+
+        return $party->refresh();
+    }
+
+    /**
+     * @throws InvalidPartyTransitionException if the party isn't in a cancellable status.
+     */
+    public function cancel(Party $party): Party
+    {
+        if (! in_array($party->status, [PartyStatus::Draft, PartyStatus::Scheduled], true)) {
+            throw new InvalidPartyTransitionException('This party cannot be cancelled from its current status.');
+        }
+
+        $party->update(['status' => PartyStatus::Cancelled]);
 
         return $party->refresh();
     }

@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\PartyMemberStatus;
 use App\Models\Party;
 use App\Models\PartyMember;
 use App\Models\User;
@@ -22,7 +23,20 @@ class PartyMemberFactory extends Factory
         return [
             'party_id' => Party::factory(),
             'user_id' => User::factory(),
+            'status' => PartyMemberStatus::Active,
             'joined_at' => now(),
+            'left_at' => null,
         ];
+    }
+
+    /**
+     * @return Factory<PartyMember>
+     */
+    public function left(): Factory
+    {
+        return $this->state([
+            'status' => PartyMemberStatus::Left,
+            'left_at' => now(),
+        ]);
     }
 }

@@ -2,7 +2,9 @@
 
 use Illuminate\Support\Str;
 
-const CACHE_DATA_PATH = 'framework/cache/data';
+if (! defined('CACHE_DATA_PATH')) {
+    define('CACHE_DATA_PATH', 'framework/cache/data');
+}
 
 return [
 
@@ -120,7 +122,7 @@ return [
     |
     */
 
-    'prefix' => env('CACHE_PREFIX', Str::slug((string) env('APP_NAME', 'laravel')) . '-cache-'),
+    'prefix' => env('CACHE_PREFIX', Str::slug((string) env('APP_NAME', 'laravel')).'-cache-'),
 
     /*
     |--------------------------------------------------------------------------

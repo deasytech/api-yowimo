@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PartyMemberStatus;
 use App\Enums\PartyMode;
 use App\Enums\PartyStatus;
 use App\Enums\PartyVisibility;
@@ -92,11 +93,22 @@ class Party extends Model
     }
 
     /**
+     * All membership rows ever created for this party, current and past —
+     * the full history. See activeMembers() for the current roster.
+     *
      * @return HasMany<PartyMember, $this>
      */
     public function members(): HasMany
     {
         return $this->hasMany(PartyMember::class);
+    }
+
+    /**
+     * @return HasMany<PartyMember, $this>
+     */
+    public function activeMembers(): HasMany
+    {
+        return $this->members()->where('status', PartyMemberStatus::Active);
     }
 
     /**
@@ -132,8 +144,8 @@ class Party extends Model
             return (bool) $this->attributes['viewer_is_member'];
         }
 
-        return $this->relationLoaded('members')
-            ? $this->members->contains('user_id', $user->id)
-            : $this->members()->where('user_id', $user->id)->exists();
+        return $this->relationLoaded('activeMembers')
+            ? $this->activeMembers->contains('user_id', $user->id)
+            : $this->activeMembers()->where('user_id', $user->id)->exists();
     }
 }

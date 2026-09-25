@@ -18,20 +18,18 @@ class PartyPolicy
     }
 
     /**
-     * Determine whether the user can view the party. Public parties are visible to anyone;
-     * private parties and drafts are only visible to their host.
+     * Determine whether the user can view the party. The host and any
+     * current (active) member can always view it, regardless of
+     * visibility — otherwise a member of a private party couldn't reopen
+     * its lobby. Anyone else can only view a non-draft public party.
      */
     public function view(?User $user, Party $party): bool
     {
-        if ($user && $party->host_id === $user->id) {
+        if (($user && $party->host_id === $user->id) || $party->isMemberOf($user)) {
             return true;
         }
 
-        if ($party->status === PartyStatus::Draft) {
-            return false;
-        }
-
-        return $party->visibility === PartyVisibility::Public;
+        return $party->status !== PartyStatus::Draft && $party->visibility === PartyVisibility::Public;
     }
 
     /**
@@ -59,11 +57,22 @@ class PartyPolicy
     }
 
     /**
-     * Determine whether the user can join the party. Only parties the user can view are joinable.
+     * Determine whether the user can join the party. A public party is
+     * joinable by anyone; a private one requires proof of invitation — the
+     * exact room code — since knowing the party's id alone (e.g. by
+     * guessing a sequential one) isn't an invitation.
      */
-    public function join(User $user, Party $party): bool
+    public function join(User $user, Party $party, ?string $roomCode = null): bool
     {
-        return $this->view($user, $party);
+        if ($party->host_id === $user->id) {
+            return true;
+        }
+
+        if ($party->visibility === PartyVisibility::Public) {
+            return true;
+        }
+
+        return $roomCode !== null && hash_equals($party->room_code, strtoupper(trim($roomCode)));
     }
 
     /**
@@ -95,6 +104,14 @@ class PartyPolicy
      * Determine whether the user can end the party. Host-only.
      */
     public function end(User $user, Party $party): bool
+    {
+        return $party->host_id === $user->id;
+    }
+
+    /**
+     * Determine whether the user can cancel the party. Host-only.
+     */
+    public function cancel(User $user, Party $party): bool
     {
         return $party->host_id === $user->id;
     }

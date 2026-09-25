@@ -4,6 +4,7 @@ namespace App\Services\Game;
 
 use App\Enums\GameSessionStatus;
 use App\Enums\PackCardKind;
+use App\Enums\PartyMemberStatus;
 use App\Enums\PartyStatus;
 use App\Events\GameCompleted;
 use App\Events\RoundCompleted;
@@ -61,7 +62,13 @@ class GameSessionService
                 throw new GameSessionPackUnavailableException('This party has no pack assigned.');
             }
 
-            $turnOrder = PartyMember::query()->where('party_id', $party->id)->pluck('user_id')->shuffle()->values()->all();
+            $turnOrder = PartyMember::query()
+                ->where('party_id', $party->id)
+                ->where('status', PartyMemberStatus::Active)
+                ->pluck('user_id')
+                ->shuffle()
+                ->values()
+                ->all();
 
             $session = GameSession::create([
                 'party_id' => $party->id,

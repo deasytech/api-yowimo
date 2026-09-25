@@ -2,6 +2,7 @@
 
 namespace App\Listeners;
 
+use App\Enums\PartyMemberStatus;
 use App\Events\GameCompleted;
 use App\Models\GameSession;
 use App\Models\PartyMember;
@@ -20,7 +21,9 @@ class SendGameCompletedPushNotification implements ShouldQueue
             return;
         }
 
-        $userIds = PartyMember::where('party_id', $gameSession->party_id)->pluck('user_id');
+        $userIds = PartyMember::where('party_id', $gameSession->party_id)
+            ->where('status', PartyMemberStatus::Active)
+            ->pluck('user_id');
         $users = User::whereIn('id', $userIds)->get();
 
         if ($users->isEmpty()) {
