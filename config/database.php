@@ -3,11 +3,21 @@
 use Illuminate\Support\Str;
 use Pdo\Mysql;
 
-const LOCALHOST_IP = '127.0.0.1';
-const MYSQL_DEFAULT_PORT = '3306';
-const POSTGRES_DEFAULT_PORT = '5432';
-const SQLSERVER_DEFAULT_PORT = '1433';
-const REDIS_DEFAULT_PORT = '6379';
+if (! defined('LOCALHOST_IP')) {
+    define('LOCALHOST_IP', '127.0.0.1');
+}
+if (! defined('MYSQL_DEFAULT_PORT')) {
+    define('MYSQL_DEFAULT_PORT', '3306');
+}
+if (! defined('POSTGRES_DEFAULT_PORT')) {
+    define('POSTGRES_DEFAULT_PORT', '5432');
+}
+if (! defined('SQLSERVER_DEFAULT_PORT')) {
+    define('SQLSERVER_DEFAULT_PORT', '1433');
+}
+if (! defined('REDIS_DEFAULT_PORT')) {
+    define('REDIS_DEFAULT_PORT', '6379');
+}
 
 return [
 
@@ -155,7 +165,7 @@ return [
 
         'options' => [
             'cluster' => env('REDIS_CLUSTER', 'redis'),
-            'prefix' => env('REDIS_PREFIX', Str::slug((string) env('APP_NAME', 'laravel')) . '-database-'),
+            'prefix' => env('REDIS_PREFIX', Str::slug((string) env('APP_NAME', 'laravel')).'-database-'),
             'persistent' => env('REDIS_PERSISTENT', false),
         ],
 
