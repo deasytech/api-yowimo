@@ -1,58 +1,94 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Yowimo API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+The backend for **Yowimo**, a mobile party game (Truth or Dare-style) built on Laravel. It powers real-time multiplayer game sessions, a social layer (friends, likes), a token/wallet economy with real payments, an XP and badges reward system, and push/in-app notifications — all served as a JSON API to a separate mobile client.
 
-## About Laravel
+## Tech stack
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Laravel 13** / PHP 8.3+
+- **Clerk** — identity provider; the API never issues its own auth tokens, it verifies Clerk-issued JWTs (`clerk` guard) and syncs users via Clerk webhooks
+- **Filament 5** — admin panel at `/admin`, for managing packs, token bundles, users, parties, and content
+- **Laravel Reverb** — WebSocket broadcasting for real-time game/party state
+- **Laravel Horizon** — queue dashboard/monitoring (Redis-backed queues)
+- **Firebase Cloud Messaging** (`kreait/laravel-firebase`) — push notifications, paired with in-app notification records
+- **Paystack** — real payment processing for token bundle purchases (NGN by default, USD for confirmed non-Nigerian buyers), with saved payment methods and webhook reconciliation
+- **OpenAI** — optional AI "host" (Yowi) that posts contextual messages during a game; inert until `OPENAI_API_KEY` is configured
+- **Sentry** — error tracking; inert until `SENTRY_LARAVEL_DSN` is configured
+- **Pest** — test suite (370+ tests)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Core domain
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- **Packs & cards** — Truth/Dare content packs, purchasable with tokens, with preview cards for non-owners
+- **Parties & game sessions** — create/join/like parties, start a live game session, take turns, advance rounds
+- **Voting & XP** — fellow party members vote on completed turns; XP is awarded automatically and via votes
+- **Badges** — awarded automatically based on gameplay milestones
+- **Wallet & token bundles** — a token-based currency with a ledger (`wallet_transactions`) as the source of truth; token bundles are purchasable via Paystack or a manual/test provider
+- **Friends** — send/accept/reject/cancel friend requests, remove friendships
+- **Notifications** — FCM push + in-app, for events like party invites, game completion, wallet activity, and friend requests
+- **Admin panel** — Filament-based CMS for managing the above
 
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Getting started
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
+npm install
+npm run build
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Or run the bundled setup script (installs deps, copies `.env`, generates the app key, migrates, and builds assets):
 
-## Contributing
+```bash
+composer run setup
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### Required configuration
 
-## Code of Conduct
+At minimum, set these in `.env` before the API will authenticate real requests:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+- `CLERK_ISSUER`, `CLERK_JWKS_URL` — verify Clerk-issued JWTs on incoming API requests
+- `CLERK_WEBHOOK_SECRET` — verifies the signature of incoming Clerk (Svix) webhooks
+- `CLERK_SECRET_KEY` — Backend API secret key, used only for server-to-server Clerk API calls (e.g. `clerk:sync-users`) — never exposed to a client
+- `DB_*` — a MySQL database (defaults to a local `yowimo` database)
+- `REDIS_*` — required for queues (Horizon) and cache
 
-## Security Vulnerabilities
+Optional, feature-gated integrations (each fails gracefully / stays inert when unset):
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+- `PAYSTACK_SECRET_KEY`, `PAYSTACK_PUBLIC_KEY` — real payment processing; without these, purchases fall back to a manual provider (useful for local/test environments)
+- `FIREBASE_CREDENTIALS` — push notifications via FCM
+- `REVERB_*` — real-time broadcasting
+- `OPENAI_API_KEY` — the AI host feature
+- `SENTRY_LARAVEL_DSN` — error tracking
 
-## License
+### Running locally
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+composer run dev
+```
+
+This starts the app server, queue worker, log viewer (Pail), Vite, and Reverb together.
+
+## Testing
+
+```bash
+composer test
+# or
+php artisan test
+```
+
+The suite uses [Pest](https://pestphp.com) against an in-memory SQLite database (per `phpunit.xml`), Clerk auth faked via a signed-JWT test helper, and Paystack/Firebase calls faked via `Http::fake()`.
+
+Code style is enforced with [Laravel Pint](https://laravel.com/docs/pint):
+
+```bash
+./vendor/bin/pint
+```
+
+## API documentation
+
+A human-readable API reference is served as a static page at `resources/docs/api-reference.html`.
+
+## Admin panel
+
+The Filament admin panel is available at `/admin` once a super-admin user exists (seeded via `SUPER_ADMIN_PASSWORD` in `.env`).

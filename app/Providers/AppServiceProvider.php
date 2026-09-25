@@ -70,5 +70,10 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('party-actions', fn (Request $request) => Limit::perMinute(30)->by($request->user()?->id ?: $request->ip()));
 
         RateLimiter::for('push-tokens', fn (Request $request) => Limit::perMinute(10)->by($request->user()?->id ?: $request->ip()));
+
+        // Room codes are short (6 chars) and drawn from a constrained
+        // charset — stricter than the general party-actions limit to slow
+        // down brute-force guessing.
+        RateLimiter::for('room-code-lookup', fn (Request $request) => Limit::perMinute(10)->by($request->user()?->id ?: $request->ip()));
     }
 }

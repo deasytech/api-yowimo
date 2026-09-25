@@ -75,6 +75,15 @@ class PartyPolicy
     }
 
     /**
+     * Determine whether the user can update the party's game type/pack
+     * selection. Host-only.
+     */
+    public function update(User $user, Party $party): bool
+    {
+        return $party->host_id === $user->id;
+    }
+
+    /**
      * Determine whether the user can start the party. Host-only.
      */
     public function start(User $user, Party $party): bool

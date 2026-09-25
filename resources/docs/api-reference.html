@@ -473,7 +473,7 @@
               <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
               <pre data-raw='{
   "success": true,
-  "message": "OK",
+  "message": "Profile retrieved successfully.",
   "data": {
     "id": 482,
     "username": "maya",
@@ -495,7 +495,7 @@
   }
 }'>{
   <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>,
-  <span class="tok-key">"message"</span>: <span class="tok-str">"OK"</span>,
+  <span class="tok-key">"message"</span>: <span class="tok-str">"Profile retrieved successfully."</span>,
   <span class="tok-key">"data"</span>: {
     <span class="tok-key">"id"</span>: <span class="tok-num">482</span>,
     <span class="tok-key">"username"</span>: <span class="tok-str">"maya"</span>,
@@ -551,7 +551,7 @@
               <pre data-raw='curl -X PATCH https://api.yowimo.com/api/v1/users/me \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '"'"'{"display_name":"Maya C.","bio":"host of chaos"}'"'"''><span class="tok-flag">curl -X PATCH</span> https://api.yowimo.com/api/v1/users/me \
+  -d &#39;{"display_name":"Maya C.","bio":"host of chaos"}&#39;'><span class="tok-flag">curl -X PATCH</span> https://api.yowimo.com/api/v1/users/me \
   -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span> \
   -H <span class="tok-str">"Content-Type: application/json"</span> \
   -d <span class="tok-str">'{"display_name":"Maya C.","bio":"host of chaos"}'</span></pre>
@@ -560,13 +560,13 @@
               <div class="code-head"><span>422 Response</span><button class="copy-btn" data-copy>Copy</button></div>
               <pre data-raw='{
   "success": false,
-  "message": "The given data was invalid.",
+  "message": "Validation failed",
   "errors": {
     "username": ["The username has already been taken."]
   }
 }'>{
   <span class="tok-key">"success"</span>: <span class="tok-bool">false</span>,
-  <span class="tok-key">"message"</span>: <span class="tok-str">"The given data was invalid."</span>,
+  <span class="tok-key">"message"</span>: <span class="tok-str">"Validation failed"</span>,
   <span class="tok-key">"errors"</span>: {
     <span class="tok-key">"username"</span>: [<span class="tok-str">"The username has already been taken."</span>]
   }
@@ -610,7 +610,7 @@
               <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
               <pre data-raw='{
   "success": true,
-  "message": "OK",
+  "message": "Game types retrieved successfully.",
   "data": [
     {
       "id": 3,
@@ -630,7 +630,7 @@
   "meta": { "per_page": 10, "has_more_pages": false, "next_cursor": null, "prev_cursor": null }
 }'>{
   <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>,
-  <span class="tok-key">"message"</span>: <span class="tok-str">"OK"</span>,
+  <span class="tok-key">"message"</span>: <span class="tok-str">"Game types retrieved successfully."</span>,
   <span class="tok-key">"data"</span>: [
     {
       <span class="tok-key">"id"</span>: <span class="tok-num">3</span>,
@@ -689,7 +689,7 @@
               <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
               <pre data-raw='{
   "success": true,
-  "message": "OK",
+  "message": "Packs retrieved successfully.",
   "data": [
     {
       "id": 14,
@@ -716,7 +716,7 @@
   "meta": { "per_page": 12, "has_more_pages": true, "next_cursor": "eyJ...==", "prev_cursor": null }
 }'>{
   <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>,
-  <span class="tok-key">"message"</span>: <span class="tok-str">"OK"</span>,
+  <span class="tok-key">"message"</span>: <span class="tok-str">"Packs retrieved successfully."</span>,
   <span class="tok-key">"data"</span>: [
     {
       <span class="tok-key">"id"</span>: <span class="tok-num">14</span>,
@@ -800,7 +800,7 @@
               <div class="code-head"><span>200 Response (owned)</span><button class="copy-btn" data-copy>Copy</button></div>
               <pre data-raw='{
   "success": true,
-  "message": "OK",
+  "message": "Pack retrieved successfully.",
   "data": {
     "id": 14,
     "slug": "spicy-secrets",
@@ -813,7 +813,7 @@
   }
 }'>{
   <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>,
-  <span class="tok-key">"message"</span>: <span class="tok-str">"OK"</span>,
+  <span class="tok-key">"message"</span>: <span class="tok-str">"Pack retrieved successfully."</span>,
   <span class="tok-key">"data"</span>: {
     <span class="tok-key">"id"</span>: <span class="tok-num">14</span>,
     <span class="tok-key">"slug"</span>: <span class="tok-str">"spicy-secrets"</span>,
@@ -917,7 +917,7 @@
               <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
               <pre data-raw='{
   "success": true,
-  "message": "OK",
+  "message": "Token bundles retrieved successfully.",
   "data": [
     {
       "id": 5, "slug": "starter-pack", "name": "Starter Pack",
@@ -930,7 +930,7 @@
   "meta": { "per_page": 20, "has_more_pages": false, "next_cursor": null, "prev_cursor": null }
 }'>{
   <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>,
-  <span class="tok-key">"message"</span>: <span class="tok-str">"OK"</span>,
+  <span class="tok-key">"message"</span>: <span class="tok-str">"Token bundles retrieved successfully."</span>,
   <span class="tok-key">"data"</span>: [
     {
       <span class="tok-key">"id"</span>: <span class="tok-num">5</span>, <span class="tok-key">"slug"</span>: <span class="tok-str">"starter-pack"</span>, <span class="tok-key">"name"</span>: <span class="tok-str">"Starter Pack"</span>,
@@ -1030,11 +1030,11 @@
               <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
               <pre data-raw='{
   "success": true,
-  "message": "OK",
+  "message": "Wallet retrieved successfully.",
   "data": { "balance": 590, "currency": "tokens", "created_at": "2026-03-01T09:00:00Z", "updated_at": "2026-08-28T10:15:00Z" }
 }'>{
   <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>,
-  <span class="tok-key">"message"</span>: <span class="tok-str">"OK"</span>,
+  <span class="tok-key">"message"</span>: <span class="tok-str">"Wallet retrieved successfully."</span>,
   <span class="tok-key">"data"</span>: { <span class="tok-key">"balance"</span>: <span class="tok-num">590</span>, <span class="tok-key">"currency"</span>: <span class="tok-str">"tokens"</span>, <span class="tok-key">"created_at"</span>: <span class="tok-str">"2026-03-01T09:00:00Z"</span>, <span class="tok-key">"updated_at"</span>: <span class="tok-str">"2026-08-28T10:15:00Z"</span> }
 }</pre>
             </div>
@@ -1060,14 +1060,14 @@
             <div class="code-block">
               <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
               <pre data-raw='{
-  "success": true, "message": "OK",
+  "success": true, "message": "Wallet transactions retrieved successfully.",
   "data": [
     { "id": 5511, "type": "top_up", "amount": 500, "balance_after": 590, "description": "Token bundle: Starter Pack", "created_at": "2026-08-28T10:15:00Z" },
     { "id": 5510, "type": "purchase", "amount": -250, "balance_after": 90, "description": "Pack purchase: Spicy Secrets", "created_at": "2026-08-28T10:12:00Z" }
   ],
   "meta": { "per_page": 20, "has_more_pages": false, "next_cursor": null, "prev_cursor": null }
 }'>{
-  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"OK"</span>,
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"Wallet transactions retrieved successfully."</span>,
   <span class="tok-key">"data"</span>: [
     { <span class="tok-key">"id"</span>: <span class="tok-num">5511</span>, <span class="tok-key">"type"</span>: <span class="tok-str">"top_up"</span>, <span class="tok-key">"amount"</span>: <span class="tok-num">500</span>, <span class="tok-key">"balance_after"</span>: <span class="tok-num">590</span>, <span class="tok-key">"description"</span>: <span class="tok-str">"Token bundle: Starter Pack"</span>, <span class="tok-key">"created_at"</span>: <span class="tok-str">"2026-08-28T10:15:00Z"</span> },
     { <span class="tok-key">"id"</span>: <span class="tok-num">5510</span>, <span class="tok-key">"type"</span>: <span class="tok-str">"purchase"</span>, <span class="tok-key">"amount"</span>: <span class="tok-num">-250</span>, <span class="tok-key">"balance_after"</span>: <span class="tok-num">90</span>, <span class="tok-key">"description"</span>: <span class="tok-str">"Pack purchase: Spicy Secrets"</span>, <span class="tok-key">"created_at"</span>: <span class="tok-str">"2026-08-28T10:12:00Z"</span> }
@@ -1193,14 +1193,14 @@
             <div class="code-block">
               <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
               <pre data-raw='{
-  "success": true, "message": "OK",
+  "success": true, "message": "Badges retrieved successfully.",
   "data": [
     { "id": 1, "key": "first_party", "name": "First Party", "description": "Completed your first game.", "icon": "🎉", "created_at": "2026-09-02T00:00:00Z" },
     { "id": 4, "key": "party_king", "name": "Party King", "description": "Earned the MVP bonus in a game.", "icon": "👑", "created_at": "2026-09-02T00:00:00Z" }
   ],
   "meta": { "per_page": 20, "has_more_pages": false, "next_cursor": null, "prev_cursor": null }
 }'>{
-  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"OK"</span>,
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"Badges retrieved successfully."</span>,
   <span class="tok-key">"data"</span>: [
     { <span class="tok-key">"id"</span>: <span class="tok-num">1</span>, <span class="tok-key">"key"</span>: <span class="tok-str">"first_party"</span>, <span class="tok-key">"name"</span>: <span class="tok-str">"First Party"</span>, <span class="tok-key">"description"</span>: <span class="tok-str">"Completed your first game."</span>, <span class="tok-key">"icon"</span>: <span class="tok-str">"🎉"</span>, <span class="tok-key">"created_at"</span>: <span class="tok-str">"2026-09-02T00:00:00Z"</span> },
     { <span class="tok-key">"id"</span>: <span class="tok-num">4</span>, <span class="tok-key">"key"</span>: <span class="tok-str">"party_king"</span>, <span class="tok-key">"name"</span>: <span class="tok-str">"Party King"</span>, <span class="tok-key">"description"</span>: <span class="tok-str">"Earned the MVP bonus in a game."</span>, <span class="tok-key">"icon"</span>: <span class="tok-str">"👑"</span>, <span class="tok-key">"created_at"</span>: <span class="tok-str">"2026-09-02T00:00:00Z"</span> }
@@ -1223,20 +1223,21 @@
               <tr><th>Field</th><th>Rules</th></tr>
               <tr><td class="field">per_page / cursor</td><td class="rule">pagination</td></tr>
             </table>
+            <p>Response carries <code>Cache-Control: no-store</code> &mdash; don't cache it.</p>
             <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">422</span></div>
           </div>
           <div class="endpoint-code">
             <div class="code-block">
               <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
               <pre data-raw='{
-  "success": true, "message": "OK",
+  "success": true, "message": "Earned badges retrieved successfully.",
   "data": [
     { "id": 91, "badge": { "id": 4, "key": "party_king", "name": "Party King", "description": "Earned the MVP bonus in a game.", "icon": "👑", "created_at": "2026-09-02T00:00:00Z" }, "earned_at": "2026-09-02T21:03:00Z" },
     { "id": 90, "badge": { "id": 1, "key": "first_party", "name": "First Party", "description": "Completed your first game.", "icon": "🎉", "created_at": "2026-09-02T00:00:00Z" }, "earned_at": "2026-09-01T18:45:00Z" }
   ],
   "meta": { "per_page": 20, "has_more_pages": false, "next_cursor": null, "prev_cursor": null }
 }'>{
-  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"OK"</span>,
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"Earned badges retrieved successfully."</span>,
   <span class="tok-key">"data"</span>: [
     { <span class="tok-key">"id"</span>: <span class="tok-num">91</span>, <span class="tok-key">"badge"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">4</span>, <span class="tok-key">"key"</span>: <span class="tok-str">"party_king"</span>, <span class="tok-key">"name"</span>: <span class="tok-str">"Party King"</span>, <span class="tok-key">"description"</span>: <span class="tok-str">"Earned the MVP bonus in a game."</span>, <span class="tok-key">"icon"</span>: <span class="tok-str">"👑"</span>, <span class="tok-key">"created_at"</span>: <span class="tok-str">"2026-09-02T00:00:00Z"</span> }, <span class="tok-key">"earned_at"</span>: <span class="tok-str">"2026-09-02T21:03:00Z"</span> },
     { <span class="tok-key">"id"</span>: <span class="tok-num">90</span>, <span class="tok-key">"badge"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">1</span>, <span class="tok-key">"key"</span>: <span class="tok-str">"first_party"</span>, <span class="tok-key">"name"</span>: <span class="tok-str">"First Party"</span>, <span class="tok-key">"description"</span>: <span class="tok-str">"Completed your first game."</span>, <span class="tok-key">"icon"</span>: <span class="tok-str">"🎉"</span>, <span class="tok-key">"created_at"</span>: <span class="tok-str">"2026-09-02T00:00:00Z"</span> }, <span class="tok-key">"earned_at"</span>: <span class="tok-str">"2026-09-01T18:45:00Z"</span> }
@@ -1302,8 +1303,10 @@
               <tr><td class="field">save_as_draft</td><td class="rule">boolean</td></tr>
               <tr><td class="field">location<span class="opt">required if mode is hybrid/in_person</span></td><td class="rule">object: <code>venue_name</code>, <code>address</code>, <code>latitude</code> (-90&ndash;90), <code>longitude</code> (-180&ndash;180)</td></tr>
               <tr><td class="field">tags</td><td class="rule">nullable, array, max 5 items, each max 20 chars</td></tr>
+              <tr><td class="field">cover_image</td><td class="rule">nullable, image file &mdash; jpeg/png/webp, max 8MB</td></tr>
             </table>
             <div class="note"><b>Status is derived, not sent</b><code>room_code</code> is always server-generated. Resulting <code>status</code>: <code>save_as_draft=true</code> &rarr; <code>draft</code>; else if <code>starts_at</code> is set &rarr; <code>scheduled</code>; else &rarr; <code>live</code> immediately.</div>
+            <div class="note"><b>cover_image needs multipart, not JSON</b>Uploading a cover image means sending the whole request as <code>multipart/form-data</code> &mdash; a file can't ride inside a JSON body. Every other field above still goes in the same form-encoded request as regular fields (not JSON) when you do this. Omit <code>cover_image</code> entirely to keep sending plain JSON, same as before. The stored image is re-encoded/resized server-side (max 1600px) before <code>cover_image_url</code> is set; it's always <code>null</code> when omitted &mdash; there's no separate endpoint to add or change it after creation yet.</div>
             <div class="status-row"><span class="status-pill ok">201 Created</span><span class="status-pill err">401</span><span class="status-pill err">422</span></div>
           </div>
           <div class="endpoint-code">
@@ -1312,10 +1315,26 @@
               <pre data-raw='curl -X POST https://api.yowimo.com/api/v1/parties \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '"'"'{"title":"Friday chaos","mode":"online","visibility":"public","pack_id":14}'"'"''><span class="tok-flag">curl -X POST</span> https://api.yowimo.com/api/v1/parties \
+  -d &#39;{"title":"Friday chaos","mode":"online","visibility":"public","pack_id":14}&#39;'><span class="tok-flag">curl -X POST</span> https://api.yowimo.com/api/v1/parties \
   -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span> \
   -H <span class="tok-str">"Content-Type: application/json"</span> \
   -d <span class="tok-str">'{"title":"Friday chaos","mode":"online","visibility":"public","pack_id":14}'</span></pre>
+            </div>
+            <div class="code-block">
+              <div class="code-head"><span>cURL with a cover image</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='curl -X POST https://api.yowimo.com/api/v1/parties \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "title=Friday chaos" \
+  -F "mode=online" \
+  -F "visibility=public" \
+  -F "pack_id=14" \
+  -F "cover_image=@cover.jpg"'><span class="tok-flag">curl -X POST</span> https://api.yowimo.com/api/v1/parties \
+  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span> \
+  -F <span class="tok-str">"title=Friday chaos"</span> \
+  -F <span class="tok-str">"mode=online"</span> \
+  -F <span class="tok-str">"visibility=public"</span> \
+  -F <span class="tok-str">"pack_id=14"</span> \
+  -F <span class="tok-str">"cover_image=@cover.jpg"</span></pre>
             </div>
             <div class="code-block">
               <div class="code-head"><span>201 Response</span><button class="copy-btn" data-copy>Copy</button></div>
@@ -1327,6 +1346,7 @@
     "mode": "online", "visibility": "public", "status": "live",
     "max_players": 8, "players_count": 1, "likes_count": 0,
     "liked_by_me": false, "joined_by_me": true,
+    "cover_image_url": "https://api.yowimo.com/storage/parties/covers/01j...ulid....jpg",
     "host": { "id": 482, "username": "maya" }
   }
 }'>{
@@ -1337,6 +1357,7 @@
     <span class="tok-key">"mode"</span>: <span class="tok-str">"online"</span>, <span class="tok-key">"visibility"</span>: <span class="tok-str">"public"</span>, <span class="tok-key">"status"</span>: <span class="tok-str">"live"</span>,
     <span class="tok-key">"max_players"</span>: <span class="tok-num">8</span>, <span class="tok-key">"players_count"</span>: <span class="tok-num">1</span>, <span class="tok-key">"likes_count"</span>: <span class="tok-num">0</span>,
     <span class="tok-key">"liked_by_me"</span>: <span class="tok-bool">false</span>, <span class="tok-key">"joined_by_me"</span>: <span class="tok-bool">true</span>,
+    <span class="tok-key">"cover_image_url"</span>: <span class="tok-str">"https://api.yowimo.com/storage/parties/covers/01j...ulid....jpg"</span>,
     <span class="tok-key">"host"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">482</span>, <span class="tok-key">"username"</span>: <span class="tok-str">"maya"</span> }
   }
 }</pre>
@@ -1365,7 +1386,7 @@
               <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
               <pre data-raw='{
   "success": true,
-  "message": "OK",
+  "message": "Party retrieved successfully.",
   "data": {
     "id": 902,
     "room_code": "9F3K2A",
@@ -1394,7 +1415,7 @@
   }
 }'>{
   <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>,
-  <span class="tok-key">"message"</span>: <span class="tok-str">"OK"</span>,
+  <span class="tok-key">"message"</span>: <span class="tok-str">"Party retrieved successfully."</span>,
   <span class="tok-key">"data"</span>: {
     <span class="tok-key">"id"</span>: <span class="tok-num">902</span>,
     <span class="tok-key">"room_code"</span>: <span class="tok-str">"9F3K2A"</span>,
@@ -1422,6 +1443,69 @@
     <span class="tok-key">"updated_at"</span>: <span class="tok-str">"2026-08-28T10:20:00Z"</span>
   }
 }</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="get-parties-lookup">
+        <div class="endpoint-head"><span class="method get">GET</span><code class="path">/parties/lookup</code></div>
+        <p class="desc">Resolve a room code to its party, for joining. Call <code>POST /parties/{party}/join</code> with the returned <code>id</code> next &mdash; this endpoint doesn't join anything itself.</p>
+        <div class="meta-line"><span><b>Rate limit</b> room-code-lookup (10/min) <span style="color:var(--text-faint)">(not party-actions)</span></span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <h4>Query</h4>
+            <table class="params"><tr><th>Field</th><th>Rules</th></tr><tr><td class="field">room_code<span class="req">required</span></td><td class="rule">string, max 10</td></tr></table>
+            <div class="note"><b>Not gated by the same visibility rule as GET /parties/{id}</b>Knowing the exact code is its own authorization &mdash; a private party's room code is meant to be shared directly with specific people, so this resolves it regardless of <code>visibility</code> or whether you're the host. Matching is case-insensitive. Only <code>scheduled</code>/<code>live</code> parties resolve; a code for a <code>draft</code>, <code>ended</code>, or <code>cancelled</code> party 404s the same as one that was never valid &mdash; there's no way to distinguish "wrong code" from "right code, wrong state" from the response.</div>
+            <div class="note"><b>10/min, not the usual party-actions 30/min</b>Room codes are only 6 characters from a constrained charset &mdash; this has its own stricter limiter specifically to slow down guessing.</div>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">404 unknown / not joinable</span><span class="status-pill err">422</span><span class="status-pill err">429</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='curl "https://api.yowimo.com/api/v1/parties/lookup?room_code=9F3K2A" \
+  -H "Authorization: Bearer $TOKEN"'><span class="tok-flag">curl</span> <span class="tok-str">"https://api.yowimo.com/api/v1/parties/lookup?room_code=9F3K2A"</span> \
+  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span></pre>
+            </div>
+            <div class="code-block"><div class="code-head"><span>Shape</span></div><pre>Same <span class="tok-str">PartyResource</span> shape as <span class="tok-str">GET /parties/{id}</span>, message "Party found."</pre></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="patch-parties-id">
+        <div class="endpoint-head"><span class="method patch">PATCH</span><code class="path">/parties/{id}</code></div>
+        <p class="desc">Set or change the party's game type and pack &mdash; the only way to fill these in when they weren't chosen at creation, since both are optional on <code>POST /parties</code>. Host only.</p>
+        <div class="meta-line"><span><b>Rate limit</b> party-actions (30/min)</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <h4>Body</h4>
+            <table class="params">
+              <tr><th>Field</th><th>Rules</th></tr>
+              <tr><td class="field">game_type_id</td><td class="rule">sometimes, nullable, integer, must exist</td></tr>
+              <tr><td class="field">pack_id</td><td class="rule">sometimes, nullable, integer, must exist</td></tr>
+            </table>
+            <h4>Fails when</h4>
+            <ul style="color:var(--text-muted); font-size:.9rem; padding-left:1.1rem; margin:.3rem 0;">
+              <li>Caller isn't the host &rarr; 403.</li>
+              <li>Either field is included in the request and a game session already exists for this party (running or completed) &rarr; 409 &mdash; turns/rounds already dealt from the original pack can't be retroactively changed.</li>
+            </ul>
+            <div class="note"><b>Partial update, not a full edit</b>Only <code>game_type_id</code> and <code>pack_id</code> are accepted &mdash; there's no endpoint yet to change a party's title, visibility, or other details after creation. Omit a field to leave it unchanged; send it as <code>null</code> to clear it.</div>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403 non-host</span><span class="status-pill err">404</span><span class="status-pill err">409 game already started</span><span class="status-pill err">422</span><span class="status-pill err">429</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='curl -X PATCH https://api.yowimo.com/api/v1/parties/902 \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d &#39;{"game_type_id":3,"pack_id":14}&#39;'><span class="tok-flag">curl -X PATCH</span> https://api.yowimo.com/api/v1/parties/902 \
+  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span> \
+  -H <span class="tok-str">"Content-Type: application/json"</span> \
+  -d <span class="tok-str">'{"game_type_id":3,"pack_id":14}'</span></pre>
+            </div>
+            <div class="code-block">
+              <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre>Same <span class="tok-str">PartyResource</span> shape as <span class="tok-str">GET /parties/{id}</span>, message "Party updated successfully."</pre>
             </div>
           </div>
         </div>
@@ -1540,7 +1624,7 @@
               <pre data-raw='curl -X POST https://api.yowimo.com/api/v1/parties/902/game/start \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '"'"'{"rounds":10}'"'"''><span class="tok-flag">curl -X POST</span> https://api.yowimo.com/api/v1/parties/902/game/start \
+  -d &#39;{"rounds":10}&#39;'><span class="tok-flag">curl -X POST</span> https://api.yowimo.com/api/v1/parties/902/game/start \
   -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span> \
   -H <span class="tok-str">"Content-Type: application/json"</span> \
   -d <span class="tok-str">'{"rounds":10}'</span></pre>
@@ -1604,6 +1688,57 @@
         </div>
       </section>
 
+      <section class="endpoint" id="post-game-turns-vote">
+        <div class="endpoint-head"><span class="method post">POST</span><code class="path">/game/{gameSession}/turns/{turn}/vote</code></div>
+        <p class="desc">Vote on a completed turn, crediting XP to the turn's player. Any party member other than the turn's own player may vote &mdash; the host has no special standing here.</p>
+        <div class="meta-line"><span><b>Rate limit</b> party-actions (30/min)</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <h4>Body</h4>
+            <table class="params"><tr><th>Field</th><th>Rules</th></tr><tr><td class="field">category<span class="req">required</span></td><td class="rule"><code>winner</code> &middot; <code>funny</code> &middot; <code>creativity</code></td></tr></table>
+            <h4>Fails when</h4>
+            <ul style="color:var(--text-muted); font-size:.9rem; padding-left:1.1rem; margin:.3rem 0;">
+              <li>Caller is the turn's own player, or not a member of the party &rarr; 403.</li>
+              <li>The turn hasn't completed yet, or was AFK-skipped &rarr; 422.</li>
+              <li>The game session has already ended &rarr; 422.</li>
+              <li>Caller already cast this same category of vote on this turn &rarr; 409.</li>
+            </ul>
+            <div class="note"><b>XP by category</b>Crediting the turn's player happens synchronously in this request: <code>winner</code> +25 XP, <code>creativity</code> +20 XP, <code>funny</code> +15 XP. A player can receive all three categories from the same voter on the same turn &mdash; the uniqueness constraint is per (turn, voter, category), not per (turn, voter).</div>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403 own turn / not a member</span><span class="status-pill err">404</span><span class="status-pill err">409 duplicate category</span><span class="status-pill err">422 not completed / game ended</span><span class="status-pill err">429</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='curl -X POST https://api.yowimo.com/api/v1/game/61/turns/500/vote \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d &#39;{"category":"winner"}&#39;'><span class="tok-flag">curl -X POST</span> https://api.yowimo.com/api/v1/game/61/turns/500/vote \
+  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span> \
+  -H <span class="tok-str">"Content-Type: application/json"</span> \
+  -d <span class="tok-str">'{"category":"winner"}'</span></pre>
+            </div>
+            <div class="code-block">
+              <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": true,
+  "message": "Vote cast successfully.",
+  "data": {
+    "id": 77, "turn_id": 500, "voter_id": 610,
+    "category": "winner", "created_at": "2026-08-28T10:31:00Z"
+  }
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>,
+  <span class="tok-key">"message"</span>: <span class="tok-str">"Vote cast successfully."</span>,
+  <span class="tok-key">"data"</span>: {
+    <span class="tok-key">"id"</span>: <span class="tok-num">77</span>, <span class="tok-key">"turn_id"</span>: <span class="tok-num">500</span>, <span class="tok-key">"voter_id"</span>: <span class="tok-num">610</span>,
+    <span class="tok-key">"category"</span>: <span class="tok-str">"winner"</span>, <span class="tok-key">"created_at"</span>: <span class="tok-str">"2026-08-28T10:31:00Z"</span>
+  }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- ============ PUSH TOKENS ============ -->
       <section class="group-head" id="pushtokens"><h2>Push Tokens</h2><p>Register a device for FCM push. One token per user &mdash; registering replaces the previous one.</p></section>
 
@@ -1627,7 +1762,7 @@
               <pre data-raw='curl -X POST https://api.yowimo.com/api/v1/push-tokens \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '"'"'{"token":"fcm-device-token","platform":"ios"}'"'"''><span class="tok-flag">curl -X POST</span> https://api.yowimo.com/api/v1/push-tokens \
+  -d &#39;{"token":"fcm-device-token","platform":"ios"}&#39;'><span class="tok-flag">curl -X POST</span> https://api.yowimo.com/api/v1/push-tokens \
   -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span> \
   -H <span class="tok-str">"Content-Type: application/json"</span> \
   -d <span class="tok-str">'{"token":"fcm-device-token","platform":"ios"}'</span></pre></div>
@@ -1664,13 +1799,13 @@
             <div class="code-block">
               <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
               <pre data-raw='{
-  "success": true, "message": "OK",
+  "success": true, "message": "Notifications retrieved successfully.",
   "data": [
     { "id": 771, "title": "Game complete!", "body": "You earned 25 tokens.", "type": "game.completed", "metadata": { "game_session_id": 61 }, "read_at": null, "created_at": "2026-08-28T10:45:00Z" }
   ],
   "meta": { "per_page": 20, "has_more_pages": false, "next_cursor": null, "prev_cursor": null }
 }'>{
-  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"OK"</span>,
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"Notifications retrieved successfully."</span>,
   <span class="tok-key">"data"</span>: [
     { <span class="tok-key">"id"</span>: <span class="tok-num">771</span>, <span class="tok-key">"title"</span>: <span class="tok-str">"Game complete!"</span>, <span class="tok-key">"body"</span>: <span class="tok-str">"You earned 25 tokens."</span>, <span class="tok-key">"type"</span>: <span class="tok-str">"game.completed"</span>, <span class="tok-key">"metadata"</span>: { <span class="tok-key">"game_session_id"</span>: <span class="tok-num">61</span> }, <span class="tok-key">"read_at"</span>: <span class="tok-null">null</span>, <span class="tok-key">"created_at"</span>: <span class="tok-str">"2026-08-28T10:45:00Z"</span> }
   ],
@@ -1695,7 +1830,7 @@
             <pre data-raw='curl -X PATCH https://api.yowimo.com/api/v1/notifications/read \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '"'"'{"notification_id":771}'"'"''><span class="tok-flag">curl -X PATCH</span> https://api.yowimo.com/api/v1/notifications/read \
+  -d &#39;{"notification_id":771}&#39;'><span class="tok-flag">curl -X PATCH</span> https://api.yowimo.com/api/v1/notifications/read \
   -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span> \
   -H <span class="tok-str">"Content-Type: application/json"</span> \
   -d <span class="tok-str">'{"notification_id":771}'</span></pre></div></div>
@@ -1790,7 +1925,7 @@
             <pre data-raw='curl -X POST https://api.yowimo.com/api/v1/friend-requests \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '"'"'{"receiver_id":340}'"'"''><span class="tok-flag">curl -X POST</span> https://api.yowimo.com/api/v1/friend-requests \
+  -d &#39;{"receiver_id":340}&#39;'><span class="tok-flag">curl -X POST</span> https://api.yowimo.com/api/v1/friend-requests \
   -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span> \
   -H <span class="tok-str">"Content-Type: application/json"</span> \
   -d <span class="tok-str">'{"receiver_id":340}'</span></pre></div></div>
@@ -1867,7 +2002,7 @@
         </div>
       </section>
 
-      <footer>Yowimo API Reference &middot; v1 &middot; verified against the running backend, 2026-08-28</footer>
+      <footer>Yowimo API Reference &middot; v1 &middot; verified against the running backend, 2026-09-25</footer>
     </div>
   </main>
 </div>

@@ -49,7 +49,9 @@ Route::prefix('v1')->group(function () {
 
         Route::get('/parties', [PartyController::class, 'index']);
         Route::post('/parties', [PartyController::class, 'store']);
+        Route::get('/parties/lookup', [PartyController::class, 'lookup'])->middleware('throttle:room-code-lookup');
         Route::get('/parties/{id}', [PartyController::class, 'show'])->whereNumber('id');
+        Route::patch('/parties/{id}', [PartyController::class, 'update'])->whereNumber('id')->middleware('throttle:party-actions');
         Route::post('/parties/{party}/like', [PartyLikeController::class, 'store'])->middleware('throttle:party-actions');
         Route::delete('/parties/{party}/like', [PartyLikeController::class, 'destroy'])->middleware('throttle:party-actions');
         Route::post('/parties/{party}/join', [PartyMembershipController::class, 'join'])->middleware('throttle:party-actions');
