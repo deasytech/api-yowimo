@@ -101,21 +101,25 @@ function completeCurrentTurn(TestCase $test, string $hostToken, int $sessionId):
 
 /**
  * Sorts an already-generated fresh voter token and the host token into
- * [$ownerToken, $otherToken], depending on which of them owns the turn.
- * clerkToken() is protected and unreachable from this free function, so
- * callers must generate the fresh voter token themselves and pass it in.
+ * [$ownerToken, $otherToken], depending on which of them owns the turn, and
+ * force-refreshes the guard so the freshly-generated token is actually
+ * honored on the next request. clerkToken() is protected and unreachable
+ * from this free function, so callers must generate the fresh voter token
+ * themselves and pass it in.
  *
  * @return array{0: string, 1: string} [$ownerToken, $otherToken]
  */
 function pickTurnTokens(User $host, string $hostToken, string $freshVoterToken, int $turnOwnerId): array
 {
+    app('auth')->forgetGuards();
+
     return $turnOwnerId === $host->id
         ? [$hostToken, $freshVoterToken]
         : [$freshVoterToken, $hostToken];
 }
 
 it('rejects casting a vote with no bearer token', function () {
-    [$host, $hostToken, , $sessionId, $turnId] = startVoteTestSession(
+    [, , , $sessionId, $turnId] = startVoteTestSession(
         $this,
         $this->clerkToken(['sub' => 'user_vote_host_401']),
         'user_vote_host_401',
@@ -142,9 +146,7 @@ it('lets a fellow party member cast a vote on a completed turn and credits XP to
     );
     completeCurrentTurn($this, $hostToken, $sessionId);
 
-    $freshVoterToken = $this->clerkToken(['sub' => 'user_vote_voter_success']);
-    $this->app->make('auth')->forgetGuards();
-    [, $voterToken] = pickTurnTokens($host, $hostToken, $freshVoterToken, $turnOwnerId);
+    [, $voterToken] = pickTurnTokens($host, $hostToken, $this->clerkToken(['sub' => 'user_vote_voter_success']), $turnOwnerId);
 
     $this->withHeader('Authorization', "Bearer {$voterToken}")
         ->postJson(voteEndpoint($sessionId, $turnId), ['category' => 'winner'])
@@ -168,9 +170,7 @@ it('forbids the turn player from voting on their own turn', function () {
     );
     completeCurrentTurn($this, $hostToken, $sessionId);
 
-    $freshVoterToken = $this->clerkToken(['sub' => 'user_vote_voter_self']);
-    $this->app->make('auth')->forgetGuards();
-    [$ownerToken] = pickTurnTokens($host, $hostToken, $freshVoterToken, $turnOwnerId);
+    [$ownerToken] = pickTurnTokens($host, $hostToken, $this->clerkToken(['sub' => 'user_vote_voter_self']), $turnOwnerId);
 
     $this->withHeader('Authorization', "Bearer {$ownerToken}")
         ->postJson(voteEndpoint($sessionId, $turnId), ['category' => 'winner'])
@@ -215,9 +215,7 @@ it('rejects voting on a turn after the game has already completed', function () 
         ->assertStatus(200)
         ->assertJsonPath('data.status', 'completed');
 
-    $freshVoterToken = $this->clerkToken(['sub' => 'user_vote_voter_ended']);
-    $this->app->make('auth')->forgetGuards();
-    [, $voterToken] = pickTurnTokens($host, $hostToken, $freshVoterToken, $turnOwnerId);
+    [, $voterToken] = pickTurnTokens($host, $hostToken, $this->clerkToken(['sub' => 'user_vote_voter_ended']), $turnOwnerId);
 
     $this->withHeader('Authorization', "Bearer {$voterToken}")
         ->postJson(voteEndpoint($sessionId, $turnId), ['category' => 'winner'])
@@ -233,9 +231,7 @@ it('rejects voting on a turn that has not completed yet', function () {
         'user_vote_voter_incomplete',
     );
 
-    $freshVoterToken = $this->clerkToken(['sub' => 'user_vote_voter_incomplete']);
-    $this->app->make('auth')->forgetGuards();
-    [, $voterToken] = pickTurnTokens($host, $hostToken, $freshVoterToken, $turnOwnerId);
+    [, $voterToken] = pickTurnTokens($host, $hostToken, $this->clerkToken(['sub' => 'user_vote_voter_incomplete']), $turnOwnerId);
 
     $this->withHeader('Authorization', "Bearer {$voterToken}")
         ->postJson(voteEndpoint($sessionId, $turnId), ['category' => 'winner'])
@@ -252,9 +248,7 @@ it('rejects casting the same category of vote twice on the same turn', function 
     );
     completeCurrentTurn($this, $hostToken, $sessionId);
 
-    $freshVoterToken = $this->clerkToken(['sub' => 'user_vote_voter_dup']);
-    $this->app->make('auth')->forgetGuards();
-    [, $voterToken] = pickTurnTokens($host, $hostToken, $freshVoterToken, $turnOwnerId);
+    [, $voterToken] = pickTurnTokens($host, $hostToken, $this->clerkToken(['sub' => 'user_vote_voter_dup']), $turnOwnerId);
 
     $this->withHeader('Authorization', "Bearer {$voterToken}")
         ->postJson(voteEndpoint($sessionId, $turnId), ['category' => 'winner'])

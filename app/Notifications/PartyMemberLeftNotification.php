@@ -21,7 +21,7 @@ class PartyMemberLeftNotification extends Notification implements ShouldQueue
     /**
      * @return array<string, mixed>
      */
-    private function payload(): array
+    private function payload(): array // NOSONAR php:S1144 - satisfies DeliversViaFcmAndInApp::payload(), called via $this->payload() in the trait
     {
         $leavingUserName = $this->leavingUser->display_name ?: $this->leavingUser->username;
 

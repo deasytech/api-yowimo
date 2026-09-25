@@ -21,7 +21,7 @@ class PartyMemberJoinedNotification extends Notification implements ShouldQueue
     /**
      * @return array<string, mixed>
      */
-    private function payload(): array
+    private function payload(): array // NOSONAR php:S1144 - satisfies DeliversViaFcmAndInApp::payload(), called via $this->payload() in the trait
     {
         $joiningUserName = $this->joiningUser->display_name ?: $this->joiningUser->username;
 

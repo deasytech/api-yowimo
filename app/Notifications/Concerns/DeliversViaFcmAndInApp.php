@@ -18,12 +18,12 @@ trait DeliversViaFcmAndInApp
     /**
      * @return array<int, string>
      */
-    public function via(object $notifiable): array
+    public function via(): array
     {
         return [FcmChannel::class, InAppChannel::class];
     }
 
-    public function toFcm(object $notifiable): CloudMessage
+    public function toFcm(): CloudMessage
     {
         $payload = $this->payload();
 
@@ -35,7 +35,7 @@ trait DeliversViaFcmAndInApp
     /**
      * @return array<string, mixed>
      */
-    public function toInApp(object $notifiable): array
+    public function toInApp(): array
     {
         return $this->payload();
     }
