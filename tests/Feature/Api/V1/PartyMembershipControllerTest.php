@@ -291,22 +291,31 @@ it('lets the host start their draft party', function () {
     expect($party->fresh()->status)->toBe(PartyStatus::Live);
 });
 
-it('forbids a non-host from starting a party', function () {
+it('forbids a non-host from performing a host-only party action', function (string $action, PartyStatus $status) {
     $host = User::factory()->create();
     $party = Party::factory()->create([
         'host_id' => $host->id,
         'visibility' => PartyVisibility::Public,
-        'status' => PartyStatus::Draft,
+        'status' => $status,
     ]);
 
-    $token = $this->clerkToken(['sub' => 'user_non_host_start']);
+    $token = $this->clerkToken(['sub' => "user_non_host_{$action}"]);
+    $endpoint = match ($action) {
+        'start' => startEndpoint($party),
+        'end' => endEndpoint($party),
+        'cancel' => cancelEndpoint($party),
+    };
 
     $this->withHeader('Authorization', "Bearer {$token}")
-        ->postJson(startEndpoint($party))
+        ->postJson($endpoint)
         ->assertStatus(403);
 
-    expect($party->fresh()->status)->toBe(PartyStatus::Draft);
-});
+    expect($party->fresh()->status)->toBe($status);
+})->with([
+    ['start', PartyStatus::Draft],
+    ['end', PartyStatus::Live],
+    ['cancel', PartyStatus::Draft],
+]);
 
 it('rejects starting a party that is already live', function () {
     [$host, $hostToken] = provisionPartyHost($this, $this->clerkToken(['sub' => 'user_host_start_live']), 'user_host_start_live');
@@ -339,23 +348,6 @@ it('lets the host end their live party', function () {
     expect($party->fresh()->status)->toBe(PartyStatus::Ended);
 });
 
-it('forbids a non-host from ending a party', function () {
-    $host = User::factory()->create();
-    $party = Party::factory()->create([
-        'host_id' => $host->id,
-        'visibility' => PartyVisibility::Public,
-        'status' => PartyStatus::Live,
-    ]);
-
-    $token = $this->clerkToken(['sub' => 'user_non_host_end']);
-
-    $this->withHeader('Authorization', "Bearer {$token}")
-        ->postJson(endEndpoint($party))
-        ->assertStatus(403);
-
-    expect($party->fresh()->status)->toBe(PartyStatus::Live);
-});
-
 it('rejects ending a party that is not live', function () {
     [$host, $hostToken] = provisionPartyHost($this, $this->clerkToken(['sub' => 'user_host_end_draft']), 'user_host_end_draft');
 
@@ -386,23 +378,6 @@ it('lets the host cancel their draft party', function (PartyStatus $status) {
 
     expect($party->fresh()->status)->toBe(PartyStatus::Cancelled);
 })->with([PartyStatus::Draft, PartyStatus::Scheduled]);
-
-it('forbids a non-host from cancelling a party', function () {
-    $host = User::factory()->create();
-    $party = Party::factory()->create([
-        'host_id' => $host->id,
-        'visibility' => PartyVisibility::Public,
-        'status' => PartyStatus::Draft,
-    ]);
-
-    $token = $this->clerkToken(['sub' => 'user_non_host_cancel']);
-
-    $this->withHeader('Authorization', "Bearer {$token}")
-        ->postJson(cancelEndpoint($party))
-        ->assertStatus(403);
-
-    expect($party->fresh()->status)->toBe(PartyStatus::Draft);
-});
 
 it('rejects cancelling a party that is already live', function () {
     [$host, $hostToken] = provisionPartyHost($this, $this->clerkToken(['sub' => 'user_host_cancel_live']), 'user_host_cancel_live');
