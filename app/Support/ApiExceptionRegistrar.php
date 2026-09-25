@@ -4,7 +4,6 @@ namespace App\Support;
 
 use App\Exceptions\Api\AlreadyFriendsException;
 use App\Exceptions\Api\DuplicateFriendRequestException;
-use App\Exceptions\Api\DuplicatePaymentReferenceException;
 use App\Exceptions\Api\DuplicateVoteException;
 use App\Exceptions\Api\GameSessionAlreadyActiveException;
 use App\Exceptions\Api\GameSessionNotActiveException;
@@ -15,7 +14,6 @@ use App\Exceptions\Api\InvalidClerkTokenException;
 use App\Exceptions\Api\InvalidClerkWebhookException;
 use App\Exceptions\Api\InvalidFriendshipTransitionException;
 use App\Exceptions\Api\InvalidPartyTransitionException;
-use App\Exceptions\Api\InvalidPaystackWebhookException;
 use App\Exceptions\Api\PackAlreadyOwnedException;
 use App\Exceptions\Api\PartyFullException;
 use App\Exceptions\Api\PartyHostCannotLeaveException;
@@ -60,15 +58,6 @@ class ApiExceptionRegistrar
 
         self::registerHandler(
             $exceptions,
-            InvalidPaystackWebhookException::class,
-            fn (InvalidPaystackWebhookException $e) => ApiResponse::error(
-                $e->getMessage(),
-                status: 400
-            )
-        );
-
-        self::registerHandler(
-            $exceptions,
             InsufficientWalletBalanceException::class,
             fn (InsufficientWalletBalanceException $e) => ApiResponse::error(
                 $e->getMessage(),
@@ -89,15 +78,6 @@ class ApiExceptionRegistrar
             $exceptions,
             IdempotencyKeyConflictException::class,
             fn (IdempotencyKeyConflictException $e) => ApiResponse::error(
-                $e->getMessage(),
-                status: 409
-            )
-        );
-
-        self::registerHandler(
-            $exceptions,
-            DuplicatePaymentReferenceException::class,
-            fn (DuplicatePaymentReferenceException $e) => ApiResponse::error(
                 $e->getMessage(),
                 status: 409
             )

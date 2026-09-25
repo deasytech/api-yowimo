@@ -300,9 +300,6 @@
         <div class="nav-group-title">Wallet</div>
         <a class="nav-link" data-search="get wallet balance" href="#get-wallet"><span class="m get">GET</span><span class="p">/wallet</span></a>
         <a class="nav-link" data-search="get wallet transactions ledger history" href="#get-wallet-transactions"><span class="m get">GET</span><span class="p">/wallet/transactions</span></a>
-        <a class="nav-link" data-search="get wallet payment methods cards list" href="#get-wallet-payment-methods"><span class="m get">GET</span><span class="p">/wallet/payment-methods</span></a>
-        <a class="nav-link" data-search="patch wallet payment methods default" href="#patch-wallet-payment-methods-default"><span class="m patch">PATCH</span><span class="p">/wallet/payment-methods/{id}/default</span></a>
-        <a class="nav-link" data-search="delete wallet payment methods card remove" href="#delete-wallet-payment-methods"><span class="m delete">DELETE</span><span class="p">/wallet/payment-methods/{id}</span></a>
       </div>
       <div class="nav-group" data-group="badges">
         <div class="nav-group-title">Badges</div>
@@ -420,7 +417,7 @@
           <table class="kv">
             <tr><th>Limiter</th><th>Limit</th><th>Applies to</th></tr>
             <tr><td class="mono">api</td><td class="num">60&nbsp;/&nbsp;min</td><td>Every request (default)</td></tr>
-            <tr><td class="mono">purchases</td><td class="num">10&nbsp;/&nbsp;min</td><td>Pack &amp; token-bundle purchase, payment method default/delete</td></tr>
+            <tr><td class="mono">purchases</td><td class="num">10&nbsp;/&nbsp;min</td><td>Pack &amp; token-bundle purchase</td></tr>
             <tr><td class="mono">party-actions</td><td class="num">30&nbsp;/&nbsp;min</td><td>Like, join, leave, start, end, game actions</td></tr>
             <tr><td class="mono">friend-requests</td><td class="num">20&nbsp;/&nbsp;min</td><td>All friend-request &amp; friend mutations</td></tr>
             <tr><td class="mono">push-tokens</td><td class="num">10&nbsp;/&nbsp;min</td><td>Register / unregister device</td></tr>
@@ -909,7 +906,6 @@
             <h4>Query</h4>
             <p><code>per_page</code> / <code>cursor</code> only &mdash; no filters exist for this resource.</p>
             <div class="note"><b>Two different kinds of number</b><code>price</code> is real money (<code>decimal(8,2)</code> + <code>currency</code>) &mdash; what the player pays. <code>tokens</code> is the integer token count they receive. Don't confuse the two when rendering "$4.99 &rarr; 500 tokens."</div>
-            <div class="note"><b>price/currency vary by viewer's country</b>Yowimo is a Nigerian company: this default price/currency is NGN, and it's what every buyer sees and is charged &mdash; <i>including</i> a buyer with no country on file. The only exception is a buyer whose profile confirms a <code>country_code</code> other than <code>"NG"</code>, who sees that bundle's USD price instead (when the bundle has one; otherwise they see NGN too). Same two keys either way &mdash; render whatever currency comes back rather than assuming NGN or USD, and re-fetch this list if the viewer's country changes mid-session.</div>
             <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span></div>
           </div>
           <div class="endpoint-code">
@@ -949,27 +945,18 @@
 
       <section class="endpoint" id="post-token-bundles-purchase">
         <div class="endpoint-head"><span class="method post">POST</span><code class="path">/token-bundles/{id}/purchase</code></div>
-        <p class="desc">Charge the player and credit tokens to their wallet, via Paystack.</p>
+        <p class="desc">Charge the player and credit tokens to their wallet.</p>
         <div class="meta-line"><span><b>Rate limit</b> purchases (10/min)</span></div>
         <div class="endpoint-grid">
           <div class="endpoint-docs">
             <h4>Headers</h4>
             <table class="params"><tr><th>Header</th><th>Rules</th></tr><tr><td class="field">Idempotency-Key<span class="req">required</span></td><td class="rule">same mechanism as pack purchase</td></tr></table>
-            <h4>Body</h4>
-            <table class="params">
-              <tr><th>Field</th><th>Rules</th></tr>
-              <tr><td class="field">payment_reference</td><td class="rule">optional, string &mdash; a reference from a charge already completed via the <a href="https://github.com/PaystackHQ/paystack-react-native" target="_blank" rel="noopener">Paystack mobile SDK</a> (card details never pass through our API). Verified server-to-server before anything is credited.</td></tr>
-              <tr><td class="field">payment_method_id</td><td class="rule">optional, integer &mdash; charge a previously saved card instead (see Payment Methods below). Must belong to the caller.</td></tr>
-            </table>
             <h4>Business rules</h4>
             <ul style="color:var(--text-muted); font-size:.9rem; padding-left:1.1rem; margin:.3rem 0;">
-              <li>Give at most one of <code>payment_reference</code> / <code>payment_method_id</code>. Give neither to charge the caller's default saved card.</li>
-              <li>A <code>payment_reference</code> charge whose resulting authorization is <code>reusable</code> is saved automatically as a new payment method (first one saved becomes the default).</li>
-              <li>The amount/currency charged via the Paystack SDK must exactly match what <code>GET /token-bundles</code> showed this same caller (NGN by default, USD only for a confirmed non-Nigerian profile) &mdash; a mismatch declines with <code>402</code> even if the charge itself succeeded at Paystack.</li>
-              <li>Card/payment declined, or no payment method available at all &rarr; <code>402</code>.</li>
-              <li>Same idempotency key reused for a different bundle &rarr; <code>409</code>.</li>
+              <li>Routes through a payment provider (currently a manual/test driver &mdash; no live gateway yet).</li>
+              <li>Card/payment declined &rarr; <code>402</code>.</li>
+              <li>Same key reused for a different bundle &rarr; <code>409</code>.</li>
             </ul>
-            <div class="note"><b>No live gateway configured yet in some environments</b>Until the backend has a live Paystack secret key, this falls back to a manual/test driver that always approves and never saves a card &mdash; same request/response shape either way, so build against this doc regardless of which is currently active.</div>
             <div class="status-row">
               <span class="status-pill ok">201 Created</span>
               <span class="status-pill err">401</span><span class="status-pill err">402 payment declined</span>
@@ -982,13 +969,9 @@
               <div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
               <pre data-raw='curl -X POST https://api.yowimo.com/api/v1/token-bundles/5/purchase \
   -H "Authorization: Bearer $TOKEN" \
-  -H "Idempotency-Key: 2c9f...-71ab" \
-  -H "Content-Type: application/json" \
-  -d "{\"payment_reference\": \"T123456789\"}"'><span class="tok-flag">curl -X POST</span> https://api.yowimo.com/api/v1/token-bundles/5/purchase \
+  -H "Idempotency-Key: 2c9f...-71ab"'><span class="tok-flag">curl -X POST</span> https://api.yowimo.com/api/v1/token-bundles/5/purchase \
   -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span> \
-  -H <span class="tok-str">"Idempotency-Key: 2c9f...-71ab"</span> \
-  -H <span class="tok-str">"Content-Type: application/json"</span> \
-  -d <span class="tok-str">'{"payment_reference": "T123456789"}'</span></pre>
+  -H <span class="tok-str">"Idempotency-Key: 2c9f...-71ab"</span></pre>
             </div>
             <div class="code-block">
               <div class="code-head"><span>201 Response</span><button class="copy-btn" data-copy>Copy</button></div>
@@ -1074,101 +1057,6 @@
   ],
   <span class="tok-key">"meta"</span>: { <span class="tok-key">"per_page"</span>: <span class="tok-num">20</span>, <span class="tok-key">"has_more_pages"</span>: <span class="tok-bool">false</span>, <span class="tok-key">"next_cursor"</span>: <span class="tok-null">null</span>, <span class="tok-key">"prev_cursor"</span>: <span class="tok-null">null</span> }
 }</pre>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="endpoint" id="get-wallet-payment-methods">
-        <div class="endpoint-head"><span class="method get">GET</span><code class="path">/wallet/payment-methods</code></div>
-        <p class="desc">Saved cards, default first. A card is only ever added as a side effect of a <code>payment_reference</code> purchase whose authorization came back reusable &mdash; there's no standalone "add a card" endpoint.</p>
-        <div class="meta-line"><span><b>Rate limit</b> api</span></div>
-        <div class="endpoint-grid">
-          <div class="endpoint-docs">
-            <div class="note"><b>authorization_code is never returned</b>That's the sensitive token Paystack uses to actually charge the card. The API only ever gives you display metadata (brand, last4, expiry) &mdash; nothing you could use to charge it yourself.</div>
-            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span></div>
-          </div>
-          <div class="endpoint-code">
-            <div class="code-block">
-              <div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
-              <pre data-raw="curl https://api.yowimo.com/api/v1/wallet/payment-methods \
-  -H &quot;Authorization: Bearer $TOKEN&quot;"><span class="tok-flag">curl</span> https://api.yowimo.com/api/v1/wallet/payment-methods \
-  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span></pre>
-            </div>
-            <div class="code-block">
-              <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
-              <pre data-raw='{
-  "success": true,
-  "message": "Payment methods retrieved successfully.",
-  "data": [
-    {
-      "id": 12, "provider": "paystack", "card_type": "visa", "last4": "4242",
-      "exp_month": "12", "exp_year": "2030", "bank": "Test Bank",
-      "is_default": true, "created_at": "2026-08-28T10:15:00Z"
-    }
-  ]
-}'>{
-  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>,
-  <span class="tok-key">"message"</span>: <span class="tok-str">"Payment methods retrieved successfully."</span>,
-  <span class="tok-key">"data"</span>: [
-    {
-      <span class="tok-key">"id"</span>: <span class="tok-num">12</span>, <span class="tok-key">"provider"</span>: <span class="tok-str">"paystack"</span>, <span class="tok-key">"card_type"</span>: <span class="tok-str">"visa"</span>, <span class="tok-key">"last4"</span>: <span class="tok-str">"4242"</span>,
-      <span class="tok-key">"exp_month"</span>: <span class="tok-str">"12"</span>, <span class="tok-key">"exp_year"</span>: <span class="tok-str">"2030"</span>, <span class="tok-key">"bank"</span>: <span class="tok-str">"Test Bank"</span>,
-      <span class="tok-key">"is_default"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"created_at"</span>: <span class="tok-str">"2026-08-28T10:15:00Z"</span>
-    }
-  ]
-}</pre>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="endpoint" id="patch-wallet-payment-methods-default">
-        <div class="endpoint-head"><span class="method patch">PATCH</span><code class="path">/wallet/payment-methods/{id}/default</code></div>
-        <p class="desc">Make this saved card the one charged when a purchase gives neither <code>payment_reference</code> nor <code>payment_method_id</code>.</p>
-        <div class="meta-line"><span><b>Rate limit</b> purchases (10/min)</span></div>
-        <div class="endpoint-grid">
-          <div class="endpoint-docs">
-            <h4>Path</h4>
-            <table class="params"><tr><th>Field</th><th>Rules</th></tr><tr><td class="field">id</td><td class="rule">integer &mdash; must belong to the caller, or <code>403</code></td></tr></table>
-            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403</span><span class="status-pill err">404</span></div>
-          </div>
-          <div class="endpoint-code">
-            <div class="code-block">
-              <div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
-              <pre data-raw="curl -X PATCH https://api.yowimo.com/api/v1/wallet/payment-methods/12/default \
-  -H &quot;Authorization: Bearer $TOKEN&quot;"><span class="tok-flag">curl -X PATCH</span> https://api.yowimo.com/api/v1/wallet/payment-methods/12/default \
-  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span></pre>
-            </div>
-            <div class="code-block">
-              <div class="code-head"><span>Shape</span></div>
-              <pre>Same as <span class="tok-str">GET /wallet/payment-methods</span>, single object under <span class="tok-str">data</span>.</pre>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="endpoint" id="delete-wallet-payment-methods">
-        <div class="endpoint-head"><span class="method delete">DELETE</span><code class="path">/wallet/payment-methods/{id}</code></div>
-        <p class="desc">Remove a saved card.</p>
-        <div class="meta-line"><span><b>Rate limit</b> purchases (10/min)</span></div>
-        <div class="endpoint-grid">
-          <div class="endpoint-docs">
-            <h4>Path</h4>
-            <table class="params"><tr><th>Field</th><th>Rules</th></tr><tr><td class="field">id</td><td class="rule">integer &mdash; must belong to the caller, or <code>403</code></td></tr></table>
-            <div class="note"><b>Deleting the default promotes the next one</b>If the card removed was the default, the most recently saved remaining card (if any) automatically becomes the new default &mdash; check <code>GET /wallet/payment-methods</code> afterward rather than assuming none is set.</div>
-            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403</span><span class="status-pill err">404</span></div>
-          </div>
-          <div class="endpoint-code">
-            <div class="code-block">
-              <div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
-              <pre data-raw="curl -X DELETE https://api.yowimo.com/api/v1/wallet/payment-methods/12 \
-  -H &quot;Authorization: Bearer $TOKEN&quot;"><span class="tok-flag">curl -X DELETE</span> https://api.yowimo.com/api/v1/wallet/payment-methods/12 \
-  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span></pre>
-            </div>
-            <div class="code-block">
-              <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
-              <pre data-raw='{ "success": true, "message": "Payment method removed successfully.", "data": [] }'><span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"Payment method removed successfully."</span>, <span class="tok-key">"data"</span>: []</pre>
             </div>
           </div>
         </div>
