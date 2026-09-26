@@ -117,24 +117,42 @@ it('does not allow taking a username already used by another user', function () 
         ->assertJsonValidationErrors('username');
 });
 
+// Avatar file uploads must be sent as POST with a `_method=PATCH` field, not
+// as a real wire-level PATCH: this project's declared runtime is PHP ^8.3
+// (composer.json/CI both pin 8.3), and on PHP <8.4 the framework only parses
+// a multipart/form-data body for a real POST request — a genuine PATCH with
+// a multipart body arrives with an empty $_POST/$_FILES, silently dropping
+// every field, not just the avatar. Laravel's method-override support (on
+// by default, `Illuminate\Foundation\Http\Kernel::handle()`) then routes the
+// POST to this same PATCH route/controller. Using `->patch(...)` directly in
+// a test would still pass — Laravel's test client injects files straight
+// into the request, bypassing real body parsing entirely — which is exactly
+// why that shape doesn't catch this; POST + `_method` is used below so the
+// tests exercise the same contract a real client must use.
+function patchWithMultipart(string $token, array $data)
+{
+    // The `clerk` guard caches its resolved user for the lifetime of the app
+    // instance (see provisionVoteTestUser() in TurnVoteControllerTest), so it
+    // must be forced to re-resolve before every call — otherwise a second
+    // call with a different token would silently reuse the first user.
+    app('auth')->forgetGuards();
+
+    return test()->withHeader('Authorization', "Bearer {$token}")
+        ->post(API_V1_ME_ENDPOINT, ['_method' => 'PATCH', ...$data]);
+}
+
 it('uploads an avatar and replaces the previous one', function () {
     Storage::fake('public');
     $token = $this->clerkToken(['sub' => 'user_avatar']);
 
-    $firstAvatarUrl = $this->withHeader('Authorization', "Bearer {$token}")
-        ->patch(API_V1_ME_ENDPOINT, [
-            'avatar' => UploadedFile::fake()->image('avatar.jpg'),
-        ])
+    $firstAvatarUrl = patchWithMultipart($token, ['avatar' => UploadedFile::fake()->image('avatar.jpg')])
         ->assertStatus(200)
         ->json('data.avatar_url');
 
     expect($firstAvatarUrl)->not->toBeNull();
     Storage::disk('public')->assertExists(str($firstAvatarUrl)->after('/storage/')->toString());
 
-    $secondAvatarUrl = $this->withHeader('Authorization', "Bearer {$token}")
-        ->patch(API_V1_ME_ENDPOINT, [
-            'avatar' => UploadedFile::fake()->image('avatar-2.jpg'),
-        ])
+    $secondAvatarUrl = patchWithMultipart($token, ['avatar' => UploadedFile::fake()->image('avatar-2.jpg')])
         ->assertStatus(200)
         ->json('data.avatar_url');
 
@@ -149,10 +167,7 @@ it('rejects a non-image file as the avatar', function () {
     Storage::fake('public');
     $token = $this->clerkToken(['sub' => 'user_bad_avatar']);
 
-    $this->withHeader('Authorization', "Bearer {$token}")
-        ->patch(API_V1_ME_ENDPOINT, [
-            'avatar' => UploadedFile::fake()->create('malicious.svg', 10, 'image/svg+xml'),
-        ])
+    patchWithMultipart($token, ['avatar' => UploadedFile::fake()->create('malicious.svg', 10, 'image/svg+xml')])
         ->assertStatus(422)
         ->assertJsonValidationErrors('avatar');
 });
@@ -166,13 +181,45 @@ it('never attempts to delete an external avatar_url when a new avatar is uploade
     $user = User::where('clerk_user_id', 'user_external_avatar')->firstOrFail();
     $user->update(['avatar_url' => 'https://img.clerk.com/some-external-avatar.png']);
 
-    $uploadedAvatarUrl = $this->withHeader('Authorization', "Bearer {$token}")
-        ->patch(API_V1_ME_ENDPOINT, [
-            'avatar' => UploadedFile::fake()->image('avatar.jpg'),
-        ])
+    $uploadedAvatarUrl = patchWithMultipart($token, ['avatar' => UploadedFile::fake()->image('avatar.jpg')])
         ->assertStatus(200)
         ->json('data.avatar_url');
 
     expect($uploadedAvatarUrl)->not->toBe('https://img.clerk.com/some-external-avatar.png');
     Storage::disk('public')->assertExists(str($uploadedAvatarUrl)->after('/storage/')->toString());
+});
+
+it('never deletes another users real avatar file even if avatar_url is spoofed to point at it', function () {
+    Storage::fake('public');
+
+    $victimToken = $this->clerkToken(['sub' => 'user_victim']);
+    $victimAvatarUrl = patchWithMultipart($victimToken, ['avatar' => UploadedFile::fake()->image('victim.jpg')])
+        ->assertStatus(200)
+        ->json('data.avatar_url');
+
+    $attackerToken = $this->clerkToken(['sub' => 'user_attacker']);
+
+    // Storage::fake() returns a scheme-relative path ("/storage/...") since
+    // no APP_URL is resolved in tests; in production Storage::disk('public')
+    // ->url() is already absolute. Prefix a fake origin so this exercises
+    // the `url` validation rule the same way a real absolute avatar_url would.
+    $victimAbsoluteAvatarUrl = 'http://localhost'.$victimAvatarUrl;
+
+    // The attacker points their own avatar_url at the victim's real,
+    // locally-stored avatar file — a plain URL field, no ownership check.
+    // forgetGuards() forces the `clerk` guard to re-resolve for this new
+    // token instead of reusing the victim it already cached (see
+    // patchWithMultipart() above).
+    app('auth')->forgetGuards();
+    $this->withHeader('Authorization', "Bearer {$attackerToken}")
+        ->patchJson(API_V1_ME_ENDPOINT, ['avatar_url' => $victimAbsoluteAvatarUrl])
+        ->assertStatus(200)
+        ->assertJsonPath('data.avatar_url', $victimAbsoluteAvatarUrl);
+
+    // Uploading a new avatar must not delete the victim's file just because
+    // it was sitting in the attacker's own avatar_url column.
+    patchWithMultipart($attackerToken, ['avatar' => UploadedFile::fake()->image('attacker-new.jpg')])
+        ->assertStatus(200);
+
+    Storage::disk('public')->assertExists(str($victimAvatarUrl)->after('/storage/')->toString());
 });

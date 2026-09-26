@@ -26,9 +26,11 @@ class AvatarUploadService
     ];
 
     /**
+     * @return array{url: string, path: string}
+     *
      * @throws AvatarUploadException if the file's type isn't supported or the disk write fails.
      */
-    public function store(UploadedFile $file): string
+    public function store(UploadedFile $file): array
     {
         $mimeType = $file->getMimeType();
         $extension = self::EXTENSION_BY_MIME_TYPE[$mimeType] ?? null;
@@ -48,23 +50,22 @@ class AvatarUploadService
             throw new AvatarUploadException('Failed to store the uploaded avatar.');
         }
 
-        return Storage::disk('public')->url($path);
+        return [
+            'url' => Storage::disk('public')->url($path),
+            'path' => $path,
+        ];
     }
 
     /**
-     * Removes a previously stored avatar when it's replaced. Only ever
-     * touches files this service itself stored — a user's avatar_url can
-     * also be an external Clerk/OAuth-provider URL, which must never be
-     * passed to a local disk delete.
+     * Removes a previously stored avatar when it's replaced or orphaned by a
+     * failed save. Takes the storage path this service itself returned from
+     * store() (tracked separately on the user, in `avatar_path`) — never a
+     * URL, since a user's avatar_url is a free-text field that can be set to
+     * anything (including another user's real avatar URL) and must never be
+     * trusted to decide what gets deleted from disk.
      */
-    public function delete(string $url): void
+    public function delete(string $path): void
     {
-        $prefix = Storage::disk('public')->url('');
-
-        if (! Str::startsWith($url, $prefix)) {
-            return;
-        }
-
-        Storage::disk('public')->delete(Str::after($url, $prefix));
+        Storage::disk('public')->delete($path);
     }
 }

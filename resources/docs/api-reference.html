@@ -539,6 +539,7 @@
         <div class="endpoint-head"><span class="method patch">PATCH</span><code class="path">/users/me</code></div>
         <p class="desc">Partially update the authenticated user's profile. All fields optional &mdash; send only what changed.</p>
         <div class="meta-line"><span><b>Rate limit</b> api</span></div>
+        <p class="desc"><b>Uploading an avatar file:</b> PHP does not parse a <code>multipart/form-data</code> body on a real PATCH request (only POST), so a client sending the <code>avatar</code> file must send it as <code>POST</code> to this same path with a <code>_method=PATCH</code> field in the multipart body &mdash; Laravel's method-override support then routes it here exactly as a native PATCH. <code>avatar_url</code> alone can still be sent as a normal JSON PATCH.</p>
         <div class="endpoint-grid">
           <div class="endpoint-docs">
             <h4>Body</h4>
@@ -546,7 +547,7 @@
               <tr><th>Field</th><th>Rules</th></tr>
               <tr><td class="field">username</td><td class="rule">string, 3&ndash;32 chars, <code>a-zA-Z0-9_.</code> only, unique</td></tr>
               <tr><td class="field">avatar_url</td><td class="rule">nullable, url, max 2048</td></tr>
-              <tr><td class="field">avatar</td><td class="rule">nullable, image file (jpeg/png/webp), max 8MB &mdash; multipart upload; overrides <code>avatar_url</code> when both are sent</td></tr>
+              <tr><td class="field">avatar</td><td class="rule">nullable, image file (jpeg/png/webp), max 8MB &mdash; multipart upload, sent via <code>POST</code> + <code>_method=PATCH</code> (see above); overrides <code>avatar_url</code> when both are sent</td></tr>
               <tr><td class="field">first_name / last_name / display_name</td><td class="rule">nullable, string, max 100</td></tr>
               <tr><td class="field">bio</td><td class="rule">nullable, string, max 1000</td></tr>
               <tr><td class="field">date_of_birth</td><td class="rule">nullable, date, must be before today</td></tr>

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
+use Throwable;
 
 class UserProfileService
 {
@@ -15,16 +16,32 @@ class UserProfileService
     public function updateProfile(User $user, array $data, ?UploadedFile $avatar = null): User
     {
         unset($data['avatar']);
-        $previousAvatarUrl = $user->avatar_url;
+        $previousAvatarPath = $user->avatar_path;
+        $newAvatarPath = null;
 
         if ($avatar) {
-            $data['avatar_url'] = $this->avatars->store($avatar);
+            $stored = $this->avatars->store($avatar);
+            $data['avatar_url'] = $stored['url'];
+            $newAvatarPath = $stored['path'];
+            $user->avatar_path = $newAvatarPath;
         }
 
-        $user->fill($data)->save();
+        try {
+            $user->fill($data)->save();
+        } catch (Throwable $exception) {
+            // The upload already committed to disk before save() ran; if the
+            // profile update itself never persists, the file would otherwise
+            // be orphaned forever (mirrors PartyService::create()'s cover
+            // image cleanup-on-failure).
+            if ($newAvatarPath !== null) {
+                $this->avatars->delete($newAvatarPath);
+            }
 
-        if ($avatar && $previousAvatarUrl) {
-            $this->avatars->delete($previousAvatarUrl);
+            throw $exception;
+        }
+
+        if ($newAvatarPath !== null && $previousAvatarPath) {
+            $this->avatars->delete($previousAvatarPath);
         }
 
         return $user;
