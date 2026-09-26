@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Database\Factories\AnalyticsEventFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -16,6 +18,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 ])]
 class AnalyticsEvent extends Model
 {
+    /** @use HasFactory<AnalyticsEventFactory> */
+    use HasFactory;
+
     const UPDATED_AT = null;
 
     /**
