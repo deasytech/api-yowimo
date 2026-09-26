@@ -19,6 +19,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'current_round_number',
     'turn_order',
     'current_turn_index',
+    'turn_seconds',
+    'paused_at',
+    'paused_turn_remaining_seconds',
+    'voting_ends_at',
     'started_at',
     'ended_at',
 ])]
@@ -38,6 +42,10 @@ class GameSession extends Model
             'current_round_number' => 'integer',
             'turn_order' => 'array',
             'current_turn_index' => 'integer',
+            'turn_seconds' => 'integer',
+            'paused_at' => 'datetime',
+            'paused_turn_remaining_seconds' => 'integer',
+            'voting_ends_at' => 'datetime',
             'started_at' => 'datetime',
             'ended_at' => 'datetime',
         ];

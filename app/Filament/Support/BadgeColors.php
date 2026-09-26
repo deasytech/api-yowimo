@@ -127,7 +127,10 @@ class BadgeColors
     {
         return match ($state) {
             GameSessionStatus::Running => 'info',
+            GameSessionStatus::Paused => 'warning',
+            GameSessionStatus::Voting => 'primary',
             GameSessionStatus::Completed => 'success',
+            GameSessionStatus::Ended => 'gray',
         };
     }
 

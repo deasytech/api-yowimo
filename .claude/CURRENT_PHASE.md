@@ -1,11 +1,25 @@
 # Current Phase — Yowimo Backend
 
-**Assessed:** 2026-09-03, against `dev` after the "Badges & Achievements" work landed, by direct code inspection.
+**Assessed:** 2026-09-26, against `dev` after the game engine completion work landed, by direct code inspection.
 **Basis:** `docs/audit/*`, `docs/implementation/IMPLEMENTATION_ORDER.md`, `.claude/PROJECT_CONTEXT.md`. This copy had fallen behind `docs/implementation/CURRENT_PHASE.md` (missing the Voting Engine + XP scoring and Badges & Achievements entries) — see that file for the full per-sprint detail; the summary below is condensed rather than duplicated in full.
 
 ---
 
 ## Current Sprint
+
+**Post-Sprint-14 — Game engine completion** (2026-09-26, scope confirmed with the user up front: player + host turn control, a 30s final voting window, early end with no completion rewards, plus reactions, late joiners, host-set turn timer, and pause/resume), **done.**
+
+- ✅ Bugs fixed: non-host members had no way to learn a new game's id (new `game.started` broadcast on `party.{id}` + `GET /parties/{party}/game`); the final turn of a game could never be voted on (new `voting` status, 30s window, `FinishGameVoting` job + sweep, then `completed`/`GameCompleted`); ending a party left its game running (new `ended` status, `game.ended`, no `GameCompleted`); players who left kept being dealt turns that each waited out the AFK timer (skipped at deal time; their current turn is closed as skipped immediately).
+- ✅ New endpoints: `POST /game/{id}/turns/{turn}/complete|skip` (turn's player or host; 409 on a stale turn), `POST /game/{id}/pause|resume` (host), `POST /game/{id}/reactions` (9 emojis, broadcast-only, own `reactions` limiter), `GET /game/{id}/results` (standings), `GET /parties/{party}/game`.
+- ✅ Schema: `game_sessions.turn_seconds/paused_at/paused_turn_remaining_seconds/voting_ends_at`, `turns.expires_at/is_skipped` (existing turns backfilled to `started_at + 30s`). Turn expiry now reads `turns.expires_at`, so pause/resume and the per-game timer work; `turn_order` stays positional because of `unique(round_id, position)`.
+- ✅ Skipped turns: no challenge XP, not votable, don't count toward Truth Master/Dare Devil, and break Perfect Game (its description already said "without a single skipped turn").
+- ✅ Additive broadcast payloads: `turn.started` now carries `expiresAt` + `card`, `turn.completed` carries `isSkipped`.
+- ✅ Intentional test changes: tests that played a game to the end now close the voting window via a shared `finishGameVotingWindow()` helper in `tests/Pest.php`; timer tests back-date `expires_at` instead of `started_at`. New: `tests/Feature/Services/GameEngineControlsTest.php`, `tests/Feature/Api/V1/GameplayActionsTest.php`. Full suite 505 passing.
+- ✅ Housekeeping in the same pass: `clerk:sync-users` (hourly) and `horizon:snapshot` (5 min) scheduled; Pint applied to `PackSeeder`/`ClerkUserProvisioner` so CI's Pint job passes; API reference got a "Game flow & realtime events" guide.
+
+**Post-Sprint-14 — Accounts, social safety & CI** (2026-09-26), **done.** `GET /game/{id}`, `GET /users/{user}` (public-safe profile + friendship status), blocking (`blocked_users`, `GET/POST /blocks`, `DELETE /blocks/{user}`, social-only), `DELETE /users/me` (Clerk delete first, then idempotent `AccountDeletionService::deleteLocally()`, also used by the `user.deleted` webhook), GitHub Actions CI (Pint + Pest, actions pinned to SHAs; blocked on a GitHub billing lock at the time of writing).
+
+Also landed since 2026-09-03 (tracked in git history, not detailed here): Paystack payments with saved cards, AI host round messages with retry, party editing/cover images/room-code lookup/membership history, admin audit resources.
 
 **Post-Sprint-14 — Badges & Achievements (Reward Engine, Phase 2)**, **done.** `badges`/`user_badges` tables, `Badge`/`UserBadge` models, `BadgeService`, `GET /badges`, `GET /users/me/badges`; seven badges (First Party, 100 Parties, Perfect Game, Party King, Truth Master, Dare Devil, Social Butterfly) awarded automatically off existing `GameCompleted`/`TurnCompleted`/`FriendRequestAccepted` events, delivered via a new `BadgeAwardedNotification` over the existing `FcmChannel`/`InAppChannel`. No existing route, request/response shape, or business logic changed. Daily streaks, combo multipliers, sponsor rewards, and leaderboards remain unscheduled. Full detail in `docs/implementation/CURRENT_PHASE.md`.
 
@@ -84,9 +98,9 @@ Sprint 3 (done previously): `pack_purchases` table + `PackPurchaseService`, `POS
 
 Sprint 2 (done previously): `PurchaseService` + `PaymentProvider`/`ManualPaymentProvider`, `POST /token-bundles/{id}/purchase` crediting the wallet, idempotency-key enforced.
 
-Outstanding from Sprint 1 (not blocking, can land anytime):
-- ⬜ `clerk:sync-users` is not scheduled anywhere.
-- ⬜ No CI workflow enforces Pint/Pest on PRs.
+Sprint 1 follow-ups (since shipped):
+- ✅ `clerk:sync-users` is scheduled hourly (`routes/console.php`).
+- ✅ CI workflow (`.github/workflows/ci.yml`) runs Pint + Pest on pushes/PRs to `main`/`dev` — currently blocked from running by a GitHub account billing lock, not by the workflow itself.
 
 Everything else shipped so far predates the sprint roadmap — it's the Phase-0/Phase-1 foundation (Clerk auth, catalog, party create/discover/like, the wallet ledger engine) that the roadmap was written to build on top of.
 
@@ -134,7 +148,7 @@ Real code exists but the module is narrower than its documented scope, or is unr
 
 No migration, model, route, or config exists for any of these:
 
-Chat/Messaging, Voice/Video (LiveKit), Moderation/Trust & Safety, Creator Economy, Corporate/Multi-Tenant/Enterprise, Internationalization, CI/CD pipeline.
+Chat/Messaging, Voice/Video (LiveKit), Moderation/Trust & Safety, Creator Economy, Corporate/Multi-Tenant/Enterprise, Internationalization, CD (deploy) pipeline — CI exists, see above.
 
 (Marketplace purchase flow/inventory/ownership and Notifications moved to Partially Complete above — token bundle and pack purchase both now exist, only a real payment gateway is missing; Notifications now covers push and in-app delivery, only a real Firebase project and `notification_preferences` are missing. Friends/social graph, Admin Panel v0, Analytics & Observability baseline, and AI Host v0 moved to Completed above.)
 
@@ -149,11 +163,10 @@ Outstanding, unscheduled (needs a design decision before it can be assigned to a
 - Notifications beyond v0, remaining scope: `notification_preferences` (per-channel opt-in/opt-out, named with no column spec in `docs/architecture/38_DATABASE_SCHEMA_REFERENCE.md`), and configuring a real Firebase project per environment — none scheduled. (Wiring the remaining fired events to push, and in-app delivery, are both now done — see Current Sprint above.)
 - In-panel password management for admins (Sprint 11 set an admin's password via `tinker`/seeder only — no self-service UI) — no sprint owns this.
 - A Filament Analytics resource/dashboard, and populating `analytics_events`' `ip`/`device`/`country` columns (would need request context threaded through every service call site) — surfaced by Sprint 12, neither scheduled.
-- AI Host beyond v0: the full "Yowi" persona (voice, moderation, translation, recommendations), a `RoundCompleted` trigger, retry/backoff on failure, and configuring a real OpenAI project per environment — surfaced by Sprint 13, none scheduled.
+- AI Host beyond v0: the full "Yowi" persona (voice, moderation, translation, recommendations) and OpenAI keys per deployed environment. (The `RoundCompleted` trigger and retry/backoff have landed.)
 
-Lower-priority, not blocking, carried over from Sprint 1:
-- Schedule `clerk:sync-users` as an hourly self-heal job.
-- Add a GitHub Actions workflow running Pint + Pest on every PR.
+Lower-priority, not blocking:
+- CI exists (`.github/workflows/ci.yml`) but GitHub Actions is blocked by an account billing lock; `clerk:sync-users` is now scheduled hourly.
 
 ---
 

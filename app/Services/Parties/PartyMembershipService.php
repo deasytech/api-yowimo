@@ -14,6 +14,8 @@ use App\Exceptions\Api\PartyNotJoinableException;
 use App\Models\Party;
 use App\Models\PartyMember;
 use App\Models\User;
+use App\Services\Game\GameSessionService;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 class PartyMembershipService
@@ -27,6 +29,8 @@ class PartyMembershipService
      * @var array<int, PartyStatus>
      */
     public const JOINABLE_STATUSES = [PartyStatus::Scheduled, PartyStatus::Live];
+
+    public function __construct(private readonly GameSessionService $games) {}
 
     /**
      * A rejoin (having previously left) reuses the same row rather than
@@ -73,10 +77,31 @@ class PartyMembershipService
 
             $party->increment('players_count');
 
+            $this->games->handlePlayerJoined($party, $user->id);
+
             PartyMemberJoined::dispatch($party->id, $user->id);
         });
 
         return $party->refresh();
+    }
+
+    /**
+     * Everyone who has been in the party — current members and those who
+     * left — in join order, with their user loaded. Members whose account
+     * has been deleted are left out.
+     *
+     * @return Collection<int, PartyMember>
+     */
+    public function players(Party $party): Collection
+    {
+        return PartyMember::query()
+            ->where('party_id', $party->id)
+            ->whereHas('user')
+            ->with('user')
+            ->orderBy('joined_at')
+            ->orderBy('id')
+            ->get()
+            ->each(fn (PartyMember $member) => $member->setRelation('party', $party));
     }
 
     /**
@@ -109,6 +134,8 @@ class PartyMembershipService
             if ($party->players_count > 0) {
                 $party->decrement('players_count');
             }
+
+            $this->games->handlePlayerLeft($party, $user->id);
 
             PartyMemberLeft::dispatch($party->id, $user->id);
         });
@@ -155,7 +182,11 @@ class PartyMembershipService
             throw new InvalidPartyTransitionException('This party cannot be ended from its current status.');
         }
 
-        $party->update(['status' => PartyStatus::Ended]);
+        DB::transaction(function () use ($party) {
+            $party->update(['status' => PartyStatus::Ended]);
+
+            $this->games->endForParty($party);
+        });
 
         return $party->refresh();
     }

@@ -29,7 +29,7 @@ class ClerkUserProvisioner
             'last_name' => Arr::get($claims, 'family_name') ?? Arr::get($claims, 'last_name'),
             'display_name' => Arr::get($claims, 'name'),
             'avatar_url' => Arr::get($claims, 'image_url') ?? Arr::get($claims, 'picture'),
-        ], fn($value) => $value !== null);
+        ], fn ($value) => $value !== null);
 
         $user = $this->findUserByClerkUserId($clerkUserId);
 

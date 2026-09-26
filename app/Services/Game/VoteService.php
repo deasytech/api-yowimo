@@ -8,6 +8,7 @@ use App\Enums\XpTransactionType;
 use App\Events\VoteCast;
 use App\Exceptions\Api\DuplicateVoteException;
 use App\Exceptions\Api\VotingNotAllowedException;
+use App\Models\GameSession;
 use App\Models\Turn;
 use App\Models\User;
 use App\Models\Vote;
@@ -42,24 +43,29 @@ class VoteService
     /**
      * Cast a vote on a completed turn, crediting XP to the turn's player.
      *
-     * @throws VotingNotAllowedException if the turn hasn't completed, was AFK-skipped, or the game has already ended.
+     * @throws VotingNotAllowedException if the turn hasn't completed, was skipped (AFK or by choice), or the game has finished.
      * @throws DuplicateVoteException if the voter already cast this category of vote on this turn.
      */
     public function cast(User $voter, Turn $turn, VoteCategory $category): Vote
     {
-        if ($turn->completed_at === null || $turn->is_afk) {
+        if ($turn->completed_at === null || $turn->is_afk || $turn->is_skipped) {
             throw new VotingNotAllowedException;
         }
 
-        // Once the game has ended, GrantMvpBonus has already snapshotted final
-        // standings; a vote afterward would credit XP that can never be
-        // reflected in the MVP determination, so it's rejected rather than
-        // silently accepted.
-        if ($turn->gameSession->status !== GameSessionStatus::Running) {
-            throw new VotingNotAllowedException('Voting is not allowed after the game has ended.');
-        }
-
         return DB::transaction(function () use ($voter, $turn, $category) {
+            // Votes are open while the game runs and during the final voting
+            // window. Once the game has completed, GrantMvpBonus has already
+            // snapshotted final standings; a vote afterward would credit XP that
+            // can never be reflected in the MVP determination, so it's rejected
+            // rather than silently accepted. A paused game accepts no actions.
+            // Checked under a shared lock inside the transaction so a vote can't
+            // slip in while finishVoting() is completing the game.
+            $status = GameSession::query()->whereKey($turn->game_session_id)->sharedLock()->first(['id', 'status'])?->status;
+
+            if (! in_array($status, [GameSessionStatus::Running, GameSessionStatus::Voting], true)) {
+                throw new VotingNotAllowedException('Voting is not allowed after the game has ended.');
+            }
+
             try {
                 $vote = Vote::create([
                     'turn_id' => $turn->id,

@@ -352,6 +352,14 @@
           }
         },
         {
+          "name": "List party players",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/parties/{{party_id}}/players", "host": ["{{base_url}}"], "path": ["parties", "{{party_id}}", "players"] },
+            "description": "Roster in join order: user_id, user {id, username, display_name, avatar_url}, is_host, status (active/left), joined_at, left_at. Includes players who left so game turn_order ids can be named; filter to active for the lobby. Same visibility as Show party."
+          }
+        },
+        {
           "name": "Join party",
           "request": {
             "method": "POST",
@@ -404,10 +412,30 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"rounds\": 5\n}"
+              "raw": "{\n  \"rounds\": 5,\n  \"turn_seconds\": 30\n}"
             },
             "url": { "raw": "{{base_url}}/parties/{{party_id}}/game/start", "host": ["{{base_url}}"], "path": ["parties", "{{party_id}}", "game", "start"] },
-            "description": "`rounds` must be one of GameSessionService::ALLOWED_ROUNDS_COUNTS (optional, defaults server-side if omitted). Party must be Live with the host present. Rate-limited: 30/min (`party-actions`)."
+            "description": "`rounds` must be one of 5, 10, 15, 20 (default 10); `turn_seconds` one of 15, 30, 45, 60, 90 (default 30). Both optional. Party must be Live with the host present. Broadcasts `game.started` on the party channel. 409 with `errors.game_session_id` if a game is already in progress. Rate-limited: 30/min (`party-actions`)."
+          }
+        },
+        {
+          "name": "Get the party's game",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data && body.data.id) { pm.collectionVariables.set('game_session_id', body.data.id); }",
+                  "if (body.data && body.data.current_turn && body.data.current_turn.id) { pm.collectionVariables.set('turn_id', body.data.current_turn.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/parties/{{party_id}}/game", "host": ["{{base_url}}"], "path": ["parties", "{{party_id}}", "game"] },
+            "description": "The party's most recent game session (in progress or finished), same shape as Get game state. How a member finds the session id to load and subscribe to. 404 if the party has no game yet."
           }
         },
         {
@@ -416,6 +444,14 @@
             "method": "GET",
             "url": { "raw": "{{base_url}}/game/{{game_session_id}}", "host": ["{{base_url}}"], "path": ["game", "{{game_session_id}}"] },
             "description": "Full current state for (re)loading a game: the start/next-turn fields plus host_id, pack_id, turn_order and current_turn_index. Host or active party member only (403 otherwise)."
+          }
+        },
+        {
+          "name": "Get game results",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/game/{{game_session_id}}/results", "host": ["{{base_url}}"], "path": ["game", "{{game_session_id}}", "results"] },
+            "description": "Standings, highest XP first: xp earned this game, votes received by category, turns completed/skipped/afk, is_mvp (decided once the game completes). Works mid-game as a live scoreboard."
           }
         },
         {
@@ -438,6 +474,71 @@
           }
         },
         {
+          "name": "Complete my turn",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data && body.data.current_turn && body.data.current_turn.id) { pm.collectionVariables.set('turn_id', body.data.current_turn.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/game/{{game_session_id}}/turns/{{turn_id}}/complete", "host": ["{{base_url}}"], "path": ["game", "{{game_session_id}}", "turns", "{{turn_id}}", "complete"] },
+            "description": "The turn's own player (or the host) marks the current turn done: challenge XP, next turn dealt. 409 if the turn is no longer the open current one; 422 if the game isn't running. Rate-limited: 30/min (`party-actions`)."
+          }
+        },
+        {
+          "name": "Skip my turn",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data && body.data.current_turn && body.data.current_turn.id) { pm.collectionVariables.set('turn_id', body.data.current_turn.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/game/{{game_session_id}}/turns/{{turn_id}}/skip", "host": ["{{base_url}}"], "path": ["game", "{{game_session_id}}", "turns", "{{turn_id}}", "skip"] },
+            "description": "Same as Complete my turn, but the turn is marked is_skipped: no challenge XP and it can't be voted on. Rate-limited: 30/min (`party-actions`)."
+          }
+        },
+        {
+          "name": "Pause game (host only)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/game/{{game_session_id}}/pause", "host": ["{{base_url}}"], "path": ["game", "{{game_session_id}}", "pause"] },
+            "description": "Freezes the turn timer (paused_turn_remaining_seconds). Turn actions, next-turn and votes are rejected while paused. 422 unless running."
+          }
+        },
+        {
+          "name": "Resume game (host only)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data && body.data.current_turn && body.data.current_turn.id) { pm.collectionVariables.set('turn_id', body.data.current_turn.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/game/{{game_session_id}}/resume", "host": ["{{base_url}}"], "path": ["game", "{{game_session_id}}", "resume"] },
+            "description": "Gives the current turn the time it had left (new expires_at). 422 unless paused."
+          }
+        },
+        {
           "name": "Vote on a turn",
           "request": {
             "method": "POST",
@@ -447,7 +548,20 @@
               "raw": "{\n  \"category\": \"winner\"\n}"
             },
             "url": { "raw": "{{base_url}}/game/{{game_session_id}}/turns/{{turn_id}}/vote", "host": ["{{base_url}}"], "path": ["game", "{{game_session_id}}", "turns", "{{turn_id}}", "vote"] },
-            "description": "`category` must be one of: winner, funny, creativity. Voting is only allowed once the turn has completed (422 otherwise). Rate-limited: 30/min (`party-actions`)."
+            "description": "`category` must be one of: winner, funny, creativity. Only on a completed turn that wasn't skipped/AFK, while the game is running or in its 30s final voting window (422 otherwise). Rate-limited: 30/min (`party-actions`)."
+          }
+        },
+        {
+          "name": "Send a reaction",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"emoji\": \"🔥\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/game/{{game_session_id}}/reactions", "host": ["{{base_url}}"], "path": ["game", "{{game_session_id}}", "reactions"] },
+            "description": "Live emoji reaction broadcast as `reaction.sent`; not stored. `emoji` must be one of 🔥 😂 ❤️ 😱 👏 💀 🤯 👀 ✨. Rate-limited: 30/min (`reactions`)."
           }
         }
       ]

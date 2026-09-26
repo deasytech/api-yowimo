@@ -16,8 +16,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'pack_card_id',
     'position',
     'started_at',
+    'expires_at',
     'completed_at',
     'is_afk',
+    'is_skipped',
 ])]
 class Turn extends Model
 {
@@ -32,8 +34,10 @@ class Turn extends Model
         return [
             'position' => 'integer',
             'started_at' => 'datetime',
+            'expires_at' => 'datetime',
             'completed_at' => 'datetime',
             'is_afk' => 'boolean',
+            'is_skipped' => 'boolean',
         ];
     }
 

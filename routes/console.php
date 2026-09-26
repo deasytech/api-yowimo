@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 
 Schedule::command('game:sweep-expired-turns')->everyMinute();
 Schedule::command('clerk:sync-users')->hourly();
+Schedule::command('horizon:snapshot')->everyFiveMinutes();

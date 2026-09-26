@@ -26,4 +26,13 @@ class TurnPolicy
             ->where('status', PartyMemberStatus::Active)
             ->exists();
     }
+
+    /**
+     * Determine whether the user can complete or skip the turn: the turn's
+     * own player, or the party host.
+     */
+    public function act(User $user, Turn $turn): bool
+    {
+        return $user->id === $turn->user_id || $user->id === $turn->gameSession->party->host_id;
+    }
 }
