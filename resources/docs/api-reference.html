@@ -279,6 +279,8 @@
         <div class="nav-group-title">Profile</div>
         <a class="nav-link" data-search="get users me profile" href="#get-users-me"><span class="m get">GET</span><span class="p">/users/me</span></a>
         <a class="nav-link" data-search="patch users me update profile" href="#patch-users-me"><span class="m patch">PATCH</span><span class="p">/users/me</span></a>
+        <a class="nav-link" data-search="delete users me account deletion close" href="#delete-users-me"><span class="m delete">DEL</span><span class="p">/users/me</span></a>
+        <a class="nav-link" data-search="get users id public profile player" href="#get-users-id"><span class="m get">GET</span><span class="p">/users/{user}</span></a>
       </div>
       <div class="nav-group" data-group="gametypes">
         <div class="nav-group-title">Game Types</div>
@@ -329,6 +331,7 @@
       <div class="nav-group" data-group="gamesessions">
         <div class="nav-group-title">Game Sessions</div>
         <a class="nav-link" data-search="post game start session" href="#post-game-start"><span class="m post">POST</span><span class="p">/parties/{party}/game/start</span></a>
+        <a class="nav-link" data-search="get game session state current reconnect" href="#get-game-id"><span class="m get">GET</span><span class="p">/game/{id}</span></a>
         <a class="nav-link" data-search="post game next-turn advance" href="#post-game-next-turn"><span class="m post">POST</span><span class="p">/game/{id}/next-turn</span></a>
         <a class="nav-link" data-search="post game turns vote winner funny creativity" href="#post-game-turns-vote"><span class="m post">POST</span><span class="p">/game/{id}/turns/{id}/vote</span></a>
       </div>
@@ -352,6 +355,9 @@
         <a class="nav-link" data-search="post friend-requests accept" href="#post-friend-requests-accept"><span class="m post">POST</span><span class="p">/friend-requests/{id}/accept</span></a>
         <a class="nav-link" data-search="post friend-requests reject decline" href="#post-friend-requests-reject"><span class="m post">POST</span><span class="p">/friend-requests/{id}/reject</span></a>
         <a class="nav-link" data-search="delete friend-requests cancel withdraw" href="#delete-friend-requests"><span class="m delete">DEL</span><span class="p">/friend-requests/{id}</span></a>
+        <a class="nav-link" data-search="get blocks blocked users list" href="#get-blocks"><span class="m get">GET</span><span class="p">/blocks</span></a>
+        <a class="nav-link" data-search="post blocks block user player" href="#post-blocks"><span class="m post">POST</span><span class="p">/blocks</span></a>
+        <a class="nav-link" data-search="delete blocks unblock user player" href="#delete-blocks"><span class="m delete">DEL</span><span class="p">/blocks/{user}</span></a>
       </div>
       <div class="nav-group" data-group="system">
         <div class="nav-group-title">System</div>
@@ -428,8 +434,9 @@
             <tr><td class="mono">api</td><td class="num">60&nbsp;/&nbsp;min</td><td>Every request (default)</td></tr>
             <tr><td class="mono">purchases</td><td class="num">10&nbsp;/&nbsp;min</td><td>Pack &amp; token-bundle purchase, payment method default/delete</td></tr>
             <tr><td class="mono">party-actions</td><td class="num">30&nbsp;/&nbsp;min</td><td>Like, join, leave, start, end, game actions</td></tr>
-            <tr><td class="mono">friend-requests</td><td class="num">20&nbsp;/&nbsp;min</td><td>All friend-request &amp; friend mutations</td></tr>
+            <tr><td class="mono">friend-requests</td><td class="num">20&nbsp;/&nbsp;min</td><td>All friend-request, friend &amp; block mutations</td></tr>
             <tr><td class="mono">push-tokens</td><td class="num">10&nbsp;/&nbsp;min</td><td>Register / unregister device</td></tr>
+            <tr><td class="mono">account-deletion</td><td class="num">3&nbsp;/&nbsp;min</td><td>Delete account</td></tr>
           </table>
           <p style="margin-top:.6rem;">All limiters key by authenticated user id (falling back to IP where unauthenticated).</p>
         </div>
@@ -448,12 +455,13 @@
             <tr><td class="mono num">422</td><td>Validation failed, or the action is invalid for the resource's current state (a Laravel-style state-machine violation, e.g. ending a party that isn't live).</td></tr>
             <tr><td class="mono num">429</td><td>Rate limit exceeded.</td></tr>
             <tr><td class="mono num">500</td><td>Unexpected server error.</td></tr>
+            <tr><td class="mono num">502</td><td>An upstream provider failed (currently only Clerk during account deletion). Nothing was changed &mdash; safe to retry.</td></tr>
           </table>
         </div>
       </div>
 
       <!-- ============ PROFILE ============ -->
-      <section class="group-head" id="profile"><h2>Profile</h2><p>The authenticated player's own account. There is no public profile endpoint &mdash; only self.</p></section>
+      <section class="group-head" id="profile"><h2>Profile</h2><p>The authenticated player's own account, plus read-only public profiles of other players.</p></section>
 
       <section class="endpoint" id="get-users-me">
         <div class="endpoint-head"><span class="method get">GET</span><code class="path">/users/me</code></div>
@@ -575,6 +583,65 @@
   <span class="tok-key">"message"</span>: <span class="tok-str">"Validation failed"</span>,
   <span class="tok-key">"errors"</span>: {
     <span class="tok-key">"username"</span>: [<span class="tok-str">"The username has already been taken."</span>]
+  }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="delete-users-me">
+        <div class="endpoint-head"><span class="method delete">DELETE</span><code class="path">/users/me</code></div>
+        <p class="desc">Permanently close the authenticated player's account.</p>
+        <div class="meta-line"><span><b>Rate limit</b> account-deletion (3/min)</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <p>Deletes the player's Clerk account first, then soft-deletes the local account. If Clerk can't be reached or rejects the call, nothing changes and the request returns <code>502</code> &mdash; safe to retry.</p>
+            <h4>Side effects</h4>
+            <ul style="color:var(--text-muted); font-size:.9rem; padding-left:1.1rem; margin:.3rem 0;">
+              <li>Hosted parties: <code>draft</code>/<code>scheduled</code> become <code>cancelled</code>; <code>live</code> ones become <code>ended</code>.</li>
+              <li>Leaves every party the player joined (other members get the usual <code>party.member.left</code> event).</li>
+              <li>Friendships and pending requests are closed; the push token is removed.</li>
+              <li>Wallet, ledger, purchase, and gameplay history are kept.</li>
+            </ul>
+            <div class="note"><b>Sign the user out</b>The bearer token stops working immediately (401 on the next request). Clear the Clerk session on the device after a 200.</div>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">429</span><span class="status-pill err">502 Clerk unavailable</span></div>
+          </div>
+          <div class="endpoint-code"><div class="code-block"><div class="code-head"><span>Shape</span></div><pre>{ <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"Account deleted successfully."</span>, <span class="tok-key">"data"</span>: [] }</pre></div></div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="get-users-id">
+        <div class="endpoint-head"><span class="method get">GET</span><code class="path">/users/{user}</code></div>
+        <p class="desc">Another player's public profile.</p>
+        <div class="meta-line"><span><b>Rate limit</b> api</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <p>Only public-safe fields &mdash; never email, wallet, date of birth, or other private data. Badges are newest first.</p>
+            <table class="params"><tr><th>friendship.status</th><th>Meaning</th></tr><tr><td class="field">none</td><td class="rule">No pending or accepted friendship (<code>friendship.id</code> is <code>null</code>)</td></tr><tr><td class="field">friends</td><td class="rule">Accepted &mdash; <code>friendship.id</code> works with <code>DELETE /friends/{id}</code></td></tr><tr><td class="field">request_sent</td><td class="rule">You sent a pending request &mdash; cancel with <code>DELETE /friend-requests/{id}</code></td></tr><tr><td class="field">request_received</td><td class="rule">They sent you a pending request &mdash; accept/reject it</td></tr><tr><td class="field">self</td><td class="rule">You are viewing your own profile</td></tr></table>
+            <div class="note"><b>404 hides blocks</b>A deactivated or deleted user, or anyone where either side has blocked the other, returns 404 exactly like a nonexistent id.</div>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">404</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": true, "message": "User profile retrieved successfully.",
+  "data": {
+    "id": 340, "username": "sam", "display_name": "Sam O.", "avatar_url": null, "xp": 1250,
+    "badges": [
+      { "id": 88, "badge": { "id": 1, "key": "first_party", "name": "First Party", "description": "Completed your first game.", "icon": "🎉", "created_at": "2026-09-02T00:00:00Z" }, "earned_at": "2026-09-10T19:12:00Z" }
+    ],
+    "friendship": { "id": 91, "status": "request_received" }
+  }
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"User profile retrieved successfully."</span>,
+  <span class="tok-key">"data"</span>: {
+    <span class="tok-key">"id"</span>: <span class="tok-num">340</span>, <span class="tok-key">"username"</span>: <span class="tok-str">"sam"</span>, <span class="tok-key">"display_name"</span>: <span class="tok-str">"Sam O."</span>, <span class="tok-key">"avatar_url"</span>: <span class="tok-null">null</span>, <span class="tok-key">"xp"</span>: <span class="tok-num">1250</span>,
+    <span class="tok-key">"badges"</span>: [
+      { <span class="tok-key">"id"</span>: <span class="tok-num">88</span>, <span class="tok-key">"badge"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">1</span>, <span class="tok-key">"key"</span>: <span class="tok-str">"first_party"</span>, <span class="tok-key">"name"</span>: <span class="tok-str">"First Party"</span>, <span class="tok-key">"description"</span>: <span class="tok-str">"Completed your first game."</span>, <span class="tok-key">"icon"</span>: <span class="tok-str">"🎉"</span>, <span class="tok-key">"created_at"</span>: <span class="tok-str">"2026-09-02T00:00:00Z"</span> }, <span class="tok-key">"earned_at"</span>: <span class="tok-str">"2026-09-10T19:12:00Z"</span> }
+    ],
+    <span class="tok-key">"friendship"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">91</span>, <span class="tok-key">"status"</span>: <span class="tok-str">"request_received"</span> }
   }
 }</pre>
             </div>
@@ -1792,6 +1859,43 @@
         </div>
       </section>
 
+      <section class="endpoint" id="get-game-id">
+        <div class="endpoint-head"><span class="method get">GET</span><code class="path">/game/{gameSession}</code></div>
+        <p class="desc">Current state of a game session &mdash; for loading or reconnecting to a game without replaying realtime events.</p>
+        <div class="meta-line"><span><b>Rate limit</b> api</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <p>The host and any active party member can call this; anyone else (including members who left) gets 403. Same fields as the start/next-turn responses, plus <code>host_id</code>, <code>pack_id</code>, <code>turn_order</code> (user ids in play order), and <code>current_turn_index</code> (position in <code>turn_order</code>).</p>
+            <div class="note"><b>Timer</b><code>current_turn.expires_at</code> is the server deadline for the current turn. Use it to render the countdown instead of starting a local 30-second timer.</div>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403 not a member</span><span class="status-pill err">404</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": true, "message": "Game session retrieved successfully.",
+  "data": {
+    "id": 77, "party_id": 902, "status": "running", "rounds_count": 10, "current_round_number": 2,
+    "started_at": "2026-09-26T20:00:00Z", "ended_at": null,
+    "current_round": { "id": 310, "number": 2, "started_at": "2026-09-26T20:04:10Z", "completed_at": null },
+    "current_turn": { "id": 1204, "position": 1, "user_id": 340, "card": { "id": 55, "kind": "dare", "text": "Sing the chorus of your favourite song.", "position": 4 }, "started_at": "2026-09-26T20:04:40Z", "completed_at": null, "expires_at": "2026-09-26T20:05:10Z", "is_afk": false },
+    "host_id": 482, "pack_id": 12, "turn_order": [482, 340, 517], "current_turn_index": 1
+  }
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"Game session retrieved successfully."</span>,
+  <span class="tok-key">"data"</span>: {
+    <span class="tok-key">"id"</span>: <span class="tok-num">77</span>, <span class="tok-key">"party_id"</span>: <span class="tok-num">902</span>, <span class="tok-key">"status"</span>: <span class="tok-str">"running"</span>, <span class="tok-key">"rounds_count"</span>: <span class="tok-num">10</span>, <span class="tok-key">"current_round_number"</span>: <span class="tok-num">2</span>,
+    <span class="tok-key">"started_at"</span>: <span class="tok-str">"2026-09-26T20:00:00Z"</span>, <span class="tok-key">"ended_at"</span>: <span class="tok-null">null</span>,
+    <span class="tok-key">"current_round"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">310</span>, <span class="tok-key">"number"</span>: <span class="tok-num">2</span>, <span class="tok-key">"started_at"</span>: <span class="tok-str">"2026-09-26T20:04:10Z"</span>, <span class="tok-key">"completed_at"</span>: <span class="tok-null">null</span> },
+    <span class="tok-key">"current_turn"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">1204</span>, <span class="tok-key">"position"</span>: <span class="tok-num">1</span>, <span class="tok-key">"user_id"</span>: <span class="tok-num">340</span>, <span class="tok-key">"card"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">55</span>, <span class="tok-key">"kind"</span>: <span class="tok-str">"dare"</span>, <span class="tok-key">"text"</span>: <span class="tok-str">"Sing the chorus of your favourite song."</span>, <span class="tok-key">"position"</span>: <span class="tok-num">4</span> }, <span class="tok-key">"started_at"</span>: <span class="tok-str">"2026-09-26T20:04:40Z"</span>, <span class="tok-key">"completed_at"</span>: <span class="tok-null">null</span>, <span class="tok-key">"expires_at"</span>: <span class="tok-str">"2026-09-26T20:05:10Z"</span>, <span class="tok-key">"is_afk"</span>: <span class="tok-bool">false</span> },
+    <span class="tok-key">"host_id"</span>: <span class="tok-num">482</span>, <span class="tok-key">"pack_id"</span>: <span class="tok-num">12</span>, <span class="tok-key">"turn_order"</span>: [<span class="tok-num">482</span>, <span class="tok-num">340</span>, <span class="tok-num">517</span>], <span class="tok-key">"current_turn_index"</span>: <span class="tok-num">1</span>
+  }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section class="endpoint" id="post-game-next-turn">
         <div class="endpoint-head"><span class="method post">POST</span><code class="path">/game/{gameSession}/next-turn</code></div>
         <p class="desc">Complete the current turn and advance. Host only. Note this path is top-level &mdash; not nested under <code>/parties</code>.</p>
@@ -1973,7 +2077,7 @@
       </section>
 
       <!-- ============ FRIENDS ============ -->
-      <section class="group-head" id="friends"><h2>Friends</h2><p>Social graph: friend requests and the resulting friend list.</p></section>
+      <section class="group-head" id="friends"><h2>Friends</h2><p>Social graph: friend requests, the resulting friend list, and blocking.</p></section>
 
       <section class="endpoint" id="get-friends">
         <div class="endpoint-head"><span class="method get">GET</span><code class="path">/friends</code></div>
@@ -2044,7 +2148,7 @@
         <div class="endpoint-grid">
           <div class="endpoint-docs">
             <table class="params"><tr><th>Field</th><th>Rules</th></tr><tr><td class="field">receiver_id<span class="req">required</span></td><td class="rule">integer, must exist, can't be your own id (custom message: "You cannot send a friend request to yourself.")</td></tr></table>
-            <div class="status-row"><span class="status-pill ok">201 Created</span><span class="status-pill err">401</span><span class="status-pill err">409 already friends / duplicate request</span><span class="status-pill err">422</span><span class="status-pill err">429</span></div>
+            <div class="status-row"><span class="status-pill ok">201 Created</span><span class="status-pill err">401</span><span class="status-pill err">403 blocked</span><span class="status-pill err">409 already friends / duplicate request</span><span class="status-pill err">422</span><span class="status-pill err">429</span></div>
           </div>
           <div class="endpoint-code"><div class="code-block"><div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
             <pre data-raw='curl -X POST https://api.yowimo.com/api/v1/friend-requests \
@@ -2087,6 +2191,73 @@
         <div class="endpoint-grid">
           <div class="endpoint-docs"><div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403 not the sender</span><span class="status-pill err">404</span><span class="status-pill err">422 not pending</span><span class="status-pill err">429</span></div></div>
           <div class="endpoint-code"><div class="code-block"><div class="code-head"><span>Shape</span></div><pre>{ <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"Friend request cancelled successfully."</span>, <span class="tok-key">"data"</span>: [] }</pre></div></div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="get-blocks">
+        <div class="endpoint-head"><span class="method get">GET</span><code class="path">/blocks</code></div>
+        <p class="desc">Players the authenticated player has blocked, newest first.</p>
+        <div class="meta-line"><span><b>Rate limit</b> api</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <p>Full collection, not paginated &mdash; no <code>meta</code> block.</p>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": true, "message": "Blocked users retrieved successfully.",
+  "data": [
+    { "user": { "id": 517, "username": "jo", "display_name": "Jo", "avatar_url": null }, "blocked_at": "2026-09-26T18:30:00Z" }
+  ]
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"Blocked users retrieved successfully."</span>,
+  <span class="tok-key">"data"</span>: [
+    { <span class="tok-key">"user"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">517</span>, <span class="tok-key">"username"</span>: <span class="tok-str">"jo"</span>, <span class="tok-key">"display_name"</span>: <span class="tok-str">"Jo"</span>, <span class="tok-key">"avatar_url"</span>: <span class="tok-null">null</span> }, <span class="tok-key">"blocked_at"</span>: <span class="tok-str">"2026-09-26T18:30:00Z"</span> }
+  ]
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="post-blocks">
+        <div class="endpoint-head"><span class="method post">POST</span><code class="path">/blocks</code></div>
+        <p class="desc">Block a player.</p>
+        <div class="meta-line"><span><b>Rate limit</b> friend-requests (20/min)</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <table class="params"><tr><th>Field</th><th>Rules</th></tr><tr><td class="field">user_id<span class="req">required</span></td><td class="rule">integer, must exist, can't be your own id (custom message: "You cannot block yourself.")</td></tr></table>
+            <p>Closes any friendship between the two players: an accepted friendship becomes <code>removed</code>, your pending request becomes <code>cancelled</code>, and their pending request to you becomes <code>rejected</code>. After that, neither player can send the other a friend request (403), and each sees the other's profile as 404. Parties and gameplay are unaffected. The blocked player isn't notified.</p>
+            <div class="note"><b>Idempotent</b>Returns 201 when the block is new and 200 if it already existed.</div>
+            <div class="status-row"><span class="status-pill ok">201 Created</span><span class="status-pill err">200 already blocked</span><span class="status-pill err">401</span><span class="status-pill err">422</span><span class="status-pill err">429</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>201 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": true, "message": "User blocked successfully.",
+  "data": { "user": { "id": 517, "username": "jo", "display_name": "Jo", "avatar_url": null }, "blocked_at": "2026-09-26T18:30:00Z" }
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"User blocked successfully."</span>,
+  <span class="tok-key">"data"</span>: { <span class="tok-key">"user"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">517</span>, <span class="tok-key">"username"</span>: <span class="tok-str">"jo"</span>, <span class="tok-key">"display_name"</span>: <span class="tok-str">"Jo"</span>, <span class="tok-key">"avatar_url"</span>: <span class="tok-null">null</span> }, <span class="tok-key">"blocked_at"</span>: <span class="tok-str">"2026-09-26T18:30:00Z"</span> }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="delete-blocks">
+        <div class="endpoint-head"><span class="method delete">DELETE</span><code class="path">/blocks/{user}</code></div>
+        <p class="desc">Unblock a player.</p>
+        <div class="meta-line"><span><b>Rate limit</b> friend-requests (20/min)</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <p><code>{user}</code> is the blocked player's user id. Only removes your own block; if they also blocked you, theirs stays. Friendships closed by the block are not restored. Returns 200 even if you hadn't blocked them.</p>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">404 no such user</span><span class="status-pill err">429</span></div>
+          </div>
+          <div class="endpoint-code"><div class="code-block"><div class="code-head"><span>Shape</span></div><pre>{ <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"User unblocked successfully."</span>, <span class="tok-key">"data"</span>: [] }</pre></div></div>
         </div>
       </section>
 

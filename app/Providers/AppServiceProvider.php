@@ -75,5 +75,8 @@ class AppServiceProvider extends ServiceProvider
         // charset — stricter than the general party-actions limit to slow
         // down brute-force guessing.
         RateLimiter::for('room-code-lookup', fn (Request $request) => Limit::perMinute(10)->by($request->user()?->id ?: $request->ip()));
+
+        // Each attempt makes an outbound Clerk Backend API call.
+        RateLimiter::for('account-deletion', fn (Request $request) => Limit::perMinute(3)->by($request->user()?->id ?: $request->ip()));
     }
 }

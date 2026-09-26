@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\UpdateProfileRequest;
 use App\Http\Resources\Api\V1\UserResource;
+use App\Services\AccountDeletionService;
 use App\Services\UserProfileService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -24,5 +25,12 @@ class MeController extends Controller
         $user = $this->profiles->updateProfile($request->user(), $request->validated());
 
         return ApiResponse::success(new UserResource($user), 'Profile updated successfully.');
+    }
+
+    public function destroy(Request $request, AccountDeletionService $accounts): JsonResponse
+    {
+        $accounts->delete($request->user());
+
+        return ApiResponse::success(null, 'Account deleted successfully.');
     }
 }
