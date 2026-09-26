@@ -15,6 +15,7 @@ use App\Models\Party;
 use App\Models\PartyMember;
 use App\Models\User;
 use App\Services\Game\GameSessionService;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 class PartyMembershipService
@@ -82,6 +83,25 @@ class PartyMembershipService
         });
 
         return $party->refresh();
+    }
+
+    /**
+     * Everyone who has been in the party — current members and those who
+     * left — in join order, with their user loaded. Members whose account
+     * has been deleted are left out.
+     *
+     * @return Collection<int, PartyMember>
+     */
+    public function players(Party $party): Collection
+    {
+        return PartyMember::query()
+            ->where('party_id', $party->id)
+            ->whereHas('user')
+            ->with('user')
+            ->orderBy('joined_at')
+            ->orderBy('id')
+            ->get()
+            ->each(fn (PartyMember $member) => $member->setRelation('party', $party));
     }
 
     /**

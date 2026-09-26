@@ -80,8 +80,13 @@ class GameSessionService
                 throw new InvalidPartyTransitionException('The party must be live to start a game.');
             }
 
-            if (GameSession::query()->where('party_id', $party->id)->whereIn('status', self::IN_PROGRESS_STATUSES)->exists()) {
-                throw new GameSessionAlreadyActiveException;
+            $inProgressId = GameSession::query()
+                ->where('party_id', $party->id)
+                ->whereIn('status', self::IN_PROGRESS_STATUSES)
+                ->value('id');
+
+            if ($inProgressId) {
+                throw new GameSessionAlreadyActiveException(gameSessionId: $inProgressId);
             }
 
             if (! $party->pack_id) {

@@ -55,8 +55,8 @@ class PackSeeder extends Seeder
                 ]);
             }
 
-            $previewTruths = count(array_filter($data['preview'], fn(array $card) => $card[0] === 'truth'));
-            $previewDares = count(array_filter($data['preview'], fn(array $card) => $card[0] === 'dare'));
+            $previewTruths = count(array_filter($data['preview'], fn (array $card) => $card[0] === 'truth'));
+            $previewDares = count(array_filter($data['preview'], fn (array $card) => $card[0] === 'dare'));
 
             $remainingTruths = max($data['truths'] - $previewTruths, 0);
             $remainingDares = max($data['dares'] - $previewDares, 0);
@@ -64,13 +64,13 @@ class PackSeeder extends Seeder
 
             PackCard::factory()
                 ->count($remainingTruths)
-                ->sequence(fn($sequence) => ['position' => $previewCount + $sequence->index])
+                ->sequence(fn ($sequence) => ['position' => $previewCount + $sequence->index])
                 ->state(['pack_id' => $pack->id, 'kind' => PackCardKind::Truth, 'is_preview' => false])
                 ->create();
 
             PackCard::factory()
                 ->count($remainingDares)
-                ->sequence(fn($sequence) => ['position' => $previewCount + $remainingTruths + $sequence->index])
+                ->sequence(fn ($sequence) => ['position' => $previewCount + $remainingTruths + $sequence->index])
                 ->state(['pack_id' => $pack->id, 'kind' => PackCardKind::Dare, 'is_preview' => false])
                 ->create();
         }
@@ -80,7 +80,7 @@ class PackSeeder extends Seeder
 
         $marketplacePacks = Pack::factory()
             ->count(6)
-            ->state(fn() => ['game_type_id' => $gameTypeIds->random()])
+            ->state(fn () => ['game_type_id' => $gameTypeIds->random()])
             ->has(PackCard::factory()->count(10), 'cards')
             ->create();
 

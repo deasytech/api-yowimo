@@ -187,3 +187,12 @@ it('validates the host-chosen turn timer when starting a game', function () {
 
     expect(GameSession::where('party_id', $game['party']->id)->latest('id')->first()->turn_seconds)->toBe(45);
 });
+
+it('returns the running session id when the host tries to start a second game', function () {
+    $game = startGameForActions('actions_second_start');
+    actAsClerkUser($game['host']);
+
+    $this->postJson("/api/v1/parties/{$game['party']->id}/game/start")
+        ->assertStatus(409)
+        ->assertJsonPath('errors.game_session_id', $game['session']->id);
+});

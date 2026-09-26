@@ -247,6 +247,7 @@ class ApiExceptionRegistrar
             GameSessionAlreadyActiveException::class,
             fn (GameSessionAlreadyActiveException $e) => ApiResponse::error(
                 $e->getMessage(),
+                $e->gameSessionId ? ['game_session_id' => $e->gameSessionId] : [],
                 status: 409
             )
         );

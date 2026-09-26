@@ -66,6 +66,7 @@ Route::prefix('v1')->group(function () {
         Route::patch('/parties/{id}', [PartyController::class, 'update'])->whereNumber('id')->middleware('throttle:party-actions');
         Route::post('/parties/{party}/like', [PartyLikeController::class, 'store'])->middleware('throttle:party-actions');
         Route::delete('/parties/{party}/like', [PartyLikeController::class, 'destroy'])->middleware('throttle:party-actions');
+        Route::get('/parties/{party}/players', [PartyMembershipController::class, 'players']);
         Route::post('/parties/{party}/join', [PartyMembershipController::class, 'join'])->middleware('throttle:party-actions');
         Route::delete('/parties/{party}/leave', [PartyMembershipController::class, 'leave'])->middleware('throttle:party-actions');
         Route::post('/parties/{party}/start', [PartyMembershipController::class, 'start'])->middleware('throttle:party-actions');
