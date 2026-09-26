@@ -1,24 +1,17 @@
 # Current Task
 
-None confirmed. Badges & Achievements (Phase 2 of the Reward Engine — see `docs/implementation/CURRENT_PHASE.md`'s Current Sprint section) has shipped: `badges`/`user_badges` tables, `Badge`/`UserBadge` models, `BadgeService`, `GET /badges`, `GET /users/me/badges`, and seven badges (First Party, 100 Parties, Perfect Game, Party King, Truth Master, Dare Devil, Social Butterfly) awarded automatically off existing gameplay/friendship events. The rest of the documented Reward/Scoring/Achievement Engine (daily streaks, combo multipliers, sponsor rewards, leaderboards) is still unbuilt — that's separate, unscheduled scope, not this task.
-
-# Why There's No Task Here
-
-`IMPLEMENTATION_ORDER.md:205` is explicit: "If/when any of these [deferred items] gets prioritized, treat it as its own multi-sprint plan appended after Sprint 14, re-running the same dependency analysis against the codebase's state at that time — rather than assuming this document's Tier 1–3 assumptions still hold." Picking one of the candidates below and building it without that confirmation would be inventing scope, which `CLAUDE.md` prohibits.
+None confirmed. The game engine completion pass (see `docs/implementation/CURRENT_PHASE.md`'s Current Sprint) has shipped: player/host turn complete & skip, final voting window, early end, pause/resume, host-set turn timer, reactions, late joiners, departed-player skipping, results and party-game lookup endpoints, plus the party roster (`GET /parties/{party}/players`), `errors.game_session_id` on the start-game 409, and realtime connection docs (auth endpoint, Echo setup).
 
 # Candidates (need a decision, not a guess)
 
-Unscheduled items carried over from `docs/implementation/CURRENT_PHASE.md`'s "Outstanding, unscheduled" list, roughly in order of how self-contained they are. Each was checked directly against the relevant `docs/architecture/` file, not assumed from the earlier July audit:
-
-- **Reward Engine — daily streaks, combo multipliers, sponsor rewards, leaderboards** — checked against `08_GAME_ENGINE.md`'s Reward/Scoring/Achievement Engine sections. Voting + XP scoring (Phase 1) and Badges/Achievements (Phase 2: First Party, 100 Parties, Perfect Game, Party King, Truth Master, Dare Devil, Social Butterfly) have shipped; everything else in that section — daily streaks, XP-gated titles/marketplace unlocks, combo multipliers (the doc marks this "(Future)" itself), sponsor/advertisement rewards, leaderboard endpoints — is still unbuilt and needs its own scoping pass (no reset/timezone rules, business terms, or point formulas defined anywhere).
-- **A real Firebase project per environment** — blocked on the user providing credentials, not a coding task (same reason it's been unscheduled since Sprint 9).
-- **`notification_preferences`** (per-channel opt-in/opt-out) — named in `38_DATABASE_SCHEMA_REFERENCE.md` with no column spec given (a "future" placeholder, like doc 14's "Future: Email/SES" note); undefined enough to need its own scoping pass before it can be built.
-- **In-panel admin password management** — checked against `16_ADMIN_PANEL_ARCHITECTURE.md`: appears only as one bullet in a security-requirements checklist ("Strong Password Policy," alongside MFA/session timeout/IP logging), not a specified feature. Sprint 11 set passwords via `tinker`/seeder only; thin doc grounding for anything beyond that.
-- **Filament Analytics resource/dashboard** — the dashboard itself is small, but populating `analytics_events`' `ip`/`device`/`country` columns needs request context threaded through every service call site, a wider-blast-radius change.
-- **AI Host beyond v0** — the full "Yowi" persona is effectively Tier-4-sized scope (voice, moderation, translation, recommendations); `RoundCompleted` trigger and retry/backoff are smaller, reasonable follow-ups.
-- **Lower priority, not blocking:** schedule `clerk:sync-users` hourly; add a GitHub Actions Pint+Pest workflow (carried over from Sprint 1).
-- **Tier 4 (`IMPLEMENTATION_ORDER.md` §G)** — Chat, Voice/Video, Moderation, Creator Economy, Corporate/Enterprise, i18n — explicitly deferred pending a business trigger (a signed customer, measured demand); do not schedule speculatively.
+- **Party ready-check** (`POST /parties/{id}/ready`) — in `08_GAME_ENGINE.md`'s flow ("Ready Check") and `39_REST_API_REFERENCE.md`, but no rules defined (is ready required to start? does it reset between games?). The players list (`GET /parties/{id}/players`) has shipped.
+- **Card reporting + minimal moderation queue** (`POST /cards/report`, an admin review screen) — app stores expect a reporting path; needs a decision on reasons and what a report does.
+- **`notification_preferences`** — named in `38_DATABASE_SCHEMA_REFERENCE.md` with no column spec; needs the channel/category list decided.
+- **Reward Engine remainder** — daily streaks, combo multipliers, sponsor rewards, leaderboards; no reset/timezone rules or formulas defined anywhere.
+- **Small follow-ups:** `POST /friend-requests` returns 404 (not 422) for a soft-deleted receiver; saved Paystack cards are kept after account deletion; no admin view of blocks/deleted accounts.
+- **Infra:** GitHub billing lock blocks CI; Sentry DSN unset; production needs a scheduler and a deploy pipeline; Firebase/OpenAI keys per deployed environment.
+- **Tier 4 (`IMPLEMENTATION_ORDER.md` §G)** — Chat, Voice/Video, Moderation, Creator Economy, Corporate/Enterprise, i18n — deferred pending a business trigger.
 
 # If Ambiguous
 
-Ask the user which candidate to build next, and get its objectives/acceptance criteria confirmed the same way each prior sprint's scope was confirmed — do not default to the top of this list without asking.
+Ask the user which candidate to build next, and confirm its rules up front, as each prior pass did.

@@ -8,7 +8,7 @@ use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 
 #[Signature('game:sweep-expired-turns')]
-#[Description('Crash-recovery safety net: AFK-skip any turn whose timer expired but whose delayed queue job never ran.')]
+#[Description('Crash-recovery safety net: AFK-skip expired turns and close expired final voting windows whose delayed queue jobs never ran.')]
 class SweepExpiredTurns extends Command
 {
     /**
@@ -17,8 +17,9 @@ class SweepExpiredTurns extends Command
     public function handle(GameSessionService $sessions): int
     {
         $skipped = $sessions->sweepExpiredTurns();
+        $completed = $sessions->sweepExpiredVotingWindows();
 
-        $this->info("Swept {$skipped} expired turn(s).");
+        $this->info("Swept {$skipped} expired turn(s) and {$completed} expired voting window(s).");
 
         return self::SUCCESS;
     }

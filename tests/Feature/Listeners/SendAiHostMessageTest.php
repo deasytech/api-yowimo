@@ -41,6 +41,7 @@ it('pushes the AI host message listener onto the queue when GameCompleted fires'
     Queue::fake();
 
     $service->nextTurn($session);
+    finishGameVotingWindow($session);
 
     Queue::assertPushed(CallQueuedListener::class, fn ($job) => $job->class === SendAiHostMessage::class);
 });
@@ -55,13 +56,15 @@ it('broadcasts an AI host message into the game session channel when GameComplet
     $provider->shouldReceive('respond')->once()->andReturn('What a wrap-up, party people!');
     app()->instance(AIProvider::class, $provider);
 
-    // Completing the only turn of a 1-round game fires RoundCompleted and
-    // GameCompleted together (see GameSessionService::advance()); faking
-    // RoundCompleted keeps this test isolated to the GameCompleted listener
-    // rather than also running the new SendAiHostRoundMessage listener.
+    // Completing the only turn of a 1-round game fires RoundCompleted, then
+    // GameCompleted once the final voting window closes (see
+    // GameSessionService::advance()/finishVoting()); faking RoundCompleted
+    // keeps this test isolated to the GameCompleted listener rather than
+    // also running the SendAiHostRoundMessage listener.
     Event::fake([AiHostMessageSent::class, RoundCompleted::class]);
 
     $service->nextTurn($session);
+    finishGameVotingWindow($session);
 
     Event::assertDispatched(AiHostMessageSent::class, fn ($event) => $event->gameSessionId === $session->id && $event->message === 'What a wrap-up, party people!');
 });
@@ -85,7 +88,9 @@ it('does not broadcast when the AI provider fails, and lets the failure surface 
     // backoff() below govern the retry instead, and the completing
     // player's request is never affected either way, since dispatching a
     // queued listener doesn't wait for it to run.
-    expect(fn () => $service->nextTurn($session))->toThrow(RuntimeException::class, 'OpenAI is down');
+    $service->nextTurn($session);
+
+    expect(fn () => finishGameVotingWindow($session))->toThrow(RuntimeException::class, 'OpenAI is down');
 
     Event::assertNotDispatched(AiHostMessageSent::class);
 });

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\JoinPartyRequest;
+use App\Http\Resources\Api\V1\PartyPlayerResource;
 use App\Http\Resources\Api\V1\PartyResource;
 use App\Models\Party;
 use App\Services\Parties\PartyMembershipService;
@@ -14,6 +15,15 @@ use Illuminate\Http\Request;
 class PartyMembershipController extends Controller
 {
     public function __construct(private readonly PartyMembershipService $memberships) {}
+
+    public function players(Party $party): JsonResponse
+    {
+        $this->authorize('view', $party);
+
+        $players = $this->memberships->players($party);
+
+        return ApiResponse::success(PartyPlayerResource::collection($players), 'Party players retrieved successfully.');
+    }
 
     public function join(JoinPartyRequest $request, Party $party): JsonResponse
     {

@@ -228,7 +228,9 @@ it('rejects voting on a turn after the game has already completed', function () 
     $this->withHeader('Authorization', "Bearer {$hostToken}")
         ->postJson("/api/v1/game/{$sessionId}/next-turn")
         ->assertStatus(200)
-        ->assertJsonPath('data.status', 'completed');
+        ->assertJsonPath('data.status', 'voting');
+
+    finishGameVotingWindow($sessionId);
 
     voteAsOtherPartyMember($this, $session, $this->clerkToken(['sub' => 'user_vote_voter_ended']))->assertStatus(422);
 });

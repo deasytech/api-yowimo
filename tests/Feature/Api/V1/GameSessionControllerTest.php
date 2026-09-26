@@ -182,7 +182,9 @@ it('rejects advancing a completed session', function () {
     $this->withHeader('Authorization', "Bearer {$hostToken}")
         ->postJson(nextTurnEndpoint($sessionId))
         ->assertStatus(200)
-        ->assertJsonPath('data.status', 'completed');
+        ->assertJsonPath('data.status', 'voting');
+
+    finishGameVotingWindow($sessionId);
 
     $this->withHeader('Authorization', "Bearer {$hostToken}")
         ->postJson(nextTurnEndpoint($sessionId))
