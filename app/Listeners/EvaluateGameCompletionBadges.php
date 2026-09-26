@@ -49,9 +49,10 @@ class EvaluateGameCompletionBadges implements ShouldQueue
                 $this->badges->award($user, BadgeKey::HundredParties, $gameSession);
             }
 
-            $hadAfkSkip = $turns->where('user_id', $userId)->contains('is_afk', true);
+            $userTurns = $turns->where('user_id', $userId);
+            $hadSkippedTurn = $userTurns->contains('is_afk', true) || $userTurns->contains('is_skipped', true);
 
-            if (! $hadAfkSkip) {
+            if (! $hadSkippedTurn) {
                 $this->badges->award($user, BadgeKey::PerfectGame, $gameSession);
             }
         }

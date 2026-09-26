@@ -28,8 +28,10 @@ class TurnFactory extends Factory
             'pack_card_id' => PackCard::factory(),
             'position' => 0,
             'started_at' => now(),
+            'expires_at' => now()->addSeconds(30),
             'completed_at' => null,
             'is_afk' => false,
+            'is_skipped' => false,
         ];
     }
 }

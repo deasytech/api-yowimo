@@ -17,8 +17,10 @@ use App\Http\Controllers\Api\V1\PartyMembershipController;
 use App\Http\Controllers\Api\V1\PaymentMethodController;
 use App\Http\Controllers\Api\V1\PaystackWebhookController;
 use App\Http\Controllers\Api\V1\PushTokenController;
+use App\Http\Controllers\Api\V1\ReactionController;
 use App\Http\Controllers\Api\V1\TokenBundleController;
 use App\Http\Controllers\Api\V1\TokenBundlePurchaseController;
+use App\Http\Controllers\Api\V1\TurnActionController;
 use App\Http\Controllers\Api\V1\TurnVoteController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\WalletController;
@@ -70,9 +72,16 @@ Route::prefix('v1')->group(function () {
         Route::post('/parties/{party}/end', [PartyMembershipController::class, 'end'])->middleware('throttle:party-actions');
         Route::post('/parties/{party}/cancel', [PartyMembershipController::class, 'cancel'])->middleware('throttle:party-actions');
         Route::post('/parties/{party}/game/start', [GameSessionController::class, 'start'])->middleware('throttle:party-actions');
+        Route::get('/parties/{party}/game', [GameSessionController::class, 'current']);
         Route::get('/game/{gameSession}', [GameSessionController::class, 'show'])->whereNumber('gameSession');
+        Route::get('/game/{gameSession}/results', [GameSessionController::class, 'results']);
         Route::post('/game/{gameSession}/next-turn', [GameSessionController::class, 'nextTurn'])->middleware('throttle:party-actions');
+        Route::post('/game/{gameSession}/pause', [GameSessionController::class, 'pause'])->middleware('throttle:party-actions');
+        Route::post('/game/{gameSession}/resume', [GameSessionController::class, 'resume'])->middleware('throttle:party-actions');
+        Route::post('/game/{gameSession}/turns/{turn}/complete', [TurnActionController::class, 'complete'])->middleware('throttle:party-actions');
+        Route::post('/game/{gameSession}/turns/{turn}/skip', [TurnActionController::class, 'skip'])->middleware('throttle:party-actions');
         Route::post('/game/{gameSession}/turns/{turn}/vote', [TurnVoteController::class, 'store'])->middleware('throttle:party-actions');
+        Route::post('/game/{gameSession}/reactions', [ReactionController::class, 'store'])->middleware('throttle:reactions');
 
         Route::post('/push-tokens', [PushTokenController::class, 'store'])->middleware('throttle:push-tokens');
         Route::delete('/push-tokens', [PushTokenController::class, 'destroy'])->middleware('throttle:push-tokens');

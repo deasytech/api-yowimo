@@ -24,6 +24,7 @@ use App\Exceptions\Api\PartyGameAlreadyStartedException;
 use App\Exceptions\Api\PartyHostCannotLeaveException;
 use App\Exceptions\Api\PartyNotJoinableException;
 use App\Exceptions\Api\PaymentDeclinedException;
+use App\Exceptions\Api\TurnNotActiveException;
 use App\Exceptions\Api\UserBlockedException;
 use App\Exceptions\Api\VotingNotAllowedException;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -256,6 +257,15 @@ class ApiExceptionRegistrar
             fn (GameSessionNotActiveException $e) => ApiResponse::error(
                 $e->getMessage(),
                 status: 422
+            )
+        );
+
+        self::registerHandler(
+            $exceptions,
+            TurnNotActiveException::class,
+            fn (TurnNotActiveException $e) => ApiResponse::error(
+                $e->getMessage(),
+                status: 409
             )
         );
 

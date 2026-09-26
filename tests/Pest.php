@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\GameSession;
+use App\Services\Game\GameSessionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -43,3 +45,16 @@ expect()->extend('toBeOne', function () {
 | global functions to help you to reduce the number of lines of code in your test files.
 |
 */
+
+/**
+ * A game whose last turn has been played sits in the final voting window
+ * until it closes. Jump past that window and close it, completing the game
+ * (which fires GameCompleted) as the delayed FinishGameVoting job would.
+ */
+function finishGameVotingWindow(GameSession|int $session): ?GameSession
+{
+    test()->travel(GameSessionService::VOTING_WINDOW_SECONDS + 1)->seconds();
+
+    return app(GameSessionService::class)
+        ->finishVoting($session instanceof GameSession ? $session->id : $session);
+}

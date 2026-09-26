@@ -43,6 +43,7 @@ it('awards First Party the first time a user completes a game', function () {
     $service = app(GameSessionService::class);
     $session = $service->start($host, $party, 1);
     $service->nextTurn($session);
+    finishGameVotingWindow($session);
 
     expect(UserBadge::whereHas('badge', fn ($q) => $q->where('key', BadgeKey::FirstParty))
         ->where('user_id', $host->id)->exists())->toBeTrue();
@@ -61,6 +62,7 @@ it('awards Hundred Parties on the 100th completed game and not before', function
     $service = app(GameSessionService::class);
     $session = $service->start($host, $party, 1);
     $service->nextTurn($session);
+    finishGameVotingWindow($session);
 
     expect(UserBadge::whereHas('badge', fn ($q) => $q->where('key', BadgeKey::HundredParties))
         ->where('user_id', $host->id)->exists())->toBeTrue();
@@ -72,6 +74,7 @@ it('awards Perfect Game when no turns were AFK-skipped', function () {
     $service = app(GameSessionService::class);
     $session = $service->start($host, $party, 1);
     $service->nextTurn($session);
+    finishGameVotingWindow($session);
 
     expect(UserBadge::whereHas('badge', fn ($q) => $q->where('key', BadgeKey::PerfectGame))
         ->where('user_id', $host->id)->exists())->toBeTrue();
@@ -84,10 +87,11 @@ it('does not award Perfect Game when a turn was AFK-skipped', function () {
     $session = $service->start($host, $party, 1);
     $turn = $session->currentTurn();
 
-    $turn->update(['started_at' => now()->subSeconds(GameSessionService::TURN_TIMEOUT_SECONDS + 1)]);
+    $turn->update(['started_at' => now()->subSeconds(GameSessionService::TURN_TIMEOUT_SECONDS + 1), 'expires_at' => now()->subSecond()]);
     $service->skipAfkTurn($turn->id);
 
     $service->nextTurn($session->fresh());
+    finishGameVotingWindow($session);
 
     expect(UserBadge::whereHas('badge', fn ($q) => $q->where('key', BadgeKey::PerfectGame))
         ->where('user_id', $turn->user_id)->exists())->toBeFalse();
@@ -99,11 +103,13 @@ it('does not duplicate a badge already earned', function () {
     $service = app(GameSessionService::class);
     $session = $service->start($host, $party, 1);
     $service->nextTurn($session);
+    finishGameVotingWindow($session);
 
     [, $party2] = makeLivePartyForGameCompletionBadges(1, $host);
 
     $session2 = $service->start($host, $party2, 1);
     $service->nextTurn($session2);
+    finishGameVotingWindow($session2);
 
     expect(UserBadge::whereHas('badge', fn ($q) => $q->where('key', BadgeKey::PerfectGame))
         ->where('user_id', $host->id)->count())->toBe(1);

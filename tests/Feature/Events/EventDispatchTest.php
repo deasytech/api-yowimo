@@ -192,7 +192,7 @@ it('fires RoundCompleted when every member has taken their turn for a round', fu
         && $event->roundNumber === 1);
 });
 
-it('fires GameCompleted when the last round of the last turn completes', function () {
+it('fires GameCompleted once the final voting window after the last turn closes', function () {
     Event::fake([GameCompleted::class]);
 
     $pack = Pack::factory()->create();
@@ -207,6 +207,10 @@ it('fires GameCompleted when the last round of the last turn completes', functio
     $session = $service->start($host, $party, 1);
 
     $session = $service->nextTurn($session);
+
+    Event::assertNotDispatched(GameCompleted::class);
+
+    finishGameVotingWindow($session);
 
     Event::assertDispatched(GameCompleted::class, fn ($event) => $event->gameSessionId === $session->id && $event->partyId === $party->id);
 });

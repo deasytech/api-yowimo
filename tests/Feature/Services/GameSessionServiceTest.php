@@ -130,7 +130,7 @@ it('advances through every member before repeating a round, alternating truth/da
     expect(Round::where('game_session_id', $session->id)->where('number', 1)->first()->completed_at)->not->toBeNull();
 });
 
-it('completes the session after the last turn of the last round', function () {
+it('opens the voting window after the last turn of the last round, then completes the session', function () {
     $party = makeLivePartyWithMembers(2);
     $service = app(GameSessionService::class);
     $session = $service->start($party->host, $party, 5);
@@ -140,6 +140,11 @@ it('completes the session after the last turn of the last round', function () {
     for ($i = 0; $i < 10; $i++) {
         $session = $service->nextTurn($session);
     }
+
+    expect($session->status)->toBe(GameSessionStatus::Voting);
+    expect($session->ended_at)->toBeNull();
+
+    $session = finishGameVotingWindow($session);
 
     expect($session->status)->toBe(GameSessionStatus::Completed);
     expect($session->ended_at)->not->toBeNull();
@@ -157,8 +162,12 @@ it('rejects advancing a completed session', function () {
         $session = $service->nextTurn($session);
     }
 
-    expect($session->status)->toBe(GameSessionStatus::Completed);
+    expect($session->status)->toBe(GameSessionStatus::Voting);
+    expect(fn () => $service->nextTurn($session))->toThrow(GameSessionNotActiveException::class);
 
+    $session = finishGameVotingWindow($session);
+
+    expect($session->status)->toBe(GameSessionStatus::Completed);
     expect(fn () => $service->nextTurn($session))->toThrow(GameSessionNotActiveException::class);
 });
 

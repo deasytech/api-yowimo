@@ -40,6 +40,7 @@ it('pushes the game-completion reward listener onto the queue when GameCompleted
     Queue::fake();
 
     $service->nextTurn($session);
+    finishGameVotingWindow($session);
 
     Queue::assertPushed(CallQueuedListener::class, fn ($job) => $job->class === GrantGameCompletionReward::class);
 });
@@ -50,10 +51,11 @@ it('credits 25 tokens to every player who took a turn when the game completes', 
     $service = app(GameSessionService::class);
     $session = $service->start($host, $party, 1);
 
-    // Drive every turn in the single round to trigger GameCompleted.
+    // Drive every turn in the single round, then close the final voting window, to trigger GameCompleted.
     for ($turn = 0; $turn < count($session->turn_order); $turn++) {
         $session = $service->nextTurn($session->fresh());
     }
+    finishGameVotingWindow($session);
 
     foreach ($userIds as $userId) {
         $user = User::find($userId);
@@ -79,6 +81,7 @@ it('does not reward a party member who joined after the game started and never t
     for ($turn = 0; $turn < count($session->turn_order); $turn++) {
         $session = $service->nextTurn($session->fresh());
     }
+    finishGameVotingWindow($session);
 
     expect($latecomer->user->wallet()->first())->toBeNull();
 });

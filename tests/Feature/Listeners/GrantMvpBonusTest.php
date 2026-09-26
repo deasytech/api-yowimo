@@ -47,8 +47,10 @@ it('pushes the MVP-bonus listener onto the queue when GameCompleted fires, but o
     Queue::fake();
 
     // Single member, single round: this one nextTurn() call completes the
-    // only (and therefore last) turn, which also completes the game.
+    // only (and therefore last) turn; closing the final voting window then
+    // completes the game.
     $service->nextTurn($session);
+    finishGameVotingWindow($session);
 
     Queue::assertPushed(CallQueuedListener::class, fn ($job) => $job->class === GrantMvpBonus::class);
 
@@ -74,6 +76,7 @@ it('awards the MVP bonus to every player tied for the highest XP when nobody vot
     for ($turn = 0; $turn < count($session->turn_order); $turn++) {
         $session = $service->nextTurn($session->fresh());
     }
+    finishGameVotingWindow($session);
 
     foreach ($userIds as $userId) {
         $user = User::find($userId);
@@ -97,6 +100,7 @@ it('awards the MVP bonus only to the sole top scorer when votes differentiate pl
 
     $session = $service->nextTurn($session->fresh());
     $service->nextTurn($session->fresh());
+    finishGameVotingWindow($session);
 
     $topScorer = User::find($firstTurnOwnerId);
     expect($topScorer->xp)->toBe(175); // 50 (own challenge) + 25 (winner vote) + 100 (MVP)
@@ -125,6 +129,7 @@ it('awards the Party King badge to the MVP bonus recipient', function () {
     $service = app(GameSessionService::class);
     $session = $service->start($host, $party, 1);
     $service->nextTurn($session);
+    finishGameVotingWindow($session);
 
     expect(UserBadge::whereHas('badge', fn ($q) => $q->where('key', BadgeKey::PartyKing))
         ->where('user_id', $host->id)->exists())->toBeTrue();

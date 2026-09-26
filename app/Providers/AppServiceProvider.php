@@ -81,6 +81,10 @@ class AppServiceProvider extends ServiceProvider
         // down brute-force guessing.
         RateLimiter::for('room-code-lookup', fn (Request $request) => Limit::perMinute(10)->by($request->user()?->id ?: $request->ip()));
 
+        // Emoji reactions get their own bucket so a burst of them can't use
+        // up the party-actions limit that turn actions and votes share.
+        RateLimiter::for('reactions', fn (Request $request) => Limit::perMinute(30)->by($request->user()?->id ?: $request->ip()));
+
         // Each attempt makes an outbound Clerk Backend API call.
         RateLimiter::for('account-deletion', fn (Request $request) => Limit::perMinute(3)->by($request->user()?->id ?: $request->ip()));
     }
