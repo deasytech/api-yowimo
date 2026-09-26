@@ -29,7 +29,7 @@ class PaymentMethodInfolist
                             ->label('Last 4'),
                         TextEntry::make('exp_month')
                             ->label('Expires')
-                            ->state(fn ($record): string => "{$record->exp_month}/{$record->exp_year}")
+                            ->state(fn ($record): ?string => ($record->exp_month && $record->exp_year) ? "{$record->exp_month}/{$record->exp_year}" : null)
                             ->placeholder('—'),
                         TextEntry::make('bank')
                             ->placeholder('—'),

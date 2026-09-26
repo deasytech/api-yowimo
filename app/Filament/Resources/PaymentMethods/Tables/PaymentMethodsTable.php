@@ -30,7 +30,7 @@ class PaymentMethodsTable
                     ->placeholder('—'),
                 TextColumn::make('exp_month')
                     ->label('Expires')
-                    ->state(fn (PaymentMethod $record): string => "{$record->exp_month}/{$record->exp_year}")
+                    ->state(fn (PaymentMethod $record): ?string => ($record->exp_month && $record->exp_year) ? "{$record->exp_month}/{$record->exp_year}" : null)
                     ->placeholder('—'),
                 TextColumn::make('bank')
                     ->placeholder('—'),

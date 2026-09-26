@@ -14,7 +14,7 @@ class AnalyticsEventFactory extends Factory
     /**
      * Define the model's default state.
      *
-     * @return array<string, mixed>
+     * @return array{user_id: Factory<User>, event: string, payload: array<empty, empty>, ip: string, device: string, country: string}
      */
     public function definition(): array
     {

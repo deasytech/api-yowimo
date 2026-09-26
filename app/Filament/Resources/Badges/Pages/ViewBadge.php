@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\Badges\Pages;
 
 use App\Filament\Resources\Badges\BadgeResource;
-use Filament\Actions\ViewAction;
+use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
 
 class ViewBadge extends ViewRecord
@@ -13,7 +13,7 @@ class ViewBadge extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            ViewAction::make(),
+            EditAction::make(),
         ];
     }
 }

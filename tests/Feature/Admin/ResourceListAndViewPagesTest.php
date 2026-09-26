@@ -85,3 +85,16 @@ it('renders the list and view pages for every resource added since the first pas
         $this->get("/admin/{$slug}/{$record->getKey()}")->assertOk();
     }
 });
+
+it('renders placeholder for payment method expiry when exp_month or exp_year is missing', function () {
+    $paymentMethod = PaymentMethod::factory()->create([
+        'exp_month' => null,
+        'exp_year' => null,
+    ]);
+
+    $this->get('/admin/payment-methods')
+        ->assertOk();
+
+    $this->get("/admin/payment-methods/{$paymentMethod->getKey()}")
+        ->assertOk();
+});
