@@ -21,7 +21,8 @@
     { "key": "turn_id", "value": "", "type": "string" },
     { "key": "friendship_id", "value": "", "type": "string" },
     { "key": "notification_id", "value": "", "type": "string" },
-    { "key": "receiver_id", "value": "", "type": "string" }
+    { "key": "receiver_id", "value": "", "type": "string" },
+    { "key": "user_id", "value": "", "type": "string" }
   ],
   "item": [
     {
@@ -79,6 +80,22 @@
             },
             "url": { "raw": "{{base_url}}/users/me", "host": ["{{base_url}}"], "path": ["users", "me"] },
             "description": "All fields are optional (`sometimes`). See UpdateProfileRequest for full validation rules (username regex, avatar_url, date_of_birth, privacy_settings, etc.)."
+          }
+        },
+        {
+          "name": "Get a public profile",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/users/{{user_id}}", "host": ["{{base_url}}"], "path": ["users", "{{user_id}}"] },
+            "description": "Another user's public profile: id, username, display_name, avatar_url, xp, badges, and friendship {id, status}. status is one of none, friends, request_sent, request_received, self. 404 for a deactivated/deleted user or when either side has blocked the other."
+          }
+        },
+        {
+          "name": "Delete my account",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/users/me", "host": ["{{base_url}}"], "path": ["users", "me"] },
+            "description": "Deletes the Clerk user, then soft-deletes the local account: hosted draft/scheduled parties are cancelled, live ones ended, joined parties left, friendships closed, push token removed. Wallet/ledger history is kept. 502 (nothing changed, safe to retry) if Clerk fails. The bearer token stops working afterwards. Rate-limited: 3/min (`account-deletion`)."
           }
         }
       ]
@@ -394,6 +411,14 @@
           }
         },
         {
+          "name": "Get game state",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/game/{{game_session_id}}", "host": ["{{base_url}}"], "path": ["game", "{{game_session_id}}"] },
+            "description": "Full current state for (re)loading a game: the start/next-turn fields plus host_id, pack_id, turn_order and current_turn_index. Host or active party member only (403 otherwise)."
+          }
+        },
+        {
           "name": "Advance to next turn (host only)",
           "event": [
             {
@@ -569,6 +594,35 @@
             "method": "DELETE",
             "url": { "raw": "{{base_url}}/friends/{{friendship_id}}", "host": ["{{base_url}}"], "path": ["friends", "{{friendship_id}}"] },
             "description": "Soft-deletes to a `removed` status rather than a hard delete."
+          }
+        },
+        {
+          "name": "List blocked users",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/blocks", "host": ["{{base_url}}"], "path": ["blocks"] },
+            "description": "Users you have blocked, newest first. Not paginated."
+          }
+        },
+        {
+          "name": "Block a user",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": {{user_id}}\n}"
+            },
+            "url": { "raw": "{{base_url}}/blocks", "host": ["{{base_url}}"], "path": ["blocks"] },
+            "description": "Closes any friendship between you (accepted -> removed, your pending -> cancelled, theirs -> rejected); after that neither side can send a friend request (403) and each sees the other's profile as 404. 201 when new, 200 if already blocked. Rate-limited: 20/min (`friend-requests`)."
+          }
+        },
+        {
+          "name": "Unblock a user",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/blocks/{{user_id}}", "host": ["{{base_url}}"], "path": ["blocks", "{{user_id}}"] },
+            "description": "Removes only your own block; closed friendships are not restored. Rate-limited: 20/min (`friend-requests`)."
           }
         }
       ]

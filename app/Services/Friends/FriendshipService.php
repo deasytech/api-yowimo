@@ -8,6 +8,8 @@ use App\Events\FriendRequestSent;
 use App\Exceptions\Api\AlreadyFriendsException;
 use App\Exceptions\Api\DuplicateFriendRequestException;
 use App\Exceptions\Api\InvalidFriendshipTransitionException;
+use App\Exceptions\Api\UserBlockedException;
+use App\Models\BlockedUser;
 use App\Models\Friendship;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
@@ -18,10 +20,19 @@ class FriendshipService
     /**
      * @throws DuplicateFriendRequestException if a pending request already exists between the two users, in either direction.
      * @throws AlreadyFriendsException if the two users are already friends.
+     * @throws UserBlockedException if either user has blocked the other.
      */
     public function send(User $sender, User $receiver): Friendship
     {
         return DB::transaction(function () use ($sender, $receiver) {
+            // Same ordered user-row lock as BlockService::block(), so a block
+            // and a request between the same pair can't interleave.
+            User::query()->whereKey([$sender->id, $receiver->id])->orderBy('id')->lockForUpdate()->get();
+
+            if (BlockedUser::query()->betweenUsers($sender, $receiver)->exists()) {
+                throw new UserBlockedException;
+            }
+
             $existing = Friendship::query()
                 ->where(fn ($q) => $q->where('sender_id', $sender->id)->where('receiver_id', $receiver->id))
                 ->orWhere(fn ($q) => $q->where('sender_id', $receiver->id)->where('receiver_id', $sender->id))
@@ -138,5 +149,47 @@ class FriendshipService
             ->with(['sender', 'receiver'])
             ->orderByDesc('created_at')
             ->get();
+    }
+
+    /**
+     * The current pending or accepted friendship between the two users, in either direction.
+     */
+    public function between(User $first, User $second): ?Friendship
+    {
+        return Friendship::query()
+            ->where(fn ($q) => $q
+                ->where(fn ($q) => $q->where('sender_id', $first->id)->where('receiver_id', $second->id))
+                ->orWhere(fn ($q) => $q->where('sender_id', $second->id)->where('receiver_id', $first->id)))
+            ->whereIn('status', [FriendshipStatus::Pending, FriendshipStatus::Accepted])
+            ->latest('id')
+            ->first();
+    }
+
+    /**
+     * Close every open friendship involving the user — or only the one with
+     * `$other`, when given — using the same terminal statuses the manual
+     * actions produce: the user's own pending requests become cancelled,
+     * requests they received become rejected, and accepted friendships
+     * become removed. No events are dispatched, matching reject/cancel/remove.
+     */
+    public function closeAll(User $user, ?User $other = null): void
+    {
+        $involving = fn ($query) => $query
+            ->where(fn ($q) => $q->where('sender_id', $user->id)->orWhere('receiver_id', $user->id))
+            ->when($other, fn ($q) => $q->where(fn ($q) => $q->where('sender_id', $other->id)->orWhere('receiver_id', $other->id)));
+
+        Friendship::query()->tap($involving)
+            ->where('status', FriendshipStatus::Pending)
+            ->where('sender_id', $user->id)
+            ->update(['status' => FriendshipStatus::Cancelled]);
+
+        Friendship::query()->tap($involving)
+            ->where('status', FriendshipStatus::Pending)
+            ->where('receiver_id', $user->id)
+            ->update(['status' => FriendshipStatus::Rejected]);
+
+        Friendship::query()->tap($involving)
+            ->where('status', FriendshipStatus::Accepted)
+            ->update(['status' => FriendshipStatus::Removed]);
     }
 }

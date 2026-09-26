@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\BadgeController;
+use App\Http\Controllers\Api\V1\BlockController;
 use App\Http\Controllers\Api\V1\ClerkWebhookController;
 use App\Http\Controllers\Api\V1\FriendshipController;
 use App\Http\Controllers\Api\V1\GameSessionController;
@@ -19,13 +20,20 @@ use App\Http\Controllers\Api\V1\PushTokenController;
 use App\Http\Controllers\Api\V1\TokenBundleController;
 use App\Http\Controllers\Api\V1\TokenBundlePurchaseController;
 use App\Http\Controllers\Api\V1\TurnVoteController;
+use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\WalletController;
 use Illuminate\Support\Facades\Route;
 
+if (! defined('API_USERS_ME_PATH')) {
+    define('API_USERS_ME_PATH', '/users/me');
+}
+
 Route::prefix('v1')->group(function () {
     Route::middleware(['auth:clerk', 'throttle:api'])->group(function () {
-        Route::get('/users/me', [MeController::class, 'show']);
-        Route::patch('/users/me', [MeController::class, 'update']);
+        Route::get(API_USERS_ME_PATH, [MeController::class, 'show']);
+        Route::patch(API_USERS_ME_PATH, [MeController::class, 'update']);
+        Route::delete(API_USERS_ME_PATH, [MeController::class, 'destroy'])->middleware('throttle:account-deletion');
+        Route::get('/users/{user}', [UserController::class, 'show'])->whereNumber('user');
 
         Route::get('/game-types', [GameTypeController::class, 'index']);
 
@@ -62,6 +70,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/parties/{party}/end', [PartyMembershipController::class, 'end'])->middleware('throttle:party-actions');
         Route::post('/parties/{party}/cancel', [PartyMembershipController::class, 'cancel'])->middleware('throttle:party-actions');
         Route::post('/parties/{party}/game/start', [GameSessionController::class, 'start'])->middleware('throttle:party-actions');
+        Route::get('/game/{gameSession}', [GameSessionController::class, 'show'])->whereNumber('gameSession');
         Route::post('/game/{gameSession}/next-turn', [GameSessionController::class, 'nextTurn'])->middleware('throttle:party-actions');
         Route::post('/game/{gameSession}/turns/{turn}/vote', [TurnVoteController::class, 'store'])->middleware('throttle:party-actions');
 
@@ -79,6 +88,10 @@ Route::prefix('v1')->group(function () {
         Route::post('/friend-requests/{friendship}/accept', [FriendshipController::class, 'accept'])->middleware('throttle:friend-requests');
         Route::post('/friend-requests/{friendship}/reject', [FriendshipController::class, 'reject'])->middleware('throttle:friend-requests');
         Route::delete('/friend-requests/{friendship}', [FriendshipController::class, 'cancel'])->middleware('throttle:friend-requests');
+
+        Route::get('/blocks', [BlockController::class, 'index']);
+        Route::post('/blocks', [BlockController::class, 'store'])->middleware('throttle:friend-requests');
+        Route::delete('/blocks/{user}', [BlockController::class, 'destroy'])->whereNumber('user')->middleware('throttle:friend-requests');
     });
 
     Route::post('/webhooks/clerk', ClerkWebhookController::class)->middleware('throttle:webhooks');

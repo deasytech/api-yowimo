@@ -1,7 +1,9 @@
 <?php
 
 use App\Enums\PackCardKind;
+use App\Enums\PartyMemberStatus;
 use App\Enums\PartyStatus;
+use App\Models\GameSession;
 use App\Models\Pack;
 use App\Models\PackCard;
 use App\Models\Party;
@@ -185,4 +187,80 @@ it('rejects advancing a completed session', function () {
     $this->withHeader('Authorization', "Bearer {$hostToken}")
         ->postJson(nextTurnEndpoint($sessionId))
         ->assertStatus(422);
+});
+
+it('rejects viewing a game session with no bearer token', function () {
+    $session = GameSession::factory()->create();
+
+    $this->getJson("/api/v1/game/{$session->id}")->assertStatus(401);
+});
+
+it('lets an active party member view the current game state', function () {
+    $hostToken = $this->clerkToken(['sub' => 'user_game_state_host']);
+    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
+    $host = User::where('clerk_user_id', 'user_game_state_host')->firstOrFail();
+
+    $party = makeLivePartyForController($host, 1);
+
+    $member = User::factory()->create(['clerk_user_id' => 'user_game_state_member']);
+    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $member->id]);
+
+    $sessionId = $this->withHeader('Authorization', "Bearer {$hostToken}")
+        ->postJson(startGameEndpoint($party), ['rounds' => 5])
+        ->assertStatus(200)
+        ->json('data.id');
+
+    $this->app->make('auth')->forgetGuards();
+    $memberToken = $this->clerkToken(['sub' => 'user_game_state_member']);
+
+    $this->withHeader('Authorization', "Bearer {$memberToken}")
+        ->getJson("/api/v1/game/{$sessionId}")
+        ->assertStatus(200)
+        ->assertJsonPath('data.id', $sessionId)
+        ->assertJsonPath('data.party_id', $party->id)
+        ->assertJsonPath('data.host_id', $host->id)
+        ->assertJsonPath('data.status', 'running')
+        ->assertJsonPath('data.current_turn_index', 0)
+        ->assertJsonPath('data.current_turn.position', 0)
+        ->assertJsonCount(2, 'data.turn_order');
+});
+
+it('forbids a non-member from viewing a game session', function () {
+    $host = User::factory()->create();
+    $party = makeLivePartyForController($host);
+    $session = GameSession::factory()->create(['party_id' => $party->id, 'host_id' => $host->id]);
+
+    $token = $this->clerkToken(['sub' => 'user_game_state_outsider']);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->getJson("/api/v1/game/{$session->id}")
+        ->assertStatus(403);
+});
+
+it('forbids a member who has left from viewing a game session', function () {
+    $host = User::factory()->create();
+    $party = makeLivePartyForController($host);
+    $session = GameSession::factory()->create(['party_id' => $party->id, 'host_id' => $host->id]);
+
+    $token = $this->clerkToken(['sub' => 'user_game_state_left']);
+    $this->withHeader('Authorization', "Bearer {$token}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
+    $leaver = User::where('clerk_user_id', 'user_game_state_left')->firstOrFail();
+    PartyMember::factory()->create([
+        'party_id' => $party->id,
+        'user_id' => $leaver->id,
+        'status' => PartyMemberStatus::Left,
+        'left_at' => now(),
+    ]);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->getJson("/api/v1/game/{$session->id}")
+        ->assertStatus(403);
+});
+
+it('returns 404 for a nonexistent game session', function () {
+    $token = $this->clerkToken(['sub' => 'user_game_state_missing']);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->getJson('/api/v1/game/999999')
+        ->assertStatus(404);
 });

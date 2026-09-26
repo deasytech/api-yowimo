@@ -2,15 +2,18 @@
 
 namespace App\Services\Clerk;
 
-use App\Enums\UserStatus;
 use App\Models\User;
 use App\Models\WebhookEvent;
+use App\Services\AccountDeletionService;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Arr;
 
 class ClerkWebhookHandler
 {
-    public function __construct(private readonly ClerkUserSynchronizer $synchronizer) {}
+    public function __construct(
+        private readonly ClerkUserSynchronizer $synchronizer,
+        private readonly AccountDeletionService $accounts,
+    ) {}
 
     /**
      * Handle a verified Clerk webhook payload, idempotently.
@@ -74,9 +77,6 @@ class ClerkWebhookHandler
             return;
         }
 
-        $user->forceFill([
-            'status' => UserStatus::Deactivated,
-            'deleted_at' => $user->deleted_at ?? now(),
-        ])->save();
+        $this->accounts->deleteLocally($user);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Exceptions\Api\AccountDeletionFailedException;
 use App\Exceptions\Api\AlreadyFriendsException;
 use App\Exceptions\Api\DuplicateFriendRequestException;
 use App\Exceptions\Api\DuplicatePaymentReferenceException;
@@ -23,6 +24,7 @@ use App\Exceptions\Api\PartyGameAlreadyStartedException;
 use App\Exceptions\Api\PartyHostCannotLeaveException;
 use App\Exceptions\Api\PartyNotJoinableException;
 use App\Exceptions\Api\PaymentDeclinedException;
+use App\Exceptions\Api\UserBlockedException;
 use App\Exceptions\Api\VotingNotAllowedException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
@@ -80,6 +82,15 @@ class ApiExceptionRegistrar
             fn (InvalidPaystackWebhookException $e) => ApiResponse::error(
                 $e->getMessage(),
                 status: 400
+            )
+        );
+
+        self::registerHandler(
+            $exceptions,
+            AccountDeletionFailedException::class,
+            fn (AccountDeletionFailedException $e) => ApiResponse::error(
+                $e->getMessage(),
+                status: 502
             )
         );
     }
@@ -215,6 +226,15 @@ class ApiExceptionRegistrar
             fn (InvalidFriendshipTransitionException $e) => ApiResponse::error(
                 $e->getMessage(),
                 status: 422
+            )
+        );
+
+        self::registerHandler(
+            $exceptions,
+            UserBlockedException::class,
+            fn (UserBlockedException $e) => ApiResponse::error(
+                $e->getMessage(),
+                status: 403
             )
         );
     }

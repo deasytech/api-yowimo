@@ -117,6 +117,15 @@ class PartyPolicy
     }
 
     /**
+     * Determine whether the user can view the party's game session state.
+     * The host and any current (active) member — the same people who play it.
+     */
+    public function viewGame(User $user, Party $party): bool
+    {
+        return $party->host_id === $user->id || $party->isMemberOf($user);
+    }
+
+    /**
      * Determine whether the user can start or advance a game session for the party. Host-only.
      */
     public function manageGame(User $user, Party $party): bool
