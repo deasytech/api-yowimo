@@ -1,12 +1,29 @@
 <?php
 
 use App\Enums\PartyVisibility;
+use App\Models\AnalyticsEvent;
+use App\Models\Badge;
+use App\Models\Friendship;
+use App\Models\GameSession;
 use App\Models\GameType;
+use App\Models\Notification;
 use App\Models\Pack;
 use App\Models\PackCard;
+use App\Models\PackPurchase;
 use App\Models\Party;
+use App\Models\PartyLike;
+use App\Models\PartyMember;
+use App\Models\PaymentMethod;
+use App\Models\PushToken;
+use App\Models\Round;
 use App\Models\TokenBundle;
+use App\Models\Turn;
 use App\Models\User;
+use App\Models\UserBadge;
+use App\Models\Vote;
+use App\Models\Wallet;
+use App\Models\WebhookEvent;
+use App\Models\XpTransaction;
 
 beforeEach(function () {
     $this->admin = User::factory()->create(['is_admin' => true]);
@@ -40,4 +57,44 @@ it('renders the list and view pages for every catalog and audit resource', funct
         $this->get("/admin/{$slug}")->assertOk();
         $this->get("/admin/{$slug}/{$record->getKey()}")->assertOk();
     }
+});
+
+it('renders the list and view pages for every resource added since the first pass', function () {
+    $resources = [
+        'party-members' => PartyMember::factory()->create(),
+        'friendships' => Friendship::factory()->create(),
+        'party-likes' => PartyLike::factory()->create(),
+        'wallets' => Wallet::factory()->create(),
+        'payment-methods' => PaymentMethod::factory()->create(),
+        'pack-purchases' => PackPurchase::factory()->create(),
+        'game-sessions' => GameSession::factory()->create(),
+        'rounds' => Round::factory()->create(),
+        'turns' => Turn::factory()->create(),
+        'votes' => Vote::factory()->create(),
+        'badges' => Badge::factory()->create(),
+        'user-badges' => UserBadge::factory()->create(),
+        'xp-transactions' => XpTransaction::factory()->create(),
+        'notifications' => Notification::factory()->create(),
+        'push-tokens' => PushToken::factory()->create(),
+        'analytics-events' => AnalyticsEvent::factory()->create(),
+        'webhook-events' => WebhookEvent::factory()->create(),
+    ];
+
+    foreach ($resources as $slug => $record) {
+        $this->get("/admin/{$slug}")->assertOk();
+        $this->get("/admin/{$slug}/{$record->getKey()}")->assertOk();
+    }
+});
+
+it('renders placeholder for payment method expiry when exp_month or exp_year is missing', function () {
+    $paymentMethod = PaymentMethod::factory()->create([
+        'exp_month' => null,
+        'exp_year' => null,
+    ]);
+
+    $this->get('/admin/payment-methods')
+        ->assertOk();
+
+    $this->get("/admin/payment-methods/{$paymentMethod->getKey()}")
+        ->assertOk();
 });
