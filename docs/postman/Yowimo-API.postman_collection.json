@@ -79,7 +79,7 @@
               "raw": "{\n  \"username\": \"party_host_01\",\n  \"display_name\": \"Party Host\",\n  \"bio\": \"Here to host games.\",\n  \"country_code\": \"US\",\n  \"interests\": [\"party games\", \"trivia\"]\n}"
             },
             "url": { "raw": "{{base_url}}/users/me", "host": ["{{base_url}}"], "path": ["users", "me"] },
-            "description": "All fields are optional (`sometimes`). See UpdateProfileRequest for full validation rules (username regex, avatar_url, date_of_birth, privacy_settings, etc.)."
+            "description": "All fields are optional (`sometimes`). See UpdateProfileRequest for full validation rules (username regex, avatar_url, date_of_birth, privacy_settings, etc.). To upload an avatar image directly, send `avatar` as a multipart/form-data file field (jpeg/png/webp, max 8MB) instead of `avatar_url` — it overrides `avatar_url` when both are sent. PHP does not parse a multipart body on a real PATCH request, so send it as POST to this same path with a `_method=PATCH` field in the multipart body instead; Laravel's method override then routes it here as PATCH."
           }
         },
         {
