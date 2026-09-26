@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Exceptions\Api\AvatarUploadException;
 use App\Filament\Support\ImageOptimizer;
+use App\Filament\Support\ImageUploadField;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -16,7 +17,7 @@ use Illuminate\Support\Str;
 class AvatarUploadService
 {
     /**
-     * @see \App\Filament\Support\ImageUploadField::EXTENSION_BY_MIME_TYPE
+     * @see ImageUploadField::EXTENSION_BY_MIME_TYPE
      */
     private const EXTENSION_BY_MIME_TYPE = [
         'image/jpeg' => 'jpg',
