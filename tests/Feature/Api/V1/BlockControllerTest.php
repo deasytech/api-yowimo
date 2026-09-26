@@ -47,6 +47,16 @@ it('rejects blocking yourself or a nonexistent user', function () {
     $this->postJson(API_V1_BLOCKS_ENDPOINT, ['user_id' => 999999])->assertStatus(422);
 });
 
+it('rejects blocking a soft-deleted user at validation', function () {
+    authAs('block_blocker_deleted_target');
+    $target = User::factory()->create();
+    $target->delete();
+
+    $this->postJson(API_V1_BLOCKS_ENDPOINT, ['user_id' => $target->id])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('user_id');
+});
+
 it('removes an accepted friendship when blocking', function () {
     $blocker = authAs('block_blocker_friend');
     $target = User::factory()->create();

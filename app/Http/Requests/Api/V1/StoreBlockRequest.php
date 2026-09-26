@@ -21,7 +21,7 @@ class StoreBlockRequest extends FormRequest
             'user_id' => [
                 'required',
                 'integer',
-                'exists:users,id',
+                Rule::exists('users', 'id')->withoutTrashed(),
                 Rule::notIn([$this->user()->id]),
             ],
         ];

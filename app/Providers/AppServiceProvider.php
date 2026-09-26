@@ -59,6 +59,11 @@ class AppServiceProvider extends ServiceProvider
             return app(ClerkUserProvisioner::class)->resolve($claims);
         });
 
+        $this->configureRateLimiters();
+    }
+
+    private function configureRateLimiters(): void
+    {
         RateLimiter::for('api', fn (Request $request) => Limit::perMinute(60)->by($request->user()?->id ?: $request->ip()));
 
         RateLimiter::for('webhooks', fn (Request $request) => Limit::perMinute(120)->by($request->ip()));

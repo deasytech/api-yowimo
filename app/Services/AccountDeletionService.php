@@ -29,12 +29,10 @@ class AccountDeletionService
      *
      * The Clerk user is deleted first, so a Clerk failure leaves everything
      * untouched and the request can simply be retried. Once Clerk has
-     * succeeded, the local cleanup runs in one transaction; Clerk's own
-     * `user.deleted` webhook will arrive afterwards and is a no-op on an
-     * already-deactivated, soft-deleted user (see ClerkWebhookHandler).
-     *
-     * Wallet, ledger, purchase, and gameplay history rows are kept, per the
-     * "never soft delete" policy for financial records.
+     * succeeded, the local cleanup runs via deleteLocally(). If that cleanup
+     * fails, it is still completed by a retry of this request (Clerk's 404
+     * for an already-deleted user counts as success) or by Clerk's own
+     * `user.deleted` webhook, which runs the same deleteLocally().
      *
      * @throws AccountDeletionFailedException if the Clerk user couldn't be deleted.
      */
@@ -42,14 +40,31 @@ class AccountDeletionService
     {
         $this->clerk->deleteUser($user->clerk_user_id);
 
+        $this->deleteLocally($user);
+    }
+
+    /**
+     * Local-only account cleanup, without calling Clerk. Idempotent: every
+     * step only touches rows that are still open, and an existing
+     * `deleted_at` is kept, so it is safe to run again after a partial
+     * failure or when the `user.deleted` webhook arrives for a user already
+     * deleted through the API.
+     *
+     * Wallet, ledger, purchase, and gameplay history rows are kept, per the
+     * "never soft delete" policy for financial records.
+     */
+    public function deleteLocally(User $user): void
+    {
         DB::transaction(function () use ($user) {
             $this->closeHostedParties($user);
             $this->leaveJoinedParties($user);
             $this->friendships->closeAll($user);
             $this->pushTokens->unregister($user);
 
-            $user->forceFill(['status' => UserStatus::Deactivated])->save();
-            $user->delete();
+            $user->forceFill([
+                'status' => UserStatus::Deactivated,
+                'deleted_at' => $user->deleted_at ?? now(),
+            ])->save();
         });
     }
 

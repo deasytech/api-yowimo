@@ -24,11 +24,15 @@ class FriendshipService
      */
     public function send(User $sender, User $receiver): Friendship
     {
-        if (BlockedUser::query()->betweenUsers($sender, $receiver)->exists()) {
-            throw new UserBlockedException;
-        }
-
         return DB::transaction(function () use ($sender, $receiver) {
+            // Same ordered user-row lock as BlockService::block(), so a block
+            // and a request between the same pair can't interleave.
+            User::query()->whereKey([$sender->id, $receiver->id])->orderBy('id')->lockForUpdate()->get();
+
+            if (BlockedUser::query()->betweenUsers($sender, $receiver)->exists()) {
+                throw new UserBlockedException;
+            }
+
             $existing = Friendship::query()
                 ->where(fn ($q) => $q->where('sender_id', $sender->id)->where('receiver_id', $receiver->id))
                 ->orWhere(fn ($q) => $q->where('sender_id', $receiver->id)->where('receiver_id', $sender->id))

@@ -24,11 +24,15 @@ use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\WalletController;
 use Illuminate\Support\Facades\Route;
 
+if (! defined('API_USERS_ME_PATH')) {
+    define('API_USERS_ME_PATH', '/users/me');
+}
+
 Route::prefix('v1')->group(function () {
     Route::middleware(['auth:clerk', 'throttle:api'])->group(function () {
-        Route::get('/users/me', [MeController::class, 'show']);
-        Route::patch('/users/me', [MeController::class, 'update']);
-        Route::delete('/users/me', [MeController::class, 'destroy'])->middleware('throttle:account-deletion');
+        Route::get(API_USERS_ME_PATH, [MeController::class, 'show']);
+        Route::patch(API_USERS_ME_PATH, [MeController::class, 'update']);
+        Route::delete(API_USERS_ME_PATH, [MeController::class, 'destroy'])->middleware('throttle:account-deletion');
         Route::get('/users/{user}', [UserController::class, 'show'])->whereNumber('user');
 
         Route::get('/game-types', [GameTypeController::class, 'index']);

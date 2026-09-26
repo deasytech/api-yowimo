@@ -46,18 +46,12 @@ class PublicUserResource extends JsonResource
      */
     private function friendshipStatus(User $viewer): string
     {
-        if ($viewer->id === $this->id) {
-            return 'self';
-        }
-
-        if (! $this->friendship) {
-            return 'none';
-        }
-
-        if ($this->friendship->status === FriendshipStatus::Accepted) {
-            return 'friends';
-        }
-
-        return $this->friendship->sender_id === $viewer->id ? 'request_sent' : 'request_received';
+        return match (true) {
+            $viewer->id === $this->id => 'self',
+            ! $this->friendship => 'none',
+            $this->friendship->status === FriendshipStatus::Accepted => 'friends',
+            $this->friendship->sender_id === $viewer->id => 'request_sent',
+            default => 'request_received',
+        };
     }
 }

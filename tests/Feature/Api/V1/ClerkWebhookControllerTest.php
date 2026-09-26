@@ -1,6 +1,10 @@
 <?php
 
+use App\Enums\FriendshipStatus;
+use App\Enums\PartyStatus;
 use App\Enums\UserStatus;
+use App\Models\Friendship;
+use App\Models\Party;
 use App\Models\User;
 use App\Models\WebhookEvent;
 use Tests\Support\FakesClerkWebhook;
@@ -95,4 +99,34 @@ it('deactivates and soft-deletes the local user for user.deleted', function () {
 
     expect($user->trashed())->toBeTrue();
     expect($user->status)->toBe(UserStatus::Deactivated);
+});
+
+it('runs the full local account cleanup for user.deleted', function () {
+    $user = User::factory()->create(['clerk_user_id' => 'user_webhook_cleanup']);
+    $party = Party::factory()->create(['host_id' => $user->id, 'status' => PartyStatus::Draft]);
+    $friendship = Friendship::factory()->accepted()->create(['sender_id' => $user->id]);
+
+    $webhook = $this->signedClerkWebhook([
+        'type' => 'user.deleted',
+        'data' => ['id' => 'user_webhook_cleanup', 'deleted' => true, 'object' => 'user'],
+    ]);
+
+    $this->postClerkWebhook($webhook['body'], $webhook['headers'])->assertStatus(200);
+
+    expect($party->refresh()->status)->toBe(PartyStatus::Cancelled);
+    expect($friendship->refresh()->status)->toBe(FriendshipStatus::Removed);
+});
+
+it('keeps the original deleted_at for a user.deleted on an already-deleted user', function () {
+    $deletedAt = now()->subDay()->startOfSecond();
+    User::factory()->deactivated()->create(['clerk_user_id' => 'user_webhook_already', 'deleted_at' => $deletedAt]);
+
+    $webhook = $this->signedClerkWebhook([
+        'type' => 'user.deleted',
+        'data' => ['id' => 'user_webhook_already', 'deleted' => true, 'object' => 'user'],
+    ]);
+
+    $this->postClerkWebhook($webhook['body'], $webhook['headers'])->assertStatus(200);
+
+    expect(User::withTrashed()->where('clerk_user_id', 'user_webhook_already')->first()->deleted_at->equalTo($deletedAt))->toBeTrue();
 });

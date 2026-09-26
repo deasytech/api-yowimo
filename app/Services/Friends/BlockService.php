@@ -19,6 +19,10 @@ class BlockService
     public function block(User $blocker, User $blocked): BlockedUser
     {
         return DB::transaction(function () use ($blocker, $blocked) {
+            // Same ordered user-row lock as FriendshipService::send(), so a
+            // block and a request between the same pair can't interleave.
+            User::query()->whereKey([$blocker->id, $blocked->id])->orderBy('id')->lockForUpdate()->get();
+
             $block = BlockedUser::query()->firstOrCreate([
                 'blocker_id' => $blocker->id,
                 'blocked_id' => $blocked->id,
