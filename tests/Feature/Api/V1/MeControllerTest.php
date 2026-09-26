@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\Support\FakesClerk;
 
 const API_V1_ME_ENDPOINT = '/api/v1/users/me';
@@ -113,4 +115,64 @@ it('does not allow taking a username already used by another user', function () 
         ->patchJson(API_V1_ME_ENDPOINT, ['username' => 'taken'])
         ->assertStatus(422)
         ->assertJsonValidationErrors('username');
+});
+
+it('uploads an avatar and replaces the previous one', function () {
+    Storage::fake('public');
+    $token = $this->clerkToken(['sub' => 'user_avatar']);
+
+    $firstAvatarUrl = $this->withHeader('Authorization', "Bearer {$token}")
+        ->patch(API_V1_ME_ENDPOINT, [
+            'avatar' => UploadedFile::fake()->image('avatar.jpg'),
+        ])
+        ->assertStatus(200)
+        ->json('data.avatar_url');
+
+    expect($firstAvatarUrl)->not->toBeNull();
+    Storage::disk('public')->assertExists(str($firstAvatarUrl)->after('/storage/')->toString());
+
+    $secondAvatarUrl = $this->withHeader('Authorization', "Bearer {$token}")
+        ->patch(API_V1_ME_ENDPOINT, [
+            'avatar' => UploadedFile::fake()->image('avatar-2.jpg'),
+        ])
+        ->assertStatus(200)
+        ->json('data.avatar_url');
+
+    expect($secondAvatarUrl)->not->toBe($firstAvatarUrl);
+    Storage::disk('public')->assertExists(str($secondAvatarUrl)->after('/storage/')->toString());
+    Storage::disk('public')->assertMissing(str($firstAvatarUrl)->after('/storage/')->toString());
+
+    expect(User::where('clerk_user_id', 'user_avatar')->first()->avatar_url)->toBe($secondAvatarUrl);
+});
+
+it('rejects a non-image file as the avatar', function () {
+    Storage::fake('public');
+    $token = $this->clerkToken(['sub' => 'user_bad_avatar']);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->patch(API_V1_ME_ENDPOINT, [
+            'avatar' => UploadedFile::fake()->create('malicious.svg', 10, 'image/svg+xml'),
+        ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('avatar');
+});
+
+it('never attempts to delete an external avatar_url when a new avatar is uploaded', function () {
+    Storage::fake('public');
+    $token = $this->clerkToken(['sub' => 'user_external_avatar']);
+
+    // JIT-provision the user first, then seed an external avatar URL directly.
+    $this->withHeader('Authorization', "Bearer {$token}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
+    $user = User::where('clerk_user_id', 'user_external_avatar')->firstOrFail();
+    $user->update(['avatar_url' => 'https://img.clerk.com/some-external-avatar.png']);
+
+    $uploadedAvatarUrl = $this->withHeader('Authorization', "Bearer {$token}")
+        ->patch(API_V1_ME_ENDPOINT, [
+            'avatar' => UploadedFile::fake()->image('avatar.jpg'),
+        ])
+        ->assertStatus(200)
+        ->json('data.avatar_url');
+
+    expect($uploadedAvatarUrl)->not->toBe('https://img.clerk.com/some-external-avatar.png');
+    Storage::disk('public')->assertExists(str($uploadedAvatarUrl)->after('/storage/')->toString());
 });

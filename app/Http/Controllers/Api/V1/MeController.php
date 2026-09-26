@@ -22,7 +22,7 @@ class MeController extends Controller
 
     public function update(UpdateProfileRequest $request): JsonResponse
     {
-        $user = $this->profiles->updateProfile($request->user(), $request->validated());
+        $user = $this->profiles->updateProfile($request->user(), $request->validated(), $request->file('avatar'));
 
         return ApiResponse::success(new UserResource($user), 'Profile updated successfully.');
     }

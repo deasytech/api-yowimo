@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Http;
 
 function clerkApiUser(string $id, string $username): array
@@ -17,6 +18,15 @@ function clerkApiUser(string $id, string $username): array
         ],
     ];
 }
+
+it('is scheduled to run hourly as a self-heal job', function () {
+    $events = $this->app->make(Schedule::class)->events();
+
+    $event = collect($events)->first(fn ($event) => str_contains($event->command ?? '', 'clerk:sync-users'));
+
+    expect($event)->not->toBeNull();
+    expect($event->expression)->toBe('0 * * * *');
+});
 
 it('fails fast when no secret key is configured', function () {
     config(['services.clerk.secret_key' => null]);

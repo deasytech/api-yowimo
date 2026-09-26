@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('game:sweep-expired-turns')->everyMinute();
+Schedule::command('clerk:sync-users')->hourly();

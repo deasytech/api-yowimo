@@ -546,6 +546,7 @@
               <tr><th>Field</th><th>Rules</th></tr>
               <tr><td class="field">username</td><td class="rule">string, 3&ndash;32 chars, <code>a-zA-Z0-9_.</code> only, unique</td></tr>
               <tr><td class="field">avatar_url</td><td class="rule">nullable, url, max 2048</td></tr>
+              <tr><td class="field">avatar</td><td class="rule">nullable, image file (jpeg/png/webp), max 8MB &mdash; multipart upload; overrides <code>avatar_url</code> when both are sent</td></tr>
               <tr><td class="field">first_name / last_name / display_name</td><td class="rule">nullable, string, max 100</td></tr>
               <tr><td class="field">bio</td><td class="rule">nullable, string, max 1000</td></tr>
               <tr><td class="field">date_of_birth</td><td class="rule">nullable, date, must be before today</td></tr>
