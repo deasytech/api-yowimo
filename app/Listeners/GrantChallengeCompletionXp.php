@@ -25,7 +25,7 @@ class GrantChallengeCompletionXp
 
     public function handle(TurnCompleted $event): void
     {
-        if ($event->isAfk) {
+        if ($event->isAfk || $event->isSkipped) {
             return;
         }
 

@@ -48,7 +48,7 @@ it('dispatches a delayed AFK-skip job when a turn is dealt', function () {
 function expireCurrentTurn(GameSession $session): Turn
 {
     $turn = $session->currentTurn();
-    $turn->update(['started_at' => now()->subSeconds(GameSessionService::TURN_TIMEOUT_SECONDS + 1)]);
+    $turn->update(['started_at' => now()->subSeconds(GameSessionService::TURN_TIMEOUT_SECONDS + 1), 'expires_at' => now()->subSeconds(1)]);
 
     return $turn;
 }
@@ -103,7 +103,7 @@ it('does not reprocess a turn the host already completed normally', function () 
     expect($firstTurn->fresh()->is_afk)->toBeFalse();
 });
 
-it('completes the round and game via an AFK skip on the last turn, same as a normal advance', function () {
+it('opens the final voting window via an AFK skip on the last turn, same as a normal advance', function () {
     Queue::fake();
 
     $party = makeTimerTestParty(1);
@@ -114,6 +114,10 @@ it('completes the round and game via an AFK skip on the last turn, same as a nor
         $turn = expireCurrentTurn($session);
         $session = $service->skipAfkTurn($turn->id);
     }
+
+    expect($session->status)->toBe(GameSessionStatus::Voting);
+
+    $session = finishGameVotingWindow($session);
 
     expect($session->status)->toBe(GameSessionStatus::Completed);
     expect($session->ended_at)->not->toBeNull();
@@ -128,7 +132,7 @@ it('sweeps and AFK-skips a turn whose delayed job never ran (crash recovery)', f
     $session = $service->start($party->host, $party);
     $turn = $session->currentTurn();
 
-    $turn->update(['started_at' => now()->subSeconds(GameSessionService::TURN_TIMEOUT_SECONDS + 5)]);
+    $turn->update(['started_at' => now()->subSeconds(GameSessionService::TURN_TIMEOUT_SECONDS + 5), 'expires_at' => now()->subSeconds(5)]);
 
     $skipped = $service->sweepExpiredTurns();
 

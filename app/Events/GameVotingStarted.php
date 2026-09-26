@@ -7,19 +7,16 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Foundation\Events\Dispatchable;
 
-class TurnStarted implements ShouldBroadcast, ShouldDispatchAfterCommit
+/**
+ * The last turn has been played; votes are open until `votingEndsAt`, then the game completes.
+ */
+class GameVotingStarted implements ShouldBroadcast, ShouldDispatchAfterCommit
 {
     use Dispatchable;
 
     public function __construct(
         public readonly int $gameSessionId,
-        public readonly int $roundId,
-        public readonly int $turnId,
-        public readonly int $userId,
-        public readonly int $position,
-        public readonly ?string $expiresAt = null,
-        /** @var array{id: int, kind: string, text: string}|null */
-        public readonly ?array $card = null,
+        public readonly string $votingEndsAt,
     ) {}
 
     /**
@@ -32,6 +29,6 @@ class TurnStarted implements ShouldBroadcast, ShouldDispatchAfterCommit
 
     public function broadcastAs(): string
     {
-        return 'turn.started';
+        return 'game.voting';
     }
 }

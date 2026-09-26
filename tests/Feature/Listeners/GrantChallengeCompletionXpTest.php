@@ -81,7 +81,7 @@ it('does not credit XP for a turn that was AFK-skipped', function () {
     $turn = $session->currentTurn();
     $turnOwnerId = $turn->user_id;
 
-    $turn->update(['started_at' => now()->subSeconds(GameSessionService::TURN_TIMEOUT_SECONDS + 1)]);
+    $turn->update(['started_at' => now()->subSeconds(GameSessionService::TURN_TIMEOUT_SECONDS + 1), 'expires_at' => now()->subSeconds(1)]);
     $service->skipAfkTurn($turn->id);
 
     $owner = User::find($turnOwnerId);

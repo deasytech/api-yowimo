@@ -17,6 +17,7 @@ class TurnCompleted implements ShouldBroadcast, ShouldDispatchAfterCommit
         public readonly int $turnId,
         public readonly int $userId,
         public readonly bool $isAfk,
+        public readonly bool $isSkipped = false,
     ) {}
 
     /**

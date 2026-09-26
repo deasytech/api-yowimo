@@ -36,6 +36,7 @@ it('pushes the game-completed notification listener onto the queue when GameComp
     Queue::fake();
 
     $service->nextTurn($session);
+    finishGameVotingWindow($session);
 
     Queue::assertPushed(CallQueuedListener::class, fn ($job) => $job->class === SendGameCompletedPushNotification::class);
 });
@@ -49,6 +50,7 @@ it('notifies every party member when the game completes', function () {
     Notification::fake();
 
     $session = $service->nextTurn($session);
+    finishGameVotingWindow($session);
 
     Notification::assertSentTo($host, GameCompletedNotification::class, fn ($notification) => $notification->gameSession->id === $session->id);
 });
@@ -64,6 +66,7 @@ it('does not notify a member who has since left the party', function () {
     Notification::fake();
 
     $service->nextTurn($session);
+    finishGameVotingWindow($session);
 
     Notification::assertNothingSentTo($formerMember);
 });

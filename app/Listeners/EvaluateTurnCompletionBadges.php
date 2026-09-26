@@ -18,7 +18,7 @@ class EvaluateTurnCompletionBadges implements ShouldQueue
 
     public function handle(TurnCompleted $event): void
     {
-        if ($event->isAfk) {
+        if ($event->isAfk || $event->isSkipped) {
             return;
         }
 
@@ -31,6 +31,7 @@ class EvaluateTurnCompletionBadges implements ShouldQueue
 
         $completedCount = Turn::where('user_id', $event->userId)
             ->where('is_afk', false)
+            ->where('is_skipped', false)
             ->whereHas('packCard', fn ($query) => $query->where('kind', $turn->packCard->kind))
             ->count();
 
