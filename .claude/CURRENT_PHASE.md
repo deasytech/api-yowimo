@@ -98,9 +98,9 @@ Sprint 3 (done previously): `pack_purchases` table + `PackPurchaseService`, `POS
 
 Sprint 2 (done previously): `PurchaseService` + `PaymentProvider`/`ManualPaymentProvider`, `POST /token-bundles/{id}/purchase` crediting the wallet, idempotency-key enforced.
 
-Outstanding from Sprint 1 (not blocking, can land anytime):
-- ⬜ `clerk:sync-users` is not scheduled anywhere.
-- ⬜ No CI workflow enforces Pint/Pest on PRs.
+Sprint 1 follow-ups (since shipped):
+- ✅ `clerk:sync-users` is scheduled hourly (`routes/console.php`).
+- ✅ CI workflow (`.github/workflows/ci.yml`) runs Pint + Pest on pushes/PRs to `main`/`dev` — currently blocked from running by a GitHub account billing lock, not by the workflow itself.
 
 Everything else shipped so far predates the sprint roadmap — it's the Phase-0/Phase-1 foundation (Clerk auth, catalog, party create/discover/like, the wallet ledger engine) that the roadmap was written to build on top of.
 
@@ -148,7 +148,7 @@ Real code exists but the module is narrower than its documented scope, or is unr
 
 No migration, model, route, or config exists for any of these:
 
-Chat/Messaging, Voice/Video (LiveKit), Moderation/Trust & Safety, Creator Economy, Corporate/Multi-Tenant/Enterprise, Internationalization, CI/CD pipeline.
+Chat/Messaging, Voice/Video (LiveKit), Moderation/Trust & Safety, Creator Economy, Corporate/Multi-Tenant/Enterprise, Internationalization, CD (deploy) pipeline — CI exists, see above.
 
 (Marketplace purchase flow/inventory/ownership and Notifications moved to Partially Complete above — token bundle and pack purchase both now exist, only a real payment gateway is missing; Notifications now covers push and in-app delivery, only a real Firebase project and `notification_preferences` are missing. Friends/social graph, Admin Panel v0, Analytics & Observability baseline, and AI Host v0 moved to Completed above.)
 

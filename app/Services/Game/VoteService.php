@@ -8,6 +8,7 @@ use App\Enums\XpTransactionType;
 use App\Events\VoteCast;
 use App\Exceptions\Api\DuplicateVoteException;
 use App\Exceptions\Api\VotingNotAllowedException;
+use App\Models\GameSession;
 use App\Models\Turn;
 use App\Models\User;
 use App\Models\Vote;
@@ -51,16 +52,20 @@ class VoteService
             throw new VotingNotAllowedException;
         }
 
-        // Votes are open while the game runs and during the final voting
-        // window. Once the game has completed, GrantMvpBonus has already
-        // snapshotted final standings; a vote afterward would credit XP that
-        // can never be reflected in the MVP determination, so it's rejected
-        // rather than silently accepted. A paused game accepts no actions.
-        if (! in_array($turn->gameSession->status, [GameSessionStatus::Running, GameSessionStatus::Voting], true)) {
-            throw new VotingNotAllowedException('Voting is not allowed after the game has ended.');
-        }
-
         return DB::transaction(function () use ($voter, $turn, $category) {
+            // Votes are open while the game runs and during the final voting
+            // window. Once the game has completed, GrantMvpBonus has already
+            // snapshotted final standings; a vote afterward would credit XP that
+            // can never be reflected in the MVP determination, so it's rejected
+            // rather than silently accepted. A paused game accepts no actions.
+            // Checked under a shared lock inside the transaction so a vote can't
+            // slip in while finishVoting() is completing the game.
+            $status = GameSession::query()->whereKey($turn->game_session_id)->sharedLock()->first(['id', 'status'])?->status;
+
+            if (! in_array($status, [GameSessionStatus::Running, GameSessionStatus::Voting], true)) {
+                throw new VotingNotAllowedException('Voting is not allowed after the game has ended.');
+            }
+
             try {
                 $vote = Vote::create([
                     'turn_id' => $turn->id,

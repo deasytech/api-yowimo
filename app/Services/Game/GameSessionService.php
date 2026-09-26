@@ -186,13 +186,21 @@ class GameSessionService
     public function skipAfkTurn(int $turnId): ?GameSession
     {
         return DB::transaction(function () use ($turnId) {
+            // Lock the session before the turn — the same order as every other
+            // session operation (which lock the session, then write the turn),
+            // so a concurrent complete/next-turn can't deadlock with this.
+            $sessionId = Turn::query()->whereKey($turnId)->value('game_session_id');
+
+            if (! $sessionId) {
+                return null;
+            }
+
+            $session = GameSession::query()->whereKey($sessionId)->lockForUpdate()->firstOrFail();
             $turn = Turn::query()->whereKey($turnId)->lockForUpdate()->first();
 
             if (! $turn || $turn->completed_at !== null || now()->lessThan($turn->expires_at)) {
                 return null;
             }
-
-            $session = GameSession::query()->whereKey($turn->game_session_id)->lockForUpdate()->firstOrFail();
 
             if ($session->status !== GameSessionStatus::Running || $session->currentTurn()?->id !== $turn->id) {
                 return null;
