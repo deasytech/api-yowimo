@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\GameType;
+use App\Models\Pack;
 use Tests\Support\FakesClerk;
 
 const API_V1_GAME_TYPES_ENDPOINT = '/api/v1/game-types';
@@ -31,6 +32,22 @@ it('lists active game types ordered by sort order', function () {
     $response->assertJsonPath('data.1.name', 'Second');
     expect($response->json('data'))->toHaveCount(2);
     expect($response->json('meta'))->toHaveKeys(['per_page', 'has_more_pages', 'next_cursor', 'prev_cursor']);
+});
+
+it('exposes the default deck each game type falls back to', function () {
+    $token = $this->clerkToken();
+
+    $gameType = GameType::factory()->create(['sort_order' => 1]);
+    $pack = Pack::factory()->create(['game_type_id' => $gameType->id]);
+    $gameType->update(['default_pack_id' => $pack->id]);
+
+    GameType::factory()->create(['sort_order' => 2]);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->getJson(API_V1_GAME_TYPES_ENDPOINT)
+        ->assertStatus(200)
+        ->assertJsonPath('data.0.default_pack_id', $pack->id)
+        ->assertJsonPath('data.1.default_pack_id', null);
 });
 
 it('searches game types by name', function () {

@@ -115,6 +115,76 @@ it('creates an online party with a generated room code and live status', functio
     expect(Party::where('room_code', $roomCode)->first()->host_id)->toBe($host->id);
 });
 
+it("assigns the game type's default pack when the party is created without one", function () {
+    $token = $this->clerkToken(['sub' => 'user_create_default_pack']);
+    $gameType = GameType::factory()->create();
+    $defaultPack = Pack::factory()->create(['game_type_id' => $gameType->id]);
+    Pack::factory()->create(['game_type_id' => $gameType->id, 'price' => 0]);
+    $gameType->update(['default_pack_id' => $defaultPack->id]);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->postJson(API_V1_PARTIES_ENDPOINT, [
+            'title' => 'Deck Inherited',
+            'game_type_id' => $gameType->id,
+            'mode' => 'online',
+            'visibility' => 'public',
+        ])
+        ->assertStatus(201)
+        ->assertJsonPath('data.pack.id', $defaultPack->id);
+});
+
+it('falls back to the cheapest active pack when the game type has no default set', function () {
+    $token = $this->clerkToken(['sub' => 'user_create_fallback_pack']);
+    $gameType = GameType::factory()->create();
+    Pack::factory()->create(['game_type_id' => $gameType->id, 'price' => 120]);
+    $cheapest = Pack::factory()->create(['game_type_id' => $gameType->id, 'price' => 0]);
+    Pack::factory()->create(['game_type_id' => $gameType->id, 'price' => 0, 'is_active' => false]);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->postJson(API_V1_PARTIES_ENDPOINT, [
+            'title' => 'Cheapest Deck',
+            'game_type_id' => $gameType->id,
+            'mode' => 'online',
+            'visibility' => 'public',
+        ])
+        ->assertStatus(201)
+        ->assertJsonPath('data.pack.id', $cheapest->id);
+});
+
+it('prefers an explicitly chosen pack over the game type default', function () {
+    $token = $this->clerkToken(['sub' => 'user_create_chosen_pack']);
+    $gameType = GameType::factory()->create();
+    $defaultPack = Pack::factory()->create(['game_type_id' => $gameType->id]);
+    $chosenPack = Pack::factory()->create(['game_type_id' => $gameType->id]);
+    $gameType->update(['default_pack_id' => $defaultPack->id]);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->postJson(API_V1_PARTIES_ENDPOINT, [
+            'title' => 'Chosen Deck',
+            'game_type_id' => $gameType->id,
+            'pack_id' => $chosenPack->id,
+            'mode' => 'online',
+            'visibility' => 'public',
+        ])
+        ->assertStatus(201)
+        ->assertJsonPath('data.pack.id', $chosenPack->id);
+});
+
+it('leaves the pack empty when the game type has no packs at all', function () {
+    $token = $this->clerkToken(['sub' => 'user_create_no_packs']);
+    $gameType = GameType::factory()->create();
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->postJson(API_V1_PARTIES_ENDPOINT, [
+            'title' => 'Deckless Game',
+            'game_type_id' => $gameType->id,
+            'mode' => 'online',
+            'visibility' => 'public',
+        ])
+        ->assertStatus(201)
+        ->assertJsonPath('data.pack', null);
+});
+
 it('creates a party with an uploaded cover image that appears in the discover feed', function () {
     Storage::fake('public');
     $token = $this->clerkToken(['sub' => 'user_create_with_image']);
@@ -410,6 +480,50 @@ it('lets the host clear the pack selection by setting it back to null', function
         ->assertJsonPath('data.pack', null);
 
     expect($party->fresh()->pack_id)->toBeNull();
+});
+
+it('re-resolves the pack when the host switches game type without naming a deck', function () {
+    $hostToken = $this->clerkToken(['sub' => 'user_update_switch_host']);
+    $host = provisionUserFromToken($this, $hostToken, 'user_update_switch_host');
+
+    $oldGameType = GameType::factory()->create();
+    $party = Party::factory()->create([
+        'host_id' => $host->id,
+        'game_type_id' => $oldGameType->id,
+        'pack_id' => Pack::factory()->create(['game_type_id' => $oldGameType->id])->id,
+    ]);
+
+    $newGameType = GameType::factory()->create();
+    $newDefaultPack = Pack::factory()->create(['game_type_id' => $newGameType->id]);
+    $newGameType->update(['default_pack_id' => $newDefaultPack->id]);
+
+    $this->withHeader('Authorization', "Bearer {$hostToken}")
+        ->patchJson(API_V1_PARTIES_ENDPOINT."/{$party->id}", ['game_type_id' => $newGameType->id])
+        ->assertStatus(200)
+        ->assertJsonPath('data.pack.id', $newDefaultPack->id);
+
+    expect($party->fresh()->pack_id)->toBe($newDefaultPack->id);
+});
+
+it('keeps a still-matching pack when the game type is updated to the same one', function () {
+    $hostToken = $this->clerkToken(['sub' => 'user_update_same_host']);
+    $host = provisionUserFromToken($this, $hostToken, 'user_update_same_host');
+
+    $gameType = GameType::factory()->create();
+    $chosenPack = Pack::factory()->create(['game_type_id' => $gameType->id]);
+    $otherPack = Pack::factory()->create(['game_type_id' => $gameType->id]);
+    $gameType->update(['default_pack_id' => $otherPack->id]);
+
+    $party = Party::factory()->create([
+        'host_id' => $host->id,
+        'game_type_id' => $gameType->id,
+        'pack_id' => $chosenPack->id,
+    ]);
+
+    $this->withHeader('Authorization', "Bearer {$hostToken}")
+        ->patchJson(API_V1_PARTIES_ENDPOINT."/{$party->id}", ['game_type_id' => $gameType->id])
+        ->assertStatus(200)
+        ->assertJsonPath('data.pack.id', $chosenPack->id);
 });
 
 it('forbids a non-host from updating the party', function () {

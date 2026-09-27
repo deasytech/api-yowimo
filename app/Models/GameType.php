@@ -7,6 +7,7 @@ use Database\Factories\GameTypeFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'intensity',
     'cost',
     'image_url',
+    'default_pack_id',
     'gradient',
     'is_active',
     'sort_order',
@@ -37,8 +39,19 @@ class GameType extends Model
             'gradient' => 'array',
             'is_active' => 'boolean',
             'cost' => 'integer',
+            'default_pack_id' => 'integer',
             'sort_order' => 'integer',
         ];
+    }
+
+    /**
+     * The deck a party inherits when this game is picked without one.
+     *
+     * @return BelongsTo<Pack, $this>
+     */
+    public function defaultPack(): BelongsTo
+    {
+        return $this->belongsTo(Pack::class, 'default_pack_id');
     }
 
     /**

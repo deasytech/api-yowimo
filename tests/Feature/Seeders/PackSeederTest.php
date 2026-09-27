@@ -20,6 +20,29 @@ it('gives each curated pack sequential, non-colliding card positions', function 
     expect($positions->toArray())->toBe(range(0, $positions->count() - 1));
 });
 
+it('seeds the curated catalog in its marketplace display order', function () {
+    (new GameTypeSeeder)->run();
+    (new PackSeeder)->run();
+
+    $curatedSlugs = [
+        'midnight-spice', 'office-icebreakers', 'sweet-silly-couples',
+        'family-game-night', 'party-starter-pack', 'most-likely-to-starter',
+        'would-you-rather-starter', 'two-truths-starter', 'hot-seat-starter',
+        'guess-the-song-starter', 'guess-the-movie-starter', 'neon-confessions',
+    ];
+
+    $curatedPacks = Pack::query()
+        ->whereIn('slug', $curatedSlugs)
+        ->orderBy('sort_order')
+        ->get();
+
+    expect($curatedPacks->pluck('slug')->all())->toBe($curatedSlugs);
+
+    foreach ($curatedPacks as $pack) {
+        expect($pack->cards()->where('is_preview', true)->count())->toBe(4);
+    }
+});
+
 it('syncs the randomized marketplace packs count metadata to their actual attached cards', function () {
     (new GameTypeSeeder)->run();
     (new PackSeeder)->run();
@@ -27,6 +50,9 @@ it('syncs the randomized marketplace packs count metadata to their actual attach
     $curatedSlugs = [
         'midnight-spice', 'office-icebreakers', 'sweet-silly-couples',
         'family-game-night', 'party-starter-pack', 'neon-confessions',
+        // Free starter decks for the game types that had no pack of their own.
+        'most-likely-to-starter', 'would-you-rather-starter', 'two-truths-starter',
+        'hot-seat-starter', 'guess-the-song-starter', 'guess-the-movie-starter',
     ];
 
     $marketplacePacks = Pack::query()->whereNotIn('slug', $curatedSlugs)->get();

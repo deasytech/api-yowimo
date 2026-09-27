@@ -4,6 +4,9 @@ use App\Exceptions\Api\AlreadyFriendsException;
 use App\Exceptions\Api\DuplicateFriendRequestException;
 use App\Exceptions\Api\DuplicatePaymentReferenceException;
 use App\Exceptions\Api\DuplicateVoteException;
+use App\Exceptions\Api\GameSessionAlreadyActiveException;
+use App\Exceptions\Api\GameSessionNotActiveException;
+use App\Exceptions\Api\GameSessionPackUnavailableException;
 use App\Exceptions\Api\IdempotencyKeyConflictException;
 use App\Exceptions\Api\InsufficientWalletBalanceException;
 use App\Exceptions\Api\InvalidClerkTokenException;
@@ -12,10 +15,14 @@ use App\Exceptions\Api\InvalidFriendshipTransitionException;
 use App\Exceptions\Api\InvalidPartyTransitionException;
 use App\Exceptions\Api\InvalidPaystackWebhookException;
 use App\Exceptions\Api\PackAlreadyOwnedException;
+use App\Exceptions\Api\PackNotInGameTypeException;
 use App\Exceptions\Api\PartyFullException;
+use App\Exceptions\Api\PartyGameAlreadyStartedException;
 use App\Exceptions\Api\PartyHostCannotLeaveException;
 use App\Exceptions\Api\PartyNotJoinableException;
 use App\Exceptions\Api\PaymentDeclinedException;
+use App\Exceptions\Api\TurnNotActiveException;
+use App\Exceptions\Api\UserBlockedException;
 use App\Exceptions\Api\VotingNotAllowedException;
 use App\Support\ApiExceptionRegistrar;
 use Illuminate\Foundation\Application;
@@ -46,10 +53,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // These represent expected, already-handled client-error conditions
         // (invalid/expired tokens, bad webhook signatures, insufficient
         // balance, payment/ownership conflicts, party capacity/status/
-        // membership rules) with proper HTTP responses registered below —
-        // not server failures worth reporting, the same way Laravel
-        // excludes AuthenticationException/ValidationException/etc. by
-        // default.
+        // membership rules, game-session/turn state and pack eligibility
+        // rules) with proper HTTP responses registered below — not server
+        // failures worth reporting, the same way Laravel excludes
+        // AuthenticationException/ValidationException/etc. by default.
         $exceptions->dontReport([
             InvalidClerkTokenException::class,
             InvalidClerkWebhookException::class,
@@ -68,6 +75,13 @@ return Application::configure(basePath: dirname(__DIR__))
             InvalidFriendshipTransitionException::class,
             DuplicateVoteException::class,
             VotingNotAllowedException::class,
+            PackNotInGameTypeException::class,
+            PartyGameAlreadyStartedException::class,
+            GameSessionAlreadyActiveException::class,
+            GameSessionNotActiveException::class,
+            GameSessionPackUnavailableException::class,
+            TurnNotActiveException::class,
+            UserBlockedException::class,
         ]);
 
         ApiExceptionRegistrar::register($exceptions);

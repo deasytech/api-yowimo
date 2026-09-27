@@ -6,6 +6,7 @@ use App\Events\AiHostMessageSent;
 use App\Events\GameCompleted;
 use App\Models\GameSession;
 use App\Services\AI\AIProvider;
+use App\Services\AI\AiProviderFailedException;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -30,7 +31,24 @@ class SendAiHostMessage implements ShouldQueue
             $session->rounds_count,
         );
 
-        $message = $this->provider->respond($prompt);
+        try {
+            $message = $this->provider->respond($prompt);
+        } catch (AiProviderFailedException $e) {
+            if ($e->retryable) {
+                throw $e;
+            }
+
+            // Terminal failures (missing key, exhausted quota, rejected
+            // request) repeat identically on every attempt, so the queue
+            // retries/backoff have nothing to fix: skip the message with a
+            // single warning and let gameplay carry on.
+            Log::warning('AI host message skipped: the AI provider will not accept this request.', [
+                'game_session_id' => $session->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return;
+        }
 
         if ($message === '') {
             return;

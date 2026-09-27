@@ -8,6 +8,7 @@ use App\Enums\PartyVisibility;
 use App\Events\PartyCreated;
 use App\Exceptions\Api\PackNotInGameTypeException;
 use App\Exceptions\Api\PartyGameAlreadyStartedException;
+use App\Models\GameType;
 use App\Models\Pack;
 use App\Models\Party;
 use App\Models\PartyMember;
@@ -141,6 +142,8 @@ class PartyService
      */
     public function create(User $host, array $data, ?UploadedFile $coverImage = null): Party
     {
+        $data['pack_id'] = $this->resolvePackId($data['game_type_id'] ?? null, $data['pack_id'] ?? null);
+
         $this->assertPackMatchesGameType($data['game_type_id'] ?? null, $data['pack_id'] ?? null);
 
         // Uploaded once here, not inside attemptInsert(): that can run twice
@@ -245,16 +248,71 @@ class PartyService
                 throw new PartyGameAlreadyStartedException;
             }
 
-            $this->assertPackMatchesGameType(
-                array_key_exists('game_type_id', $changes) ? $changes['game_type_id'] : $party->game_type_id,
-                array_key_exists('pack_id', $changes) ? $changes['pack_id'] : $party->pack_id,
-            );
+            $gameTypeId = array_key_exists('game_type_id', $changes) ? $changes['game_type_id'] : $party->game_type_id;
+            $packId = array_key_exists('pack_id', $changes) ? $changes['pack_id'] : $party->pack_id;
+
+            // Switching game type without naming a deck re-resolves it, so the
+            // party can't be left holding a pack from the game it just left.
+            // An explicit pack_id — including one sent as null to clear the
+            // selection — is always respected.
+            if (
+                array_key_exists('game_type_id', $changes)
+                && ! array_key_exists('pack_id', $changes)
+                && ! $this->packBelongsToGameType($packId, $gameTypeId)
+            ) {
+                $packId = $this->resolvePackId($gameTypeId, null);
+                $changes['pack_id'] = $packId;
+            }
+
+            $this->assertPackMatchesGameType($gameTypeId, $packId);
         }
 
         $party->fill($changes);
         $party->save();
 
         return $party->load(['host', 'gameType', 'pack']);
+    }
+
+    /**
+     * The deck a party plays from: an explicit choice always wins, otherwise
+     * the game type's configured default, otherwise its cheapest active pack.
+     *
+     * Both game_type_id and pack_id are optional at creation, but a game
+     * session can't deal a single card without a pack — GameSessionService
+     * copies the party's pack_id and reads its cards. Resolving one here is
+     * what keeps a party created from just a game type playable.
+     */
+    private function resolvePackId(?int $gameTypeId, ?int $packId): ?int
+    {
+        if ($packId !== null || $gameTypeId === null) {
+            return $packId;
+        }
+
+        $defaultPackId = GameType::query()->whereKey($gameTypeId)->value('default_pack_id');
+
+        if ($defaultPackId !== null && $this->packBelongsToGameType($defaultPackId, $gameTypeId)) {
+            return $defaultPackId;
+        }
+
+        return Pack::query()
+            ->where('game_type_id', $gameTypeId)
+            ->where('is_active', true)
+            ->orderBy('price')
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->value('id');
+    }
+
+    private function packBelongsToGameType(?int $packId, ?int $gameTypeId): bool
+    {
+        if ($packId === null || $gameTypeId === null) {
+            return false;
+        }
+
+        return Pack::query()
+            ->whereKey($packId)
+            ->where('game_type_id', $gameTypeId)
+            ->exists();
     }
 
     /**

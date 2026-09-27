@@ -98,117 +98,158 @@ class PackSeeder extends Seeder
         });
     }
 
+    /**
+     * All curated catalog packs, in marketplace display order.
+     *
+     * @return array<int, array<string, mixed>>
+     */
     private function packs(): array
     {
+        return array_merge(
+            $this->featuredPacks(),
+            $this->starterPacks(),
+            $this->weeklyDropPacks(),
+        );
+    }
+
+    /**
+     * Paid headline packs sold across the marketplace.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function featuredPacks(): array
+    {
         return [
-            [
-                'game_type_slug' => 'truth-dare',
-                'name' => 'Midnight Spice',
-                'emoji' => '🌶️',
-                'tag' => 'Limited',
-                'category' => PackCategory::Spicy,
-                'description' => 'Turn up the heat with confessions, dares, and spicy hypotheticals built for couples who want the temperature to rise fast.',
-                'price' => 120,
-                'truths' => 30,
-                'dares' => 30,
-                'is_featured' => false,
-                'preview' => [
-                    ['truth', "What's the boldest thing you've ever wanted to try but haven't asked for?"],
-                    ['dare', "Whisper your partner's name the way you'd say it in your favorite fantasy."],
-                    ['truth', 'On a scale of 1-10, how adventurous are you really?'],
-                    ['dare', 'Trade one item of clothing with the player to your left.'],
-                ],
-            ],
-            [
-                'game_type_slug' => 'corporate',
-                'name' => 'Office Icebreakers',
-                'emoji' => '💼',
-                'tag' => 'Corporate',
-                'category' => PackCategory::Corporate,
-                'description' => 'Low-pressure prompts and light challenges that get a team laughing before the real meeting starts.',
-                'price' => 60,
-                'truths' => 22,
-                'dares' => 18,
-                'is_featured' => false,
-                'preview' => [
-                    ['truth', "What's the most useless skill you're weirdly proud of?"],
-                    ['dare', 'Do your best impression of a coworker (nicely).'],
-                    ['truth', 'What was your first job and how much did it pay?'],
-                    ['dare', 'Send your favorite GIF in the team chat right now.'],
-                ],
-            ],
-            [
-                'game_type_slug' => 'couple',
-                'name' => 'Sweet & Silly Couples',
-                'emoji' => '💕',
-                'tag' => null,
-                'category' => PackCategory::Couples,
-                'description' => 'Playful prompts made for couples who want to laugh, blush, and learn something new about each other.',
-                'price' => 80,
-                'truths' => 25,
-                'dares' => 15,
-                'is_featured' => false,
-                'preview' => [
-                    ['truth', 'What is a small thing I do that makes you feel loved?'],
-                    ['dare', 'Recreate our first date in under two minutes.'],
-                    ['truth', "What's a habit of mine you secretly find adorable?"],
-                    ['dare', 'Give your partner a compliment in a fake accent.'],
-                ],
-            ],
-            [
-                'game_type_slug' => 'family',
-                'name' => 'Family Game Night',
-                'emoji' => '👨‍👩‍👧',
-                'tag' => 'New',
-                'category' => PackCategory::Family,
-                'description' => 'Wholesome, all-ages prompts perfect for a living room full of family members of every age.',
-                'price' => 0,
-                'truths' => 20,
-                'dares' => 20,
-                'is_featured' => false,
-                'preview' => [
-                    ['truth', "What's your favorite family memory from this year?"],
-                    ['dare', 'Do your best animal impression.'],
-                    ['truth', 'If you could have any superpower, what would it be?'],
-                    ['dare', 'Sing the chorus of your favorite song.'],
-                ],
-            ],
-            [
-                'game_type_slug' => 'party',
-                'name' => 'Party Starter Pack',
-                'emoji' => '🎉',
-                'tag' => 'Hot',
-                'category' => PackCategory::Limited,
-                'description' => 'A fast-moving mix of icebreakers and dares to get any party moving in the first ten minutes.',
-                'price' => 40,
-                'truths' => 18,
-                'dares' => 22,
-                'is_featured' => false,
-                'preview' => [
-                    ['truth', "What's the most spontaneous thing you've ever done?"],
-                    ['dare', 'Start a conga line for 15 seconds.'],
-                    ['truth', 'Whats a trend you regret following?'],
-                    ['dare', 'Let the group pick your profile picture for a day.'],
-                ],
-            ],
-            [
-                'game_type_slug' => 'wild',
-                'name' => 'Neon Confessions',
-                'emoji' => '💫',
-                'tag' => 'Drop of the Week',
-                'category' => PackCategory::Limited,
-                'description' => "This week's exclusive drop — neon-lit confessions, blackout dares, and prompts that only surface for 48 hours.",
-                'price' => 300,
-                'truths' => 70,
-                'dares' => 50,
-                'is_featured' => true,
-                'preview' => [
-                    ['truth', "What's a confession you've never told anyone in this room?"],
-                    ['dare', 'Let the group send one text from your phone.'],
-                    ['truth', "What's the wildest rumor you've heard about yourself?"],
-                    ['dare', 'Do 20 seconds of your best dance move.'],
-                ],
-            ],
+            $this->catalogPack('truth-dare', 'Midnight Spice', '🌶️', 'Limited', PackCategory::Spicy, 'Turn up the heat with confessions, dares, and spicy hypotheticals built for couples who want the temperature to rise fast.', 120, 30, 30, [
+                ['truth', "What's the boldest thing you've ever wanted to try but haven't asked for?"],
+                ['dare', "Whisper your partner's name the way you'd say it in your favorite fantasy."],
+                ['truth', 'On a scale of 1-10, how adventurous are you really?'],
+                ['dare', 'Trade one item of clothing with the player to your left.'],
+            ]),
+            $this->catalogPack('corporate', 'Office Icebreakers', '💼', 'Corporate', PackCategory::Corporate, 'Low-pressure prompts and light challenges that get a team laughing before the real meeting starts.', 60, 22, 18, [
+                ['truth', "What's the most useless skill you're weirdly proud of?"],
+                ['dare', 'Do your best impression of a coworker (nicely).'],
+                ['truth', 'What was your first job and how much did it pay?'],
+                ['dare', 'Send your favorite GIF in the team chat right now.'],
+            ]),
+            $this->catalogPack('couple', 'Sweet & Silly Couples', '💕', null, PackCategory::Couples, 'Playful prompts made for couples who want to laugh, blush, and learn something new about each other.', 80, 25, 15, [
+                ['truth', 'What is a small thing I do that makes you feel loved?'],
+                ['dare', 'Recreate our first date in under two minutes.'],
+                ['truth', "What's a habit of mine you secretly find adorable?"],
+                ['dare', 'Give your partner a compliment in a fake accent.'],
+            ]),
+            $this->catalogPack('family', 'Family Game Night', '👨‍👩‍👧', 'New', PackCategory::Family, 'Wholesome, all-ages prompts perfect for a living room full of family members of every age.', 0, 20, 20, [
+                ['truth', "What's your favorite family memory from this year?"],
+                ['dare', 'Do your best animal impression.'],
+                ['truth', 'If you could have any superpower, what would it be?'],
+                ['dare', 'Sing the chorus of your favorite song.'],
+            ]),
+            $this->catalogPack('party', 'Party Starter Pack', '🎉', 'Hot', PackCategory::Limited, 'A fast-moving mix of icebreakers and dares to get any party moving in the first ten minutes.', 40, 18, 22, [
+                ['truth', "What's the most spontaneous thing you've ever done?"],
+                ['dare', 'Start a conga line for 15 seconds.'],
+                ['truth', 'Whats a trend you regret following?'],
+                ['dare', 'Let the group pick your profile picture for a day.'],
+            ]),
+        ];
+    }
+
+    /**
+     * Free starter decks for the game types that had no pack at all.
+     *
+     * A party created with only a game type inherits its game type's
+     * default pack, and the game engine can't deal a single card
+     * without one — so every playable game type needs at least this.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function starterPacks(): array
+    {
+        return [
+            $this->catalogPack('most-likely', 'Most Likely To Starter', '🤔', 'Free', PackCategory::Limited, 'Point the finger: quick prompts that turn any group into a room full of suspects.', 0, 25, 15, [
+                ['truth', 'Who here is most likely to become famous for something ridiculous?'],
+                ['dare', 'Point at the player most likely to text their ex tonight, and explain why.'],
+                ['truth', 'Who is most likely to survive a zombie apocalypse?'],
+                ['dare', 'Give a dramatic acceptance speech as the group\'s most likely to win an award.'],
+            ]),
+            $this->catalogPack('would-rather', 'Would You Rather Starter', '⚖️', 'Free', PackCategory::Family, 'Impossible choices only. No fences to sit on, and no boring answers allowed.', 0, 30, 10, [
+                ['truth', 'Would you rather always be 10 minutes late or always 20 minutes early?'],
+                ['dare', 'Answer the next five questions in a movie-trailer voice.'],
+                ['truth', 'Would you rather give up music or good food for a year?'],
+                ['dare', 'Let the group pick the option you have to defend for the next round.'],
+            ]),
+            $this->catalogPack('two-truths', 'Two Truths Starter', '🎯', 'Free', PackCategory::Corporate, 'Spot the fib. Built for teams and friends who think they know each other better than they do.', 0, 20, 20, [
+                ['truth', 'Tell the group two true things about yourself and one convincing lie.'],
+                ['dare', 'Reveal which of your statements from the last round was the lie.'],
+                ['truth', 'What is the most believable lie you have ever told?'],
+                ['dare', 'Invent a fake job title for yourself and pitch it to the group.'],
+            ]),
+            $this->catalogPack('hot-seat', 'Hot Seat Starter', '🔥', 'Free', PackCategory::Limited, 'All eyes on you. Rapid-fire questions for whoever is currently in the chair.', 0, 35, 10, [
+                ['truth', 'What is the most embarrassing thing on your phone right now?'],
+                ['dare', 'Swap seats with the player who asked your last question.'],
+                ['truth', 'Who in this room would you trust with a secret?'],
+                ['dare', 'Let the group ask you three follow-up questions with no refusals.'],
+            ]),
+            $this->catalogPack('guess-song', 'Guess the Song Starter', '🎤', 'Free', PackCategory::Limited, 'Name that tune with hums, claps, and wildly off-key renditions.', 0, 15, 25, [
+                ['dare', 'Hum the chorus of your favourite song until someone guesses it.'],
+                ['truth', 'What song do you know every word to but would never admit to?'],
+                ['dare', 'Perform a five-second drum solo from any song in the group\'s playlist.'],
+                ['truth', "What's the last song you played on repeat?"],
+            ]),
+            $this->catalogPack('guess-movie', 'Guess the Movie Starter', '🎬', 'Free', PackCategory::Limited, 'One line, one scene, one guess. Quote it badly and make the group work for it.', 0, 15, 25, [
+                ['dare', 'Act out one scene from a famous movie in under 20 seconds.'],
+                ['truth', 'Which movie have you rewatched more than any other?'],
+                ['dare', 'Deliver a famous movie line in the worst accent you can manage.'],
+                ['truth', "What's the most overrated movie you have ever sat through?"],
+            ]),
+        ];
+    }
+
+    /**
+     * This week's exclusive paid drop, listed last in the catalog.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function weeklyDropPacks(): array
+    {
+        return [
+            $this->catalogPack('wild', 'Neon Confessions', '💫', 'Drop of the Week', PackCategory::Limited, "This week's exclusive drop — neon-lit confessions, blackout dares, and prompts that only surface for 48 hours.", 300, 70, 50, [
+                ['truth', "What's a confession you've never told anyone in this room?"],
+                ['dare', 'Let the group send one text from your phone.'],
+                ['truth', "What's the wildest rumor you've heard about yourself?"],
+                ['dare', 'Do 20 seconds of your best dance move.'],
+            ], true),
+        ];
+    }
+
+    /**
+     * @param  array<int, array{0: 'truth'|'dare', 1: string}>  $preview
+     * @return array{game_type_slug: string, name: string, emoji: string, tag: ?string, category: PackCategory, description: string, price: int, truths: int, dares: int, is_featured: bool, preview: array<int, array{0: 'truth'|'dare', 1: string}>}
+     */
+    private function catalogPack(
+        string $gameTypeSlug,
+        string $name,
+        string $emoji,
+        ?string $tag,
+        PackCategory $category,
+        string $description,
+        int $price,
+        int $truths,
+        int $dares,
+        array $preview,
+        bool $isFeatured = false,
+    ): array {
+        return [
+            'game_type_slug' => $gameTypeSlug,
+            'name' => $name,
+            'emoji' => $emoji,
+            'tag' => $tag,
+            'category' => $category,
+            'description' => $description,
+            'price' => $price,
+            'truths' => $truths,
+            'dares' => $dares,
+            'is_featured' => $isFeatured,
+            'preview' => $preview,
         ];
     }
 }

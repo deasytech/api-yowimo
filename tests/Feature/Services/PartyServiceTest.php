@@ -106,6 +106,36 @@ it('allows creating a party whose pack matches its game type', function () {
     expect($party->pack_id)->toBe($pack->id);
 });
 
+it('inherits the game type default pack when creating a party without one', function () {
+    $host = User::factory()->create();
+    $gameType = GameType::factory()->create();
+    $defaultPack = Pack::factory()->create(['game_type_id' => $gameType->id]);
+    $gameType->update(['default_pack_id' => $defaultPack->id]);
+
+    $party = app(PartyService::class)->create($host, [
+        'title' => 'Inherited Deck Party',
+        'game_type_id' => $gameType->id,
+        'mode' => PartyMode::Online->value,
+        'visibility' => PartyVisibility::Public->value,
+    ]);
+
+    expect($party->pack_id)->toBe($defaultPack->id);
+});
+
+it('leaves the pack empty when creating a party for a game type with no packs', function () {
+    $host = User::factory()->create();
+    $gameType = GameType::factory()->create();
+
+    $party = app(PartyService::class)->create($host, [
+        'title' => 'Deckless Party',
+        'game_type_id' => $gameType->id,
+        'mode' => PartyMode::Online->value,
+        'visibility' => PartyVisibility::Public->value,
+    ]);
+
+    expect($party->pack_id)->toBeNull();
+});
+
 it('rejects updating a party to a pack that does not belong to its current game type', function () {
     $gameType = GameType::factory()->create();
     $otherGameType = GameType::factory()->create();
@@ -118,16 +148,18 @@ it('rejects updating a party to a pack that does not belong to its current game 
     expect($party->fresh()->pack_id)->toBeNull();
 });
 
-it('rejects updating a party to a game type that does not match its current pack', function () {
+it('re-resolves the pack when the game type changes to one its current pack does not belong to', function () {
     $gameType = GameType::factory()->create();
     $otherGameType = GameType::factory()->create();
     $pack = Pack::factory()->create(['game_type_id' => $gameType->id]);
+    $otherDefaultPack = Pack::factory()->create(['game_type_id' => $otherGameType->id]);
+    $otherGameType->update(['default_pack_id' => $otherDefaultPack->id]);
     $party = Party::factory()->create(['game_type_id' => $gameType->id, 'pack_id' => $pack->id]);
 
-    expect(fn () => app(PartyService::class)->update($party, ['game_type_id' => $otherGameType->id]))
-        ->toThrow(PackNotInGameTypeException::class);
+    app(PartyService::class)->update($party, ['game_type_id' => $otherGameType->id]);
 
-    expect($party->fresh()->game_type_id)->toBe($gameType->id);
+    expect($party->fresh()->game_type_id)->toBe($otherGameType->id);
+    expect($party->fresh()->pack_id)->toBe($otherDefaultPack->id);
 });
 
 it('allows updating both game type and pack together when they match each other', function () {
