@@ -2,11 +2,11 @@
 
 namespace App\Console\Commands;
 
+use Database\Seeders\TemptGamesExtractException;
 use Database\Seeders\TemptGamesSeeder;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\File;
 
 #[Signature('yowimo:sync-tempt-games {--dry-run : Only show what would be synced without saving} {--path= : Path to the extracted games JSON file}')]
 #[Description('Sync games and card packs extracted from Tempt DB into Yowimo catalog.')]
@@ -19,16 +19,14 @@ class SyncTemptGamesCommand extends Command
     {
         $path = $this->option('path') ?: database_path('data/tempt_extracted_games.json');
 
-        if (! File::exists($path)) {
-            $this->error("Extracted games file not found at: {$path}");
+        try {
+            $packs = $seeder->extractPacks($path);
+        } catch (TemptGamesExtractException $e) {
+            $this->error($e->getMessage());
 
             return self::FAILURE;
         }
 
-        $content = File::get($path);
-        $data = json_decode($content, true, 512, JSON_THROW_ON_ERROR);
-
-        $packs = $data['packs'] ?? [];
         $totalPacks = count($packs);
         $totalCards = 0;
 
@@ -53,11 +51,11 @@ class SyncTemptGamesCommand extends Command
         }
 
         $this->table(
-            ['Pack Name', 'Pack Slug', 'Game Type Slug', 'Category', 'Truths', 'Dares', 'Total Cards'],
+            ['Pack Name', 'Pack Slug', 'Game Type Slug', 'Category', 'Input Truths', 'Input Dares', 'Input Cards'],
             $rows
         );
 
-        $this->info("Total cards across all packs: {$totalCards}");
+        $this->info("Total input cards across all packs: {$totalCards}");
 
         if ($this->option('dry-run')) {
             $this->warn('Dry-run mode active. No changes written to database.');

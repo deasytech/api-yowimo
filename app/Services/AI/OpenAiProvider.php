@@ -51,10 +51,10 @@ class OpenAiProvider implements AIProvider
     }
 
     /**
-     * Timeouts, rate limits and upstream 5xx responses can clear on their
-     * own, so they're worth retrying; every other 4xx (bad key, malformed
-     * request, exhausted quota) is deterministic and returns the same error
-     * on each attempt.
+     * Timeouts, conflicts, rate limits and upstream 5xx responses can clear
+     * on their own, so they're worth retrying; every other 4xx (bad key,
+     * malformed request, exhausted quota) is deterministic and returns the
+     * same error on each attempt.
      */
     private static function isRetryable(Response $response): bool
     {
@@ -64,6 +64,6 @@ class OpenAiProvider implements AIProvider
             return $response->json('error.code') !== 'insufficient_quota';
         }
 
-        return $status === 408 || $status >= 500;
+        return $status === 408 || $status === 409 || $status >= 500;
     }
 }

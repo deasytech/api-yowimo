@@ -110,7 +110,7 @@ it('skips the message with a warning instead of retrying a terminal provider fai
     app()->instance(AIProvider::class, $provider);
 
     Event::fake([AiHostMessageSent::class, RoundCompleted::class]);
-    Log::spy();
+    $log = Log::spy();
 
     $service->nextTurn($session);
 
@@ -121,7 +121,7 @@ it('skips the message with a warning instead of retrying a terminal provider fai
     finishGameVotingWindow($session);
 
     Event::assertNotDispatched(AiHostMessageSent::class);
-    Log::shouldHaveReceived('warning')
+    $log->shouldHaveReceived('warning')
         ->once()
         ->withArgs(fn (string $message, array $context) => $context['game_session_id'] === $session->id);
 });

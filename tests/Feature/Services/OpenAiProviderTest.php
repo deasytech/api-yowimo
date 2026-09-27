@@ -5,8 +5,11 @@ use App\Services\AI\OpenAiNotConfiguredException;
 use App\Services\AI\OpenAiProvider;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
+use PHPUnit\Framework\Assert;
 
 const OPENAI_CHAT_COMPLETIONS_URL = 'https://api.openai.com/v1/chat/completions';
+
+const OPENAI_TEST_PROMPT = 'Say something witty.';
 
 beforeEach(function () {
     config([
@@ -14,6 +17,21 @@ beforeEach(function () {
         'services.openai.model' => 'gpt-4o-mini',
     ]);
 });
+
+/**
+ * Trigger a completion that the provider is expected to fail, and return the
+ * failure it translated that trigger into.
+ */
+function expectAiFailure(Closure $trigger): AiProviderFailedException
+{
+    try {
+        $trigger();
+    } catch (AiProviderFailedException $e) {
+        return $e;
+    }
+
+    Assert::fail('The AI provider was expected to fail, but it did not.');
+}
 
 /**
  * Run a completion against a faked OpenAI response and return the failure the
@@ -25,13 +43,7 @@ function openAiFailureFor(int $status, array $body = []): AiProviderFailedExcept
 {
     Http::fake([OPENAI_CHAT_COMPLETIONS_URL => Http::response($body, $status)]);
 
-    try {
-        app(OpenAiProvider::class)->respond('Say something witty.');
-    } catch (AiProviderFailedException $e) {
-        return $e;
-    }
-
-    throw new RuntimeException('The AI provider was expected to fail, but it did not.');
+    return expectAiFailure(fn () => app(OpenAiProvider::class)->respond(OPENAI_TEST_PROMPT));
 }
 
 it('returns the trimmed completion text', function () {
@@ -41,22 +53,17 @@ it('returns the trimmed completion text', function () {
         ]),
     ]);
 
-    expect(app(OpenAiProvider::class)->respond('Say something witty.'))
+    expect(app(OpenAiProvider::class)->respond(OPENAI_TEST_PROMPT))
         ->toBe("Let's go, party people!");
 });
 
 it('fails terminally when no API key is configured', function () {
     config(['services.openai.api_key' => null]);
 
-    try {
-        app(OpenAiProvider::class)->respond('Say something witty.');
-    } catch (OpenAiNotConfiguredException $e) {
-        expect($e->retryable)->toBeFalse();
+    $failure = expectAiFailure(fn () => app(OpenAiProvider::class)->respond(OPENAI_TEST_PROMPT));
 
-        return;
-    }
-
-    throw new RuntimeException('The AI provider was expected to fail, but it did not.');
+    expect($failure)->toBeInstanceOf(OpenAiNotConfiguredException::class);
+    expect($failure->retryable)->toBeFalse();
 });
 
 it('fails terminally when the OpenAI account is out of credits', function () {
@@ -73,18 +80,12 @@ it('fails terminally when OpenAI rejects the request', function (int $status) {
 
 it('fails retryably on a rate limit or a server error', function (int $status) {
     expect(openAiFailureFor($status)->retryable)->toBeTrue();
-})->with([408, 429, 500, 502, 503]);
+})->with([408, 409, 429, 500, 502, 503]);
 
 it('fails retryably when OpenAI cannot be reached', function () {
     Http::fake(fn () => throw new ConnectionException('cURL error 56: OpenSSL SSL_read'));
 
-    try {
-        app(OpenAiProvider::class)->respond('Say something witty.');
-    } catch (AiProviderFailedException $e) {
-        expect($e->retryable)->toBeTrue();
+    $failure = expectAiFailure(fn () => app(OpenAiProvider::class)->respond(OPENAI_TEST_PROMPT));
 
-        return;
-    }
-
-    throw new RuntimeException('The AI provider was expected to fail, but it did not.');
+    expect($failure->retryable)->toBeTrue();
 });

@@ -98,7 +98,26 @@ class PackSeeder extends Seeder
         });
     }
 
+    /**
+     * All curated catalog packs, in marketplace display order.
+     *
+     * @return array<int, array<string, mixed>>
+     */
     private function packs(): array
+    {
+        return array_merge(
+            $this->featuredPacks(),
+            $this->starterPacks(),
+            $this->weeklyDropPacks(),
+        );
+    }
+
+    /**
+     * Paid headline packs sold across the marketplace.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function featuredPacks(): array
     {
         return [
             [
@@ -191,10 +210,21 @@ class PackSeeder extends Seeder
                     ['dare', 'Let the group pick your profile picture for a day.'],
                 ],
             ],
-            // Free starter decks for the game types that had no pack at all.
-            // A party created with only a game type inherits its game type's
-            // default pack, and the game engine can't deal a single card
-            // without one — so every playable game type needs at least this.
+        ];
+    }
+
+    /**
+     * Free starter decks for the game types that had no pack at all.
+     *
+     * A party created with only a game type inherits its game type's
+     * default pack, and the game engine can't deal a single card
+     * without one — so every playable game type needs at least this.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function starterPacks(): array
+    {
+        return [
             [
                 'game_type_slug' => 'most-likely',
                 'name' => 'Most Likely To Starter',
@@ -303,6 +333,17 @@ class PackSeeder extends Seeder
                     ['truth', "What's the most overrated movie you have ever sat through?"],
                 ],
             ],
+        ];
+    }
+
+    /**
+     * This week's exclusive paid drop, listed last in the catalog.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function weeklyDropPacks(): array
+    {
+        return [
             [
                 'game_type_slug' => 'wild',
                 'name' => 'Neon Confessions',

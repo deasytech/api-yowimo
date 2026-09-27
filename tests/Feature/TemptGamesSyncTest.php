@@ -55,11 +55,20 @@ it('syncs tempt games into database without duplicate cards or schema changes', 
         expect($positions->toArray())->toBe(range(0, $counts['total'] - 1));
     }
 
-    // Running the seeder again should be idempotent and not create duplicate cards
+    // Running the seeder again should be idempotent: no duplicate cards,
+    // and the persisted catalog order and counts must not shift.
+    $baseline = [];
+    foreach ($expectedPacks as $slug => $counts) {
+        $pack = Pack::query()->where('slug', $slug)->first();
+        $baseline[$slug] = ['sort_order' => $pack->sort_order, 'cards_count' => $pack->cards_count];
+    }
+
     $seeder->run();
     foreach ($expectedPacks as $slug => $counts) {
         $pack = Pack::query()->where('slug', $slug)->first();
         expect($pack->cards()->count())->toBe($counts['total']);
+        expect($pack->sort_order)->toBe($baseline[$slug]['sort_order']);
+        expect($pack->cards_count)->toBe($baseline[$slug]['cards_count']);
     }
 });
 
@@ -70,4 +79,55 @@ it('supports artisan dry-run without writing to database', function () {
         ->assertSuccessful();
 
     expect(Pack::query()->count())->toBe($existingPacksCount);
+});
+
+it('fails the sync command when the extracted file has no packs array', function () {
+    $path = sys_get_temp_dir().'/tempt-missing-packs-'.uniqid().'.json';
+    File::put($path, json_encode(['games' => ['not' => 'packs']]));
+
+    // Invalid input must fail the command in every mode, including dry-run,
+    // instead of reporting an empty "successful" sync.
+    $this->artisan('yowimo:sync-tempt-games --path='.$path)
+        ->assertFailed()
+        ->expectsOutputToContain("missing top-level 'packs' array");
+
+    $this->artisan('yowimo:sync-tempt-games --dry-run --path='.$path)
+        ->assertFailed();
+
+    expect(Pack::query()->count())->toBe(0);
+
+    File::delete($path);
+});
+
+it('skips only the literal merge placeholder and keeps ordinary words containing merge', function () {
+    $path = sys_get_temp_dir().'/tempt-merge-placeholder-'.uniqid().'.json';
+    File::put($path, json_encode([
+        'packs' => [
+            [
+                'name' => 'Placeholder Test',
+                'pack_slug' => 'placeholder-test-pack',
+                'game_type_slug' => 'truth-dare',
+                'category' => 'limited',
+                'cards' => [
+                    ['text' => 'merge', 'kind' => 'truth'],
+                    ['text' => '  MERGE  ', 'kind' => 'truth'],
+                    ['text' => '   ', 'kind' => 'truth'],
+                    ['text' => 'In case of emergency, compliment the person to your left.', 'kind' => 'truth'],
+                    ['text' => 'Perform a submerged impression of a seagull.', 'kind' => 'dare'],
+                ],
+            ],
+        ],
+    ]));
+
+    (new TemptGamesSeeder)->run($path);
+
+    $pack = Pack::query()->where('slug', 'placeholder-test-pack')->first();
+    expect($pack)->not->toBeNull();
+    expect($pack->cards()->count())->toBe(2);
+    expect($pack->cards()->pluck('text')->all())->toBe([
+        'In case of emergency, compliment the person to your left.',
+        'Perform a submerged impression of a seagull.',
+    ]);
+
+    File::delete($path);
 });
