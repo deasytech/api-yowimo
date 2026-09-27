@@ -11,9 +11,11 @@ use App\Models\Party;
 use App\Models\PartyMember;
 use App\Models\User;
 use App\Services\AI\AIProvider;
+use App\Services\AI\AiProviderFailedException;
 use App\Services\Game\GameSessionService;
 use Illuminate\Events\CallQueuedListener;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 
 /**
@@ -93,6 +95,35 @@ it('does not broadcast when the AI provider fails, and lets the failure surface 
     expect(fn () => finishGameVotingWindow($session))->toThrow(RuntimeException::class, 'OpenAI is down');
 
     Event::assertNotDispatched(AiHostMessageSent::class);
+});
+
+it('skips the message with a warning instead of retrying a terminal provider failure', function () {
+    [$host, $party] = createLiveSoloGameSessionForAiHost();
+
+    $service = app(GameSessionService::class);
+    $session = $service->start($host, $party, 1);
+
+    $provider = Mockery::mock(AIProvider::class);
+    $provider->shouldReceive('respond')->once()->andThrow(
+        new AiProviderFailedException('OpenAI rejected the request: You have no credits remaining.', retryable: false),
+    );
+    app()->instance(AIProvider::class, $provider);
+
+    Event::fake([AiHostMessageSent::class, RoundCompleted::class]);
+    Log::spy();
+
+    $service->nextTurn($session);
+
+    // Terminal failures (no credits, bad key, rejected request) repeat
+    // identically on every attempt, so the listener skips the message rather
+    // than throwing the exception at the retrying queue worker — completing
+    // the game still succeeds.
+    finishGameVotingWindow($session);
+
+    Event::assertNotDispatched(AiHostMessageSent::class);
+    Log::shouldHaveReceived('warning')
+        ->once()
+        ->withArgs(fn (string $message, array $context) => $context['game_session_id'] === $session->id);
 });
 
 it('retries up to 4 times with 5s/15s/30s backoff before giving up', function () {

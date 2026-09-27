@@ -3,12 +3,14 @@
 use App\Enums\PackCardKind;
 use App\Enums\PartyMemberStatus;
 use App\Enums\PartyStatus;
+use App\Exceptions\Api\GameSessionPackUnavailableException;
 use App\Models\GameSession;
 use App\Models\Pack;
 use App\Models\PackCard;
 use App\Models\Party;
 use App\Models\PartyMember;
 use App\Models\User;
+use Illuminate\Support\Facades\Exceptions;
 use Tests\Support\FakesClerk;
 
 uses(FakesClerk::class);
@@ -104,6 +106,31 @@ it('forbids a non-host from starting a game', function () {
     $this->withHeader('Authorization', "Bearer {$token}")
         ->postJson(startGameEndpoint($party))
         ->assertStatus(403);
+});
+
+it('returns 422 without reporting the expected client error when the party has no pack assigned', function () {
+    $hostToken = $this->clerkToken(['sub' => 'user_game_host_no_pack']);
+    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
+    $host = User::where('clerk_user_id', 'user_game_host_no_pack')->firstOrFail();
+
+    $party = Party::factory()->create([
+        'host_id' => $host->id,
+        'pack_id' => null,
+        'status' => PartyStatus::Live,
+    ]);
+    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $host->id]);
+
+    Exceptions::fake();
+
+    $this->withHeader('Authorization', "Bearer {$hostToken}")
+        ->postJson(startGameEndpoint($party))
+        ->assertStatus(422)
+        ->assertJsonPath('message', 'This party has no pack assigned.');
+
+    // A missing pack is a client-side condition with a proper 4xx response,
+    // not a server failure worth an ERROR log entry or a Sentry alert.
+    Exceptions::assertNotReported(GameSessionPackUnavailableException::class);
+    Exceptions::assertNothingReported();
 });
 
 it('rejects starting a game twice for the same party', function () {
