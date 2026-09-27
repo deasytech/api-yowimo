@@ -27,6 +27,9 @@ it('syncs the randomized marketplace packs count metadata to their actual attach
     $curatedSlugs = [
         'midnight-spice', 'office-icebreakers', 'sweet-silly-couples',
         'family-game-night', 'party-starter-pack', 'neon-confessions',
+        // Free starter decks for the game types that had no pack of their own.
+        'most-likely-to-starter', 'would-you-rather-starter', 'two-truths-starter',
+        'hot-seat-starter', 'guess-the-song-starter', 'guess-the-movie-starter',
     ];
 
     $marketplacePacks = Pack::query()->whereNotIn('slug', $curatedSlugs)->get();

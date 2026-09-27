@@ -5,6 +5,7 @@ use App\Enums\PartyMemberStatus;
 use App\Enums\PartyStatus;
 use App\Exceptions\Api\GameSessionPackUnavailableException;
 use App\Models\GameSession;
+use App\Models\GameType;
 use App\Models\Pack;
 use App\Models\PackCard;
 use App\Models\Party;
@@ -131,6 +132,38 @@ it('returns 422 without reporting the expected client error when the party has n
     // not a server failure worth an ERROR log entry or a Sentry alert.
     Exceptions::assertNotReported(GameSessionPackUnavailableException::class);
     Exceptions::assertNothingReported();
+});
+
+it('starts a game for a party created with only a game type', function () {
+    $hostToken = $this->clerkToken(['sub' => 'user_game_host_default_pack']);
+
+    $gameType = GameType::factory()->create();
+    $pack = Pack::factory()->create(['game_type_id' => $gameType->id]);
+    PackCard::factory()->count(10)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Truth]);
+    PackCard::factory()->count(10)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Dare]);
+    $gameType->update(['default_pack_id' => $pack->id]);
+
+    // Created the way the app's Play screen does it: a game type, no pack.
+    $partyId = $this->withHeader('Authorization', "Bearer {$hostToken}")
+        ->postJson('/api/v1/parties', [
+            'title' => 'Pickup Game',
+            'game_type_id' => $gameType->id,
+            'mode' => 'online',
+            'visibility' => 'private',
+        ])
+        ->assertStatus(201)
+        ->json('data.id');
+
+    $party = Party::findOrFail($partyId);
+    expect($party->pack_id)->toBe($pack->id);
+
+    $response = $this->withHeader('Authorization', "Bearer {$hostToken}")
+        ->postJson(startGameEndpoint($party))
+        ->assertStatus(200)
+        ->assertJsonPath('data.status', 'running');
+
+    // The session was created from the pack the party inherited, so its turns deal real cards.
+    expect(GameSession::findOrFail($response->json('data.id'))->pack_id)->toBe($pack->id);
 });
 
 it('rejects starting a game twice for the same party', function () {

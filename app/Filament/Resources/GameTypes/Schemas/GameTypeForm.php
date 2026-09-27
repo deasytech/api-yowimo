@@ -4,6 +4,8 @@ namespace App\Filament\Resources\GameTypes\Schemas;
 
 use App\Enums\GameIntensity;
 use App\Filament\Support\ImageUploadField;
+use App\Models\GameType;
+use App\Models\Pack;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
@@ -41,7 +43,7 @@ class GameTypeForm
                     ]),
 
                 Section::make('Gameplay')
-                    ->description('Intensity level and token cost to play.')
+                    ->description('Intensity level, token cost, and the deck new parties default to.')
                     ->icon(Heroicon::OutlinedAdjustmentsHorizontal)
                     ->columns(2)
                     ->schema([
@@ -57,6 +59,18 @@ class GameTypeForm
                             ->default(0)
                             ->required()
                             ->suffix('tokens'),
+                        Select::make('default_pack_id')
+                            ->label('Default deck')
+                            ->options(fn (?GameType $record): array => $record
+                                ? Pack::query()
+                                    ->where('game_type_id', $record->id)
+                                    ->orderBy('sort_order')
+                                    ->pluck('name', 'id')
+                                    ->all()
+                                : [])
+                            ->searchable()
+                            ->columnSpanFull()
+                            ->helperText('Given to new parties that pick this game without choosing a deck. Empty falls back to the cheapest active deck.'),
                     ]),
 
                 Section::make('Appearance')

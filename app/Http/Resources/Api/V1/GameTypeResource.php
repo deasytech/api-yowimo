@@ -24,6 +24,7 @@ class GameTypeResource extends JsonResource
             'intensity' => $this->intensity->value,
             'cost' => $this->cost,
             'image_url' => $this->image_url,
+            'default_pack_id' => $this->default_pack_id,
             'gradient' => $this->gradient ?? [],
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

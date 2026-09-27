@@ -41,6 +41,9 @@ class GameTypeInfolist
                         TextEntry::make('cost')
                             ->numeric()
                             ->suffix(' tokens'),
+                        TextEntry::make('defaultPack.name')
+                            ->label('Default deck')
+                            ->placeholder('Cheapest active deck'),
                     ]),
 
                 Section::make('Appearance')

@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             GameTypeSeeder::class,
             PackSeeder::class,
+            GameTypeDefaultPackSeeder::class,
             TokenBundleSeeder::class,
             BadgeSeeder::class,
             PartySeeder::class,
