@@ -184,17 +184,74 @@ it('reshuffles and allows repeat cards once a kind is exhausted', function () {
     expect(Turn::where('game_session_id', $session->id)->count())->toBeGreaterThan(0);
 });
 
-it('throws when the pack has no cards of the kind needed to deal', function () {
+it('keeps dealing valid cards for truth-only and dare-only packs', function (PackCardKind $kind) {
     $pack = Pack::factory()->create();
-    PackCard::factory()->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Dare]);
-    // No Truth cards at all — the very first turn needs one.
+    PackCard::factory()->count(3)->create(['pack_id' => $pack->id, 'kind' => $kind]);
 
     $host = User::factory()->create();
     $party = Party::factory()->create(['host_id' => $host->id, 'pack_id' => $pack->id, 'status' => PartyStatus::Live]);
     PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $host->id]);
 
+    $service = app(GameSessionService::class);
+    $session = $service->start($host, $party, 5);
+
+    for ($i = 0; $i < 3; $i++) {
+        $turn = $session->fresh()->currentTurn();
+        expect($turn->packCard->kind)->toBe($kind);
+
+        $session = $service->completeTurn($session, $turn);
+    }
+
+    expect($session->status)->toBe(GameSessionStatus::Running);
+    expect($session->currentTurn()->packCard)->not->toBeNull();
+})->with([
+    'truth-only' => PackCardKind::Truth,
+    'dare-only' => PackCardKind::Dare,
+]);
+
+it('falls back to unused cards of the other kind before repeating a mixed pack card', function () {
+    $pack = Pack::factory()->create();
+    $truth = PackCard::factory()->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Truth]);
+    $dares = PackCard::factory()->count(2)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Dare]);
+
+    $host = User::factory()->create();
+    $party = Party::factory()->create(['host_id' => $host->id, 'pack_id' => $pack->id, 'status' => PartyStatus::Live]);
+    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $host->id]);
+
+    $service = app(GameSessionService::class);
+    $session = $service->start($host, $party, 5);
+    expect($session->currentTurn()->pack_card_id)->toBe($truth->id);
+
+    $session = $service->nextTurn($session);
+    $session = $service->nextTurn($session);
+
+    expect($session->currentTurn()->packCard->kind)->toBe(PackCardKind::Dare);
+    expect($session->currentTurn()->pack_card_id)->toBeIn($dares->pluck('id')->all());
+    expect(Turn::query()->where('game_session_id', $session->id)->pluck('pack_card_id')->unique())->toHaveCount(3);
+});
+
+it('rejects an empty pack without creating a game session', function () {
+    $pack = Pack::factory()->create();
+    $host = User::factory()->create();
+    $party = Party::factory()->create(['host_id' => $host->id, 'pack_id' => $pack->id, 'status' => PartyStatus::Live]);
+    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $host->id]);
+
     expect(fn () => app(GameSessionService::class)->start($host, $party))
-        ->toThrow(GameSessionPackUnavailableException::class);
+        ->toThrow(GameSessionPackUnavailableException::class, 'This pack has no playable cards.');
 
     expect(GameSession::where('party_id', $party->id)->count())->toBe(0);
+});
+
+it('does not leave a session stuck when a timer races a completed turn', function () {
+    $party = makeLivePartyWithMembers(1, cardsPerKind: 2);
+    $service = app(GameSessionService::class);
+    $session = $service->start($party->host, $party, 5);
+    $turn = $session->currentTurn();
+    $turn->update(['expires_at' => now()->subSecond()]);
+
+    $session = $service->completeTurn($session, $turn);
+
+    expect($service->skipAfkTurn($turn->id))->toBeNull();
+    expect($session->fresh()->status)->toBe(GameSessionStatus::Running);
+    expect($session->fresh()->currentTurn()->packCard)->not->toBeNull();
 });

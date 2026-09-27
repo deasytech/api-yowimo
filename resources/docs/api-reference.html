@@ -1861,7 +1861,7 @@
           <table class="kv">
             <tr><th>Event</th><th>Channel</th><th>Payload</th><th>When</th></tr>
             <tr><td class="mono">game.started</td><td>party + game</td><td class="mono">gameSessionId, partyId</td><td>The host started a game. Lobby clients use <code>gameSessionId</code> to load the game and subscribe to its channel.</td></tr>
-            <tr><td class="mono">turn.started</td><td>game</td><td class="mono">gameSessionId, roundId, turnId, userId, position, expiresAt, card { id, kind, text }</td><td>A new turn was dealt. <code>expiresAt</code> is the server deadline.</td></tr>
+            <tr><td class="mono">turn.started</td><td>game</td><td class="mono">gameSessionId, roundId, turnId, userId, position, expiresAt, card { id, kind, text, position }</td><td>A new turn was dealt. <code>expiresAt</code> is the server deadline.</td></tr>
             <tr><td class="mono">turn.completed</td><td>game</td><td class="mono">gameSessionId, roundId, turnId, userId, isAfk, isSkipped</td><td>The turn ended: done (both false), skipped by the player/host, or timed out (AFK).</td></tr>
             <tr><td class="mono">round.completed</td><td>game</td><td class="mono">gameSessionId, roundId, roundNumber</td><td>Every player has had their turn this round.</td></tr>
             <tr><td class="mono">game.voting</td><td>game</td><td class="mono">gameSessionId, votingEndsAt</td><td>The last turn was played. Votes stay open until <code>votingEndsAt</code> (30s).</td></tr>
@@ -2002,9 +2002,10 @@ echo.private(`game-session.${gameSessionId}`)
             <ul style="color:var(--text-muted); font-size:.9rem; padding-left:1.1rem; margin:.3rem 0;">
               <li>Party isn't <code>live</code> &rarr; 422.</li>
               <li>A session is already in progress (running, paused or voting) &rarr; 409, with that session's id in <code>errors.game_session_id</code> &mdash; open it instead of starting a new one.</li>
-              <li>Party has no pack assigned, or the pack has zero cards of a needed kind &rarr; 422.</li>
+              <li>Party has no pack assigned &rarr; 422.</li>
+              <li>Pack has no playable cards &rarr; 422, <code>"This pack has no playable cards."</code>.</li>
             </ul>
-            <div class="note"><b>200, not 201</b>This creates a new <code>GameSession</code> but returns 200. Turn order is randomized once at start; card kind strictly alternates truth/dare by turn count; each turn gets a server timer (<code>turn_seconds</code>) &mdash; an idle player is auto-skipped. Every member is notified with <code>game.started</code> on the party channel.</div>
+            <div class="note"><b>200, not 201</b>This creates a new <code>GameSession</code> but returns 200. Any nonempty pack is playable: the engine prefers alternating truth/dare, falls back to the other available kind, and does not repeat a card until every pack card has been dealt. Each turn gets a server timer (<code>turn_seconds</code>) &mdash; an idle player is auto-skipped. Every member is notified with <code>game.started</code> on the party channel.</div>
             <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403 non-host</span><span class="status-pill err">404</span><span class="status-pill err">409 already running</span><span class="status-pill err">422</span><span class="status-pill err">429</span></div>
           </div>
           <div class="endpoint-code">
@@ -2155,8 +2156,8 @@ echo.private(`game-session.${gameSessionId}`)
         <div class="meta-line"><span><b>Rate limit</b> party-actions (30/min)</span></div>
         <div class="endpoint-grid">
           <div class="endpoint-docs">
-            <p>Completes the current turn (with challenge XP, like <code>/complete</code>) and deals the next one, skipping players who have left. After the last turn of the last round the session moves to <code>voting</code> for 30 seconds and then to <code>completed</code> &mdash; listen for <code>game.voting</code> and <code>game.completed</code> rather than polling. Rejected with 422 while <code>paused</code>, <code>voting</code> or finished.</p>
-            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403 non-host</span><span class="status-pill err">404</span><span class="status-pill err">422 not running / pack exhausted</span><span class="status-pill err">429</span></div>
+            <p>Completes the current turn (with challenge XP, like <code>/complete</code>) and deals the next one, skipping players who have left. The engine falls back between truth and dare when the preferred kind is unavailable, and only reuses a card after the full pack has been dealt. After the last turn of the last round the session moves to <code>voting</code> for 30 seconds and then to <code>completed</code> &mdash; listen for <code>game.voting</code> and <code>game.completed</code> rather than polling. Rejected with 422 while <code>paused</code>, <code>voting</code> or finished.</p>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403 non-host</span><span class="status-pill err">404</span><span class="status-pill err">422 not running</span><span class="status-pill err">429</span></div>
           </div>
           <div class="endpoint-code">
             <div class="code-block">

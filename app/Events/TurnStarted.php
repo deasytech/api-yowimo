@@ -18,7 +18,7 @@ class TurnStarted implements ShouldBroadcast, ShouldDispatchAfterCommit
         public readonly int $userId,
         public readonly int $position,
         public readonly ?string $expiresAt = null,
-        /** @var array{id: int, kind: string, text: string}|null */
+        /** @var array{id: int, kind: string, text: string, position: int}|null */
         public readonly ?array $card = null,
     ) {}
 
