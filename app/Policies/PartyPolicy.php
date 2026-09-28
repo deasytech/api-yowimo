@@ -84,6 +84,24 @@ class PartyPolicy
     }
 
     /**
+     * Determine whether the user can toggle their ready state. Any current
+     * (active) member, including the host.
+     */
+    public function ready(User $user, Party $party): bool
+    {
+        return $party->isMemberOf($user);
+    }
+
+    /**
+     * Determine whether the user can toggle their ready state. Any current
+     * (active) member, including the host.
+     */
+    public function unready(User $user, Party $party): bool
+    {
+        return $party->isMemberOf($user);
+    }
+
+    /**
      * Determine whether the user can update the party's game type/pack
      * selection. Host-only.
      */

@@ -43,6 +43,24 @@ class PartyMembershipController extends Controller
         return ApiResponse::success(new PartyResource($party), 'Left party successfully.');
     }
 
+    public function ready(Request $request, Party $party): JsonResponse
+    {
+        $this->authorize('ready', $party);
+
+        $membership = $this->memberships->ready($request->user(), $party);
+
+        return ApiResponse::success(new PartyPlayerResource($membership->load('user')), 'Marked ready.');
+    }
+
+    public function unready(Request $request, Party $party): JsonResponse
+    {
+        $this->authorize('unready', $party);
+
+        $membership = $this->memberships->unready($request->user(), $party);
+
+        return ApiResponse::success(new PartyPlayerResource($membership->load('user')), 'Marked not ready.');
+    }
+
     public function start(Party $party): JsonResponse
     {
         $this->authorize('start', $party);

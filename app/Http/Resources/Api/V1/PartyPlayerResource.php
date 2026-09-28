@@ -24,6 +24,7 @@ class PartyPlayerResource extends JsonResource
             'user' => new PartyHostResource($this->whenLoaded('user')),
             'is_host' => $this->user_id === $this->party?->host_id,
             'status' => $this->status->value,
+            'is_ready' => $this->is_ready,
             'joined_at' => $this->joined_at,
             'left_at' => $this->left_at,
         ];

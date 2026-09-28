@@ -6,6 +6,8 @@ use App\Enums\PartyMemberStatus;
 use App\Enums\PartyStatus;
 use App\Events\PartyMemberJoined;
 use App\Events\PartyMemberLeft;
+use App\Events\PartyMemberReady;
+use App\Events\PartyMemberUnready;
 use App\Events\PartyStarted;
 use App\Exceptions\Api\InvalidPartyTransitionException;
 use App\Exceptions\Api\PartyFullException;
@@ -102,6 +104,44 @@ class PartyMembershipService
             ->orderBy('id')
             ->get()
             ->each(fn (PartyMember $member) => $member->setRelation('party', $party));
+    }
+
+    /**
+     * Informational only: toggling ready never gates whether the host can
+     * start the party (see PartyMembershipService::start()) — it's a signal
+     * for the lobby UI, not a lifecycle rule.
+     */
+    public function ready(User $user, Party $party): PartyMember
+    {
+        $membership = $this->activeMembership($user, $party);
+
+        if (! $membership->is_ready) {
+            $membership->update(['is_ready' => true]);
+            PartyMemberReady::dispatch($party->id, $user->id);
+        }
+
+        return $membership->setRelation('party', $party);
+    }
+
+    public function unready(User $user, Party $party): PartyMember
+    {
+        $membership = $this->activeMembership($user, $party);
+
+        if ($membership->is_ready) {
+            $membership->update(['is_ready' => false]);
+            PartyMemberUnready::dispatch($party->id, $user->id);
+        }
+
+        return $membership->setRelation('party', $party);
+    }
+
+    private function activeMembership(User $user, Party $party): PartyMember
+    {
+        return PartyMember::query()
+            ->where('party_id', $party->id)
+            ->where('user_id', $user->id)
+            ->where('status', PartyMemberStatus::Active)
+            ->firstOrFail();
     }
 
     /**
