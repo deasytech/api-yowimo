@@ -39,6 +39,16 @@ it('sends a friend request to another user', function () {
     expect(Friendship::where('sender_id', $sender->id)->where('receiver_id', $receiver->id)->where('status', FriendshipStatus::Pending)->exists())->toBeTrue();
 });
 
+it('rejects sending a friend request to a soft-deleted receiver with a 422, not a 404', function () {
+    authAs('friend_sender_soft_deleted_receiver');
+    $receiver = User::factory()->create();
+    $receiver->delete();
+
+    $this->postJson(API_V1_FRIEND_REQUESTS_ENDPOINT, ['receiver_id' => $receiver->id])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('receiver_id');
+});
+
 it('rejects sending a friend request to yourself', function () {
     $sender = authAs('friend_sender_self');
 

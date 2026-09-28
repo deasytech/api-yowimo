@@ -10,9 +10,11 @@ use Filament\Support\Enums\FontWeight;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class UsersTable
 {
@@ -39,10 +41,18 @@ class UsersTable
                 IconColumn::make('is_admin')
                     ->boolean()
                     ->label('Admin'),
+                TextColumn::make('blocks_received_count')
+                    ->counts('blocksReceived')
+                    ->label('Times Blocked')
+                    ->sortable(),
                 TextColumn::make('last_seen_at')
                     ->dateTime()
                     ->sortable(),
                 TextColumn::make('created_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('deleted_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -53,6 +63,9 @@ class UsersTable
                 TrashedFilter::make(),
                 TernaryFilter::make('is_admin')
                     ->label('Admin'),
+                Filter::make('blocked')
+                    ->label('Has been blocked')
+                    ->query(fn (Builder $query) => $query->has('blocksReceived')),
             ])
             ->recordActions([
                 ViewAction::make(),

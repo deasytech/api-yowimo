@@ -149,4 +149,24 @@ class User extends Authenticatable implements FilamentUser, HasName
     {
         return $this->hasMany(UserBadge::class);
     }
+
+    /**
+     * Blocks this user has placed on others.
+     *
+     * @return HasMany<BlockedUser, $this>
+     */
+    public function blocksInitiated(): HasMany
+    {
+        return $this->hasMany(BlockedUser::class, 'blocker_id');
+    }
+
+    /**
+     * Blocks other users have placed on this user.
+     *
+     * @return HasMany<BlockedUser, $this>
+     */
+    public function blocksReceived(): HasMany
+    {
+        return $this->hasMany(BlockedUser::class, 'blocked_id');
+    }
 }
