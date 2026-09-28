@@ -218,6 +218,22 @@ it('reuses the same membership row on rejoin after leaving, preserving history',
     expect($party->fresh()->players_count)->toBe(2);
 });
 
+it('resets is_ready to false on rejoin after leaving', function () {
+    $token = $this->clerkToken(['sub' => 'user_rejoiner_ready_reset']);
+    $party = makeLivePartyWithHostMember();
+
+    $this->withHeader('Authorization', "Bearer {$token}")->postJson(joinEndpoint($party))->assertStatus(200);
+    $user = User::where('clerk_user_id', 'user_rejoiner_ready_reset')->firstOrFail();
+    $membership = PartyMember::where('party_id', $party->id)->where('user_id', $user->id)->firstOrFail();
+    $membership->update(['is_ready' => true]);
+
+    $this->withHeader('Authorization', "Bearer {$token}")->deleteJson(leaveEndpoint($party))->assertStatus(200);
+    expect($membership->refresh()->is_ready)->toBeFalse();
+
+    $this->withHeader('Authorization', "Bearer {$token}")->postJson(joinEndpoint($party))->assertStatus(200);
+    expect($membership->refresh()->is_ready)->toBeFalse();
+});
+
 it('leaves a party and decrements players_count', function () {
     $token = $this->clerkToken(['sub' => 'user_leaver']);
     $party = makeLivePartyWithHostMember();

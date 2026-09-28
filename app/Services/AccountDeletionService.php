@@ -89,11 +89,28 @@ class AccountDeletionService
         foreach ($user->paymentMethods as $method) {
             if ($method->provider === 'paystack') {
                 try {
-                    $this->paystack->deactivateAuthorization($method->authorization_code);
+                    $response = $this->paystack->deactivateAuthorization($method->authorization_code);
+
+                    if (($response['status'] ?? false) !== true) {
+                        // A completed-but-declined request (e.g. an already
+                        // revoked or unrecognized code) — PaystackClient
+                        // never throws for these, so they'd otherwise pass
+                        // silently. The authorization_code is logged (not
+                        // just the soon-to-be-deleted payment_method_id) so
+                        // it can still be deactivated manually via Paystack
+                        // after this row is gone.
+                        Log::warning('Paystack declined to deactivate an authorization during account deletion.', [
+                            'user_id' => $user->id,
+                            'payment_method_id' => $method->id,
+                            'authorization_code' => $method->authorization_code,
+                            'response' => $response,
+                        ]);
+                    }
                 } catch (Throwable $e) {
                     Log::warning('Failed to deactivate Paystack authorization during account deletion.', [
                         'user_id' => $user->id,
                         'payment_method_id' => $method->id,
+                        'authorization_code' => $method->authorization_code,
                         'error' => $e->getMessage(),
                     ]);
                 }

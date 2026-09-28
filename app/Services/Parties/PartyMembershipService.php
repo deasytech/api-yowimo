@@ -65,6 +65,7 @@ class PartyMembershipService
             if ($membership) {
                 $membership->update([
                     'status' => PartyMemberStatus::Active,
+                    'is_ready' => false,
                     'joined_at' => now(),
                     'left_at' => null,
                 ]);
@@ -169,7 +170,7 @@ class PartyMembershipService
                 return;
             }
 
-            $membership->update(['status' => PartyMemberStatus::Left, 'left_at' => now()]);
+            $membership->update(['status' => PartyMemberStatus::Left, 'is_ready' => false, 'left_at' => now()]);
 
             if ($party->players_count > 0) {
                 $party->decrement('players_count');

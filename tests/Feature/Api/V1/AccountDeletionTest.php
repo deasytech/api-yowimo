@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Models\Wallet;
 use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Tests\Support\FakesClerk;
 
 const CLERK_USERS_API = 'https://api.clerk.com/v1/users/*';
@@ -141,6 +142,27 @@ it('deactivates and removes saved payment methods on account deletion', function
 
     Http::assertSent(fn (HttpRequest $request) => $request->url() === 'https://api.paystack.co/customer/deactivate_authorization'
         && $request['authorization_code'] === 'AUTH_to_purge');
+    expect(PaymentMethod::whereKey($method->id)->exists())->toBeFalse();
+});
+
+it('logs a warning and still removes the payment method when Paystack declines deactivation without erroring', function () {
+    Http::fake([
+        CLERK_USERS_API => Http::response([], 200),
+        // A completed (2xx) request that Paystack itself declined — PaystackClient
+        // never throws for this, so it must be caught by checking `status` explicitly.
+        'https://api.paystack.co/customer/deactivate_authorization' => Http::response(['status' => false, 'message' => 'Authorization not found'], 200),
+    ]);
+    config(['services.paystack.secret_key' => 'sk_test_deletion']);
+    $user = authAs('user_delete_payment_method_declined');
+    $method = PaymentMethod::factory()->create(['user_id' => $user->id, 'authorization_code' => 'AUTH_declined']);
+
+    $log = Log::spy();
+
+    $this->deleteJson(API_V1_ME_ENDPOINT)->assertOk();
+
+    $log->shouldHaveReceived('warning')
+        ->once()
+        ->withArgs(fn (string $message, array $context) => $context['authorization_code'] === 'AUTH_declined');
     expect(PaymentMethod::whereKey($method->id)->exists())->toBeFalse();
 });
 
