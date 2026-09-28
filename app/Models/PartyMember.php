@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'party_id',
     'user_id',
     'status',
+    'is_ready',
     'joined_at',
     'left_at',
 ])]
@@ -28,6 +29,7 @@ class PartyMember extends Model
     {
         return [
             'status' => PartyMemberStatus::class,
+            'is_ready' => 'boolean',
             'joined_at' => 'datetime',
             'left_at' => 'datetime',
         ];

@@ -1,7 +1,9 @@
 <?php
 
 use App\Filament\Resources\Users\Pages\EditUser;
+use App\Filament\Resources\Users\Pages\ListUsers;
 use App\Filament\Resources\Users\UserResource;
+use App\Models\BlockedUser;
 use App\Models\User;
 use Livewire\Livewire;
 
@@ -37,4 +39,28 @@ it('does not offer deletion of users from the panel', function () {
 
     expect(UserResource::canDelete($user))->toBeFalse()
         ->and(UserResource::canDeleteAny())->toBeFalse();
+});
+
+it('surfaces which users have been blocked, with a filter and a per-user count', function () {
+    $blocked = User::factory()->create();
+    $notBlocked = User::factory()->create();
+    BlockedUser::factory()->create(['blocker_id' => User::factory()->create()->id, 'blocked_id' => $blocked->id]);
+
+    Livewire::test(ListUsers::class)
+        ->assertCanSeeTableRecords([$blocked, $notBlocked])
+        ->filterTable('blocked')
+        ->assertCanSeeTableRecords([$blocked])
+        ->assertCanNotSeeTableRecords([$notBlocked]);
+});
+
+it('surfaces soft-deleted accounts via the trashed filter', function () {
+    $active = User::factory()->create();
+    $deleted = User::factory()->create();
+    $deleted->delete();
+
+    Livewire::test(ListUsers::class)
+        ->assertCanSeeTableRecords([$active])
+        ->assertCanNotSeeTableRecords([$deleted])
+        ->filterTable('trashed', 'with')
+        ->assertCanSeeTableRecords([$active, $deleted]);
 });

@@ -38,6 +38,11 @@ class PackCardsTable
             ->defaultSort('position')
             ->striped()
             ->filters([
+                SelectFilter::make('pack')
+                    ->label('Pack')
+                    ->relationship('pack', 'name')
+                    ->preload()
+                    ->searchable(),
                 SelectFilter::make('kind')
                     ->options([
                         'truth' => 'Truth',

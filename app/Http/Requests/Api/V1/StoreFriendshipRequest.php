@@ -21,7 +21,10 @@ class StoreFriendshipRequest extends FormRequest
             'receiver_id' => [
                 'required',
                 'integer',
-                'exists:users,id',
+                // whereNull('deleted_at') so a soft-deleted receiver fails
+                // validation (422) here rather than reaching the controller's
+                // findOrFail(), which is soft-delete-aware and would 404.
+                Rule::exists('users', 'id')->whereNull('deleted_at'),
                 Rule::notIn([$this->user()->id]),
             ],
         ];

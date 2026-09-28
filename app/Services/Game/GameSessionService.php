@@ -93,6 +93,10 @@ class GameSessionService
                 throw new GameSessionPackUnavailableException('This party has no pack assigned.');
             }
 
+            if (! $this->hasPlayableCards($party->pack_id)) {
+                throw new GameSessionPackUnavailableException('This pack has no playable cards.');
+            }
+
             $turnOrder = PartyMember::query()
                 ->where('party_id', $party->id)
                 ->where('status', PartyMemberStatus::Active)
@@ -122,7 +126,9 @@ class GameSessionService
 
             GameStarted::dispatch($session->id, $party->id);
 
-            $this->dealTurn($session, $round, 0);
+            if (! $this->dealTurn($session, $round, 0)) {
+                throw new GameSessionPackUnavailableException('This pack has no playable cards.');
+            }
 
             return $session;
         });
@@ -132,7 +138,6 @@ class GameSessionService
      * Host action: complete the current turn and deal the next one, advancing the round/session as needed.
      *
      * @throws GameSessionNotActiveException if the session isn't running.
-     * @throws GameSessionPackUnavailableException if the pack runs out of cards of the needed kind.
      */
     public function nextTurn(GameSession $session): GameSession
     {
@@ -358,12 +363,7 @@ class GameSessionService
                 return null;
             }
 
-            $session->update([
-                'status' => GameSessionStatus::Completed,
-                'ended_at' => now(),
-            ]);
-
-            GameCompleted::dispatch($session->id, $session->party_id);
+            $this->completeSession($session);
 
             return $session->fresh();
         });
@@ -426,8 +426,13 @@ class GameSessionService
         $nextIndex = $this->nextActiveIndex($session, $fromIndex);
 
         if ($nextIndex !== null) {
-            $session->update(['current_turn_index' => $nextIndex]);
-            $this->dealTurn($session, $round, $nextIndex);
+            if ($this->dealTurn($session, $round, $nextIndex)) {
+                $session->update(['current_turn_index' => $nextIndex]);
+
+                return $session->fresh();
+            }
+
+            $this->completeSession($session);
 
             return $session->fresh();
         }
@@ -462,7 +467,9 @@ class GameSessionService
             'current_turn_index' => $firstIndex,
         ]);
 
-        $this->dealTurn($session, $newRound, $firstIndex);
+        if (! $this->dealTurn($session, $newRound, $firstIndex)) {
+            $this->completeSession($session);
+        }
 
         return $session->fresh();
     }
@@ -533,6 +540,28 @@ class GameSessionService
         GameEnded::dispatch($session->id, $session->party_id);
     }
 
+    /**
+     * Finish a game whose pack can no longer provide a card, without opening a
+     * voting window for a turn that was never dealt.
+     */
+    private function completeSession(GameSession $session): void
+    {
+        $round = $session->currentRound();
+
+        if ($round && $round->completed_at === null) {
+            $round->update(['completed_at' => now()]);
+        }
+
+        $session->update([
+            'status' => GameSessionStatus::Completed,
+            'ended_at' => now(),
+            'paused_at' => null,
+            'paused_turn_remaining_seconds' => null,
+        ]);
+
+        GameCompleted::dispatch($session->id, $session->party_id);
+    }
+
     private function closeTurn(GameSession $session, Turn $turn, bool $afk = false, bool $skipped = false): void
     {
         $turn->update(['completed_at' => now(), 'is_afk' => $afk, 'is_skipped' => $skipped]);
@@ -540,12 +569,16 @@ class GameSessionService
         TurnCompleted::dispatch($session->id, $turn->round_id, $turn->id, $turn->user_id, $afk, $skipped);
     }
 
-    private function dealTurn(GameSession $session, Round $round, int $position): Turn
+    private function dealTurn(GameSession $session, Round $round, int $position): ?Turn
     {
         $turnsSoFar = Turn::query()->where('game_session_id', $session->id)->count();
         $kind = $turnsSoFar % 2 === 0 ? PackCardKind::Truth : PackCardKind::Dare;
 
         $card = $this->selectCard($session, $kind);
+
+        if (! $card) {
+            return null;
+        }
 
         $turn = Turn::create([
             'game_session_id' => $session->id,
@@ -566,7 +599,7 @@ class GameSessionService
             $turn->user_id,
             $position,
             $turn->expires_at->toIso8601String(),
-            ['id' => $card->id, 'kind' => $card->kind->value, 'text' => $card->text],
+            ['id' => $card->id, 'kind' => $card->kind->value, 'text' => $card->text, 'position' => $card->position],
         );
 
         return $turn;
@@ -606,10 +639,15 @@ class GameSessionService
             ->first();
     }
 
-    /**
-     * @throws GameSessionPackUnavailableException if the pack has no cards of the requested kind.
-     */
-    private function selectCard(GameSession $session, PackCardKind $kind): PackCard
+    private function hasPlayableCards(int $packId): bool
+    {
+        return PackCard::query()
+            ->where('pack_id', $packId)
+            ->lockForUpdate()
+            ->first(['id']) !== null;
+    }
+
+    private function selectCard(GameSession $session, PackCardKind $kind): ?PackCard
     {
         $usedCardIds = Turn::query()->where('game_session_id', $session->id)->pluck('pack_card_id');
 
@@ -620,17 +658,24 @@ class GameSessionService
             ->inRandomOrder()
             ->first();
 
-        // Every unused card of this kind has been dealt already this session — reshuffle and allow repeats.
+        // Prefer the alternating kind, but use any unused card before repeating one.
+        $card ??= PackCard::query()
+            ->where('pack_id', $session->pack_id)
+            ->whereNotIn('id', $usedCardIds)
+            ->inRandomOrder()
+            ->first();
+
+        // The entire pack has been used. Keep the normal kind preference while
+        // allowing truth-only and dare-only packs to continue playing.
         $card ??= PackCard::query()
             ->where('pack_id', $session->pack_id)
             ->where('kind', $kind)
             ->inRandomOrder()
             ->first();
 
-        if (! $card) {
-            throw new GameSessionPackUnavailableException("This party's pack has no {$kind->value} cards available to deal.");
-        }
-
-        return $card;
+        return $card ?? PackCard::query()
+            ->where('pack_id', $session->pack_id)
+            ->inRandomOrder()
+            ->first();
     }
 }

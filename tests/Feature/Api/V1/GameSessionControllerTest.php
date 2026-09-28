@@ -134,6 +134,22 @@ it('returns 422 without reporting the expected client error when the party has n
     Exceptions::assertNothingReported();
 });
 
+it('returns 422 without creating a session when the selected pack has no playable cards', function () {
+    $hostToken = $this->clerkToken(['sub' => 'user_game_host_empty_pack']);
+    $this->withHeader('Authorization', "Bearer {$hostToken}")->getJson('/api/v1/users/me')->assertOk();
+    $host = User::where('clerk_user_id', 'user_game_host_empty_pack')->firstOrFail();
+    $pack = Pack::factory()->create();
+    $party = Party::factory()->create(['host_id' => $host->id, 'pack_id' => $pack->id, 'status' => PartyStatus::Live]);
+    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $host->id]);
+
+    $this->withHeader('Authorization', "Bearer {$hostToken}")
+        ->postJson(startGameEndpoint($party))
+        ->assertStatus(422)
+        ->assertJsonPath('message', 'This pack has no playable cards.');
+
+    expect(GameSession::query()->where('party_id', $party->id)->exists())->toBeFalse();
+});
+
 it('starts a game for a party created with only a game type', function () {
     $hostToken = $this->clerkToken(['sub' => 'user_game_host_default_pack']);
 

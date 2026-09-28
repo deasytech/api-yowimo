@@ -292,6 +292,7 @@
         <a class="nav-link" data-search="get packs featured" href="#get-packs-featured"><span class="m get">GET</span><span class="p">/packs/featured</span></a>
         <a class="nav-link" data-search="get packs id show detail" href="#get-packs-id"><span class="m get">GET</span><span class="p">/packs/{id}</span></a>
         <a class="nav-link" data-search="post packs purchase buy" href="#post-packs-purchase"><span class="m post">POST</span><span class="p">/packs/{id}/purchase</span></a>
+        <a class="nav-link" data-search="post cards report moderation flag" href="#post-cards-report"><span class="m post">POST</span><span class="p">/cards/{card}/report</span></a>
       </div>
       <div class="nav-group" data-group="tokenbundles">
         <div class="nav-group-title">Token Bundles</div>
@@ -311,6 +312,10 @@
         <a class="nav-link" data-search="get badges catalog list achievements" href="#get-badges"><span class="m get">GET</span><span class="p">/badges</span></a>
         <a class="nav-link" data-search="get users me badges earned achievements" href="#get-users-me-badges"><span class="m get">GET</span><span class="p">/users/me/badges</span></a>
       </div>
+      <div class="nav-group" data-group="leaderboard">
+        <div class="nav-group-title">Leaderboard</div>
+        <a class="nav-link" data-search="get leaderboards xp global ranking standings" href="#get-leaderboards"><span class="m get">GET</span><span class="p">/leaderboards</span></a>
+      </div>
       <div class="nav-group" data-group="parties">
         <div class="nav-group-title">Parties</div>
         <a class="nav-link" data-search="get users me parties hosted management" href="#get-users-me-parties-hosted"><span class="m get">GET</span><span class="p">/users/me/parties/hosted</span></a>
@@ -322,6 +327,8 @@
         <a class="nav-link" data-search="patch parties id game type pack" href="#patch-parties-id"><span class="m patch">PATCH</span><span class="p">/parties/{id}</span></a>
         <a class="nav-link" data-search="post parties like" href="#post-parties-like"><span class="m post">POST</span><span class="p">/parties/{party}/like</span></a>
         <a class="nav-link" data-search="delete parties unlike" href="#delete-parties-like"><span class="m delete">DEL</span><span class="p">/parties/{party}/like</span></a>
+        <a class="nav-link" data-search="post parties ready lobby signal" href="#post-parties-ready"><span class="m post">POST</span><span class="p">/parties/{party}/ready</span></a>
+        <a class="nav-link" data-search="delete parties unready lobby signal" href="#delete-parties-ready"><span class="m delete">DEL</span><span class="p">/parties/{party}/ready</span></a>
         <a class="nav-link" data-search="get parties players roster members who" href="#get-parties-players"><span class="m get">GET</span><span class="p">/parties/{party}/players</span></a>
         <a class="nav-link" data-search="post parties join room code" href="#post-parties-join"><span class="m post">POST</span><span class="p">/parties/{party}/join</span></a>
         <a class="nav-link" data-search="delete parties leave" href="#delete-parties-leave"><span class="m delete">DEL</span><span class="p">/parties/{party}/leave</span></a>
@@ -982,6 +989,60 @@
         </div>
       </section>
 
+      <section class="endpoint" id="post-cards-report">
+        <div class="endpoint-head"><span class="method post">POST</span><code class="path">/cards/{card}/report</code></div>
+        <p class="desc">Report a card as inappropriate. Log-only &mdash; nothing happens to the card automatically; an admin reviews reports manually.</p>
+        <div class="meta-line"><span><b>Rate limit</b> card-reports (10/min)</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <h4>Body</h4>
+            <table class="params">
+              <tr><th>Field</th><th>Rules</th></tr>
+              <tr><td class="field">reason<span class="req">required</span></td><td class="rule">one of inappropriate, offensive, spam, other</td></tr>
+              <tr><td class="field">note</td><td class="rule">string, max 1000</td></tr>
+            </table>
+            <p>You can report the same card more than once, including with a different reason each time &mdash; there's no dedup.</p>
+            <div class="status-row"><span class="status-pill ok">201 Created</span><span class="status-pill err">401</span><span class="status-pill err">404</span><span class="status-pill err">422</span><span class="status-pill err">429</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='curl -X POST https://api.yowimo.com/api/v1/cards/301/report \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"reason\":\"offensive\",\"note\":\"This card is not appropriate.\"}"'><span class="tok-flag">curl -X POST</span> https://api.yowimo.com/api/v1/cards/301/report \
+  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span> \
+  -H <span class="tok-str">"Content-Type: application/json"</span> \
+  -d <span class="tok-str">"{\"reason\":\"offensive\",\"note\":\"This card is not appropriate.\"}"</span></pre>
+            </div>
+            <div class="code-block">
+              <div class="code-head"><span>201 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": true,
+  "message": "Card reported successfully.",
+  "data": {
+    "id": 12,
+    "pack_card_id": 301,
+    "reason": "offensive",
+    "note": "This card is not appropriate.",
+    "created_at": "2026-09-28T10:00:00Z"
+  }
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>,
+  <span class="tok-key">"message"</span>: <span class="tok-str">"Card reported successfully."</span>,
+  <span class="tok-key">"data"</span>: {
+    <span class="tok-key">"id"</span>: <span class="tok-num">12</span>,
+    <span class="tok-key">"pack_card_id"</span>: <span class="tok-num">301</span>,
+    <span class="tok-key">"reason"</span>: <span class="tok-str">"offensive"</span>,
+    <span class="tok-key">"note"</span>: <span class="tok-str">"This card is not appropriate."</span>,
+    <span class="tok-key">"created_at"</span>: <span class="tok-str">"2026-09-28T10:00:00Z"</span>
+  }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- ============ TOKEN BUNDLES ============ -->
       <section class="group-head" id="tokenbundles"><h2>Token Bundles</h2><p>Real-money top-ups that credit the wallet.</p></section>
 
@@ -1326,6 +1387,46 @@
   <span class="tok-key">"data"</span>: [
     { <span class="tok-key">"id"</span>: <span class="tok-num">91</span>, <span class="tok-key">"badge"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">4</span>, <span class="tok-key">"key"</span>: <span class="tok-str">"party_king"</span>, <span class="tok-key">"name"</span>: <span class="tok-str">"Party King"</span>, <span class="tok-key">"description"</span>: <span class="tok-str">"Earned the MVP bonus in a game."</span>, <span class="tok-key">"icon"</span>: <span class="tok-str">"👑"</span>, <span class="tok-key">"created_at"</span>: <span class="tok-str">"2026-09-02T00:00:00Z"</span> }, <span class="tok-key">"earned_at"</span>: <span class="tok-str">"2026-09-02T21:03:00Z"</span> },
     { <span class="tok-key">"id"</span>: <span class="tok-num">90</span>, <span class="tok-key">"badge"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">1</span>, <span class="tok-key">"key"</span>: <span class="tok-str">"first_party"</span>, <span class="tok-key">"name"</span>: <span class="tok-str">"First Party"</span>, <span class="tok-key">"description"</span>: <span class="tok-str">"Completed your first game."</span>, <span class="tok-key">"icon"</span>: <span class="tok-str">"🎉"</span>, <span class="tok-key">"created_at"</span>: <span class="tok-str">"2026-09-02T00:00:00Z"</span> }, <span class="tok-key">"earned_at"</span>: <span class="tok-str">"2026-09-01T18:45:00Z"</span> }
+  ],
+  <span class="tok-key">"meta"</span>: { <span class="tok-key">"per_page"</span>: <span class="tok-num">20</span>, <span class="tok-key">"has_more_pages"</span>: <span class="tok-bool">false</span>, <span class="tok-key">"next_cursor"</span>: <span class="tok-null">null</span>, <span class="tok-key">"prev_cursor"</span>: <span class="tok-null">null</span> }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ LEADERBOARD ============ -->
+      <section class="group-head" id="leaderboard"><h2>Leaderboard</h2><p>Global standings by all-time XP. Read-only.</p></section>
+
+      <section class="endpoint" id="get-leaderboards">
+        <div class="endpoint-head"><span class="method get">GET</span><code class="path">/leaderboards</code></div>
+        <p class="desc">All players ranked by total XP, highest first.</p>
+        <div class="meta-line"><span><b>Rate limit</b> api</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <h4>Query</h4>
+            <table class="params">
+              <tr><th>Field</th><th>Rules</th></tr>
+              <tr><td class="field">per_page / cursor</td><td class="rule">pagination</td></tr>
+            </table>
+            <p>Cursor-ordered by <code>xp</code> descending, then <code>id</code>; no explicit rank number in the payload &mdash; use position in the list plus the page you're on. Deactivated/deleted accounts are excluded.</p>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">422</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": true, "message": "Leaderboard retrieved successfully.",
+  "data": [
+    { "user": { "id": 482, "username": "maya", "display_name": "Maya C.", "avatar_url": null }, "xp": 1250 },
+    { "user": { "id": 340, "username": "sam", "display_name": "Sam O.", "avatar_url": null }, "xp": 980 }
+  ],
+  "meta": { "per_page": 20, "has_more_pages": false, "next_cursor": null, "prev_cursor": null }
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"Leaderboard retrieved successfully."</span>,
+  <span class="tok-key">"data"</span>: [
+    { <span class="tok-key">"user"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">482</span>, <span class="tok-key">"username"</span>: <span class="tok-str">"maya"</span>, <span class="tok-key">"display_name"</span>: <span class="tok-str">"Maya C."</span>, <span class="tok-key">"avatar_url"</span>: <span class="tok-null">null</span> }, <span class="tok-key">"xp"</span>: <span class="tok-num">1250</span> },
+    { <span class="tok-key">"user"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">340</span>, <span class="tok-key">"username"</span>: <span class="tok-str">"sam"</span>, <span class="tok-key">"display_name"</span>: <span class="tok-str">"Sam O."</span>, <span class="tok-key">"avatar_url"</span>: <span class="tok-null">null</span> }, <span class="tok-key">"xp"</span>: <span class="tok-num">980</span> }
   ],
   <span class="tok-key">"meta"</span>: { <span class="tok-key">"per_page"</span>: <span class="tok-num">20</span>, <span class="tok-key">"has_more_pages"</span>: <span class="tok-bool">false</span>, <span class="tok-key">"next_cursor"</span>: <span class="tok-null">null</span>, <span class="tok-key">"prev_cursor"</span>: <span class="tok-null">null</span> }
 }</pre>
@@ -1715,6 +1816,49 @@
         </div>
       </section>
 
+      <section class="endpoint" id="post-parties-ready">
+        <div class="endpoint-head"><span class="method post">POST</span><code class="path">/parties/{party}/ready</code></div>
+        <p class="desc">Mark yourself ready in the lobby. Informational only &mdash; it's a signal for other members' UI, and never gates <code>POST /parties/{party}/start</code>, which the host can call regardless of who's marked ready.</p>
+        <div class="meta-line"><span><b>Rate limit</b> party-actions (30/min)</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <p>Requires an active membership in the party (host included). Surfaced on <code>GET /parties/{party}/players</code> as each player's <code>is_ready</code>, and broadcast on the <code>party.{id}</code> presence channel as <code>party.member.ready</code>.</p>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403 not a member</span><span class="status-pill err">404</span><span class="status-pill err">429</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='curl -X POST https://api.yowimo.com/api/v1/parties/902/ready \
+  -H "Authorization: Bearer $TOKEN"'><span class="tok-flag">curl -X POST</span> https://api.yowimo.com/api/v1/parties/902/ready \
+  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span></pre>
+            </div>
+            <div class="code-block">
+              <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": true, "message": "Marked ready.",
+  "data": { "user_id": 482, "user": { "id": 482, "username": "maya", "display_name": "Maya C.", "avatar_url": null }, "is_host": true, "status": "active", "is_ready": true, "joined_at": "2026-09-26T19:50:00Z", "left_at": null }
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"Marked ready."</span>,
+  <span class="tok-key">"data"</span>: { <span class="tok-key">"user_id"</span>: <span class="tok-num">482</span>, <span class="tok-key">"user"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">482</span>, <span class="tok-key">"username"</span>: <span class="tok-str">"maya"</span>, <span class="tok-key">"display_name"</span>: <span class="tok-str">"Maya C."</span>, <span class="tok-key">"avatar_url"</span>: <span class="tok-null">null</span> }, <span class="tok-key">"is_host"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"status"</span>: <span class="tok-str">"active"</span>, <span class="tok-key">"is_ready"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"joined_at"</span>: <span class="tok-str">"2026-09-26T19:50:00Z"</span>, <span class="tok-key">"left_at"</span>: <span class="tok-null">null</span> }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="delete-parties-ready">
+        <div class="endpoint-head"><span class="method delete">DELETE</span><code class="path">/parties/{party}/ready</code></div>
+        <p class="desc">Mark yourself not ready. A no-op success if you weren't marked ready.</p>
+        <div class="meta-line"><span><b>Rate limit</b> party-actions (30/min)</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <p>Broadcast on the <code>party.{id}</code> presence channel as <code>party.member.unready</code>. Readiness doesn't reset automatically when a new game starts in the same party &mdash; toggle it again if that matters to your UI.</p>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403</span><span class="status-pill err">404</span><span class="status-pill err">429</span></div>
+          </div>
+          <div class="endpoint-code"><div class="code-block"><div class="code-head"><span>Shape</span></div><pre>Same <span class="tok-str">PartyPlayerResource</span> as above with <span class="tok-str">is_ready: false</span>, message "Marked not ready."</pre></div></div>
+        </div>
+      </section>
+
       <section class="endpoint" id="get-parties-players">
         <div class="endpoint-head"><span class="method get">GET</span><code class="path">/parties/{party}/players</code></div>
         <p class="desc">The party's roster: every player who has joined, with their public identity, in join order.</p>
@@ -1861,7 +2005,7 @@
           <table class="kv">
             <tr><th>Event</th><th>Channel</th><th>Payload</th><th>When</th></tr>
             <tr><td class="mono">game.started</td><td>party + game</td><td class="mono">gameSessionId, partyId</td><td>The host started a game. Lobby clients use <code>gameSessionId</code> to load the game and subscribe to its channel.</td></tr>
-            <tr><td class="mono">turn.started</td><td>game</td><td class="mono">gameSessionId, roundId, turnId, userId, position, expiresAt, card { id, kind, text }</td><td>A new turn was dealt. <code>expiresAt</code> is the server deadline.</td></tr>
+            <tr><td class="mono">turn.started</td><td>game</td><td class="mono">gameSessionId, roundId, turnId, userId, position, expiresAt, card { id, kind, text, position }</td><td>A new turn was dealt. <code>expiresAt</code> is the server deadline.</td></tr>
             <tr><td class="mono">turn.completed</td><td>game</td><td class="mono">gameSessionId, roundId, turnId, userId, isAfk, isSkipped</td><td>The turn ended: done (both false), skipped by the player/host, or timed out (AFK).</td></tr>
             <tr><td class="mono">round.completed</td><td>game</td><td class="mono">gameSessionId, roundId, roundNumber</td><td>Every player has had their turn this round.</td></tr>
             <tr><td class="mono">game.voting</td><td>game</td><td class="mono">gameSessionId, votingEndsAt</td><td>The last turn was played. Votes stay open until <code>votingEndsAt</code> (30s).</td></tr>
@@ -2002,9 +2146,10 @@ echo.private(`game-session.${gameSessionId}`)
             <ul style="color:var(--text-muted); font-size:.9rem; padding-left:1.1rem; margin:.3rem 0;">
               <li>Party isn't <code>live</code> &rarr; 422.</li>
               <li>A session is already in progress (running, paused or voting) &rarr; 409, with that session's id in <code>errors.game_session_id</code> &mdash; open it instead of starting a new one.</li>
-              <li>Party has no pack assigned, or the pack has zero cards of a needed kind &rarr; 422.</li>
+              <li>Party has no pack assigned &rarr; 422.</li>
+              <li>Pack has no playable cards &rarr; 422, <code>"This pack has no playable cards."</code>.</li>
             </ul>
-            <div class="note"><b>200, not 201</b>This creates a new <code>GameSession</code> but returns 200. Turn order is randomized once at start; card kind strictly alternates truth/dare by turn count; each turn gets a server timer (<code>turn_seconds</code>) &mdash; an idle player is auto-skipped. Every member is notified with <code>game.started</code> on the party channel.</div>
+            <div class="note"><b>200, not 201</b>This creates a new <code>GameSession</code> but returns 200. Any nonempty pack is playable: the engine prefers alternating truth/dare, falls back to the other available kind, and does not repeat a card until every pack card has been dealt. Each turn gets a server timer (<code>turn_seconds</code>) &mdash; an idle player is auto-skipped. Every member is notified with <code>game.started</code> on the party channel.</div>
             <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403 non-host</span><span class="status-pill err">404</span><span class="status-pill err">409 already running</span><span class="status-pill err">422</span><span class="status-pill err">429</span></div>
           </div>
           <div class="endpoint-code">
@@ -2155,8 +2300,8 @@ echo.private(`game-session.${gameSessionId}`)
         <div class="meta-line"><span><b>Rate limit</b> party-actions (30/min)</span></div>
         <div class="endpoint-grid">
           <div class="endpoint-docs">
-            <p>Completes the current turn (with challenge XP, like <code>/complete</code>) and deals the next one, skipping players who have left. After the last turn of the last round the session moves to <code>voting</code> for 30 seconds and then to <code>completed</code> &mdash; listen for <code>game.voting</code> and <code>game.completed</code> rather than polling. Rejected with 422 while <code>paused</code>, <code>voting</code> or finished.</p>
-            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403 non-host</span><span class="status-pill err">404</span><span class="status-pill err">422 not running / pack exhausted</span><span class="status-pill err">429</span></div>
+            <p>Completes the current turn (with challenge XP, like <code>/complete</code>) and deals the next one, skipping players who have left. The engine falls back between truth and dare when the preferred kind is unavailable, and only reuses a card after the full pack has been dealt. After the last turn of the last round the session moves to <code>voting</code> for 30 seconds and then to <code>completed</code> &mdash; listen for <code>game.voting</code> and <code>game.completed</code> rather than polling. Rejected with 422 while <code>paused</code>, <code>voting</code> or finished.</p>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403 non-host</span><span class="status-pill err">404</span><span class="status-pill err">422 not running</span><span class="status-pill err">429</span></div>
           </div>
           <div class="endpoint-code">
             <div class="code-block">

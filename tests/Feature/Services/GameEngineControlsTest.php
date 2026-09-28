@@ -96,6 +96,7 @@ it('announces a new game on the party channel and sends the card with turn.start
         && in_array(new PresenceChannel("party.{$party->id}"), $event->broadcastOn(), false));
     Event::assertDispatched(TurnStarted::class, fn ($event) => $event->turnId === $turn->id
         && $event->card['id'] === $turn->pack_card_id
+        && $event->card['position'] === $turn->packCard->position
         && $event->expiresAt === $turn->expires_at->toIso8601String());
 });
 

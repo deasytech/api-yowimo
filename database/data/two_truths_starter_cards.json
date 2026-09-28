@@ -1,0 +1,404 @@
+{
+  "cards": [
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about your childhood and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about your school days and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about your first job and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about your favorite foods and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about places you have visited and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about your hidden talents and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about your hobbies and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about your weekend habits and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about your biggest fears and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about your biggest dreams and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about your most embarrassing moments and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about your travel mishaps and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about your unusual habits and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about things you collect and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about your favorite movies and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about your music tastes and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about sports you have played and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about your strangest meals and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about pets you have owned or wanted and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about your funniest family stories and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about your friendships and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about compliments you have received and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about gifts you have given and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about gifts you have received and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about money you have saved or spent and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about your worst shopping decisions and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about your favorite apps and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about your technology fails and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about online mistakes you have made and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about your most memorable birthdays and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about celebrations you have attended and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about your favorite holidays and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about your dream destinations and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about things you want to learn and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about skills you wish you had and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about jobs you would try and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about unusual jobs you have considered and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about things you believed as a child and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about childhood adventures and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about times you got lost and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about your closest calls with being late and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about moments you surprised yourself and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about things you are surprisingly good at and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about things you are terrible at and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about your favorite ways to relax and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about your morning routines and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about your sleep habits and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about concerts or live events you have attended and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about famous people you have met or seen and one convincing lie."
+    },
+    {
+      "kind": "truth",
+      "text": "Tell the group two true things about the most believable lie you have ever told and one fake story."
+    },
+    {
+      "kind": "dare",
+      "text": "Reveal which statement from your last round was the lie."
+    },
+    {
+      "kind": "dare",
+      "text": "Defend your lie for ten seconds as if it were completely true."
+    },
+    {
+      "kind": "dare",
+      "text": "Let the group ask one yes-or-no question about your lie."
+    },
+    {
+      "kind": "dare",
+      "text": "Reveal what inspired the most surprising true statement you gave."
+    },
+    {
+      "kind": "dare",
+      "text": "Act out your most unusual true statement without speaking."
+    },
+    {
+      "kind": "dare",
+      "text": "Give your lie a ridiculous backstory in ten seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Repeat your three statements with your most serious face."
+    },
+    {
+      "kind": "dare",
+      "text": "Let another player choose which true statement you must explain."
+    },
+    {
+      "kind": "dare",
+      "text": "Describe your lie as if you were pitching it in a movie trailer."
+    },
+    {
+      "kind": "dare",
+      "text": "Invent a fake job title for yourself and pitch it to the group."
+    },
+    {
+      "kind": "dare",
+      "text": "Give your lie a fake newspaper headline."
+    },
+    {
+      "kind": "dare",
+      "text": "Explain your lie using exactly five words."
+    },
+    {
+      "kind": "dare",
+      "text": "Turn your lie into a dramatic one-line confession."
+    },
+    {
+      "kind": "dare",
+      "text": "Act surprised that anyone doubted your lie."
+    },
+    {
+      "kind": "dare",
+      "text": "Create a fake award you could win based on your lie."
+    },
+    {
+      "kind": "dare",
+      "text": "Describe your lie as if it happened yesterday."
+    },
+    {
+      "kind": "dare",
+      "text": "Give your lie a fake location, date, and witness."
+    },
+    {
+      "kind": "dare",
+      "text": "Let the group invent a title for your next Two Truths round."
+    },
+    {
+      "kind": "dare",
+      "text": "Tell the group which statement was hardest to make believable."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a ten-second acceptance speech for successfully fooling the group."
+    },
+    {
+      "kind": "dare",
+      "text": "Turn your favorite true statement into a fake movie title."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend your lie is breaking news and report it dramatically."
+    },
+    {
+      "kind": "dare",
+      "text": "Let the group vote on which true statement sounds most fake."
+    },
+    {
+      "kind": "dare",
+      "text": "Explain one true statement using only hand gestures."
+    },
+    {
+      "kind": "dare",
+      "text": "Create a ridiculous sequel to your lie in one sentence."
+    },
+    {
+      "kind": "dare",
+      "text": "Give your lie a believable character who supposedly witnessed it."
+    },
+    {
+      "kind": "dare",
+      "text": "Say your lie again while keeping a completely straight face."
+    },
+    {
+      "kind": "dare",
+      "text": "Turn your lie into a fake social media post."
+    },
+    {
+      "kind": "dare",
+      "text": "Describe your lie like a five-star review."
+    },
+    {
+      "kind": "dare",
+      "text": "Give your lie a catchy slogan."
+    },
+    {
+      "kind": "dare",
+      "text": "Reveal which player you expected to spot your lie first."
+    },
+    {
+      "kind": "dare",
+      "text": "Let another player challenge one detail of your lie."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend your lie is an unbelievable but true documentary."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a ten-second courtroom defense of your lie."
+    },
+    {
+      "kind": "dare",
+      "text": "Turn one true statement into a dramatic action-movie scene."
+    },
+    {
+      "kind": "dare",
+      "text": "Invent a fake lesson you supposedly learned from your lie."
+    },
+    {
+      "kind": "dare",
+      "text": "Explain why your lie deserves to be believed."
+    },
+    {
+      "kind": "dare",
+      "text": "Give your lie a fake expert who could supposedly confirm it."
+    },
+    {
+      "kind": "dare",
+      "text": "Describe your lie in the style of a travel advertisement."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend your lie just won an award and thank the group."
+    },
+    {
+      "kind": "dare",
+      "text": "Reveal which of your two truths surprised you most when you remembered it."
+    },
+    {
+      "kind": "dare",
+      "text": "Make up a fake sequel to the strangest true statement you gave."
+    },
+    {
+      "kind": "dare",
+      "text": "Give your lie a completely unnecessary technical explanation."
+    },
+    {
+      "kind": "dare",
+      "text": "Act out how you would react if your lie suddenly became true."
+    },
+    {
+      "kind": "dare",
+      "text": "Let the group give you one word you must include in a defense of your lie."
+    },
+    {
+      "kind": "dare",
+      "text": "Describe your lie using three dramatic adjectives."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you are being interviewed about your lie on live television."
+    },
+    {
+      "kind": "dare",
+      "text": "Give your lie a fake celebrity endorsement without naming a real celebrity."
+    },
+    {
+      "kind": "dare",
+      "text": "Reveal one tiny detail that almost made your lie believable."
+    },
+    {
+      "kind": "dare",
+      "text": "End your round by saying which player would make the best detective."
+    }
+  ]
+}

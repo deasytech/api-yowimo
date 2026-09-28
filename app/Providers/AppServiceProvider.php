@@ -87,5 +87,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Each attempt makes an outbound Clerk Backend API call.
         RateLimiter::for('account-deletion', fn (Request $request) => Limit::perMinute(3)->by($request->user()?->id ?: $request->ip()));
+
+        RateLimiter::for('card-reports', fn (Request $request) => Limit::perMinute(10)->by($request->user()?->id ?: $request->ip()));
     }
 }

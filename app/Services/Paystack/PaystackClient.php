@@ -40,6 +40,20 @@ class PaystackClient
     }
 
     /**
+     * Deactivates a saved authorization so it can no longer be charged.
+     * Called (best-effort) when a saved card is removed or the account is
+     * deleted — see AccountDeletionService.
+     *
+     * @return array<string, mixed>
+     */
+    public function deactivateAuthorization(string $authorizationCode): array
+    {
+        return $this->request('post', '/customer/deactivate_authorization', [
+            'authorization_code' => $authorizationCode,
+        ]);
+    }
+
+    /**
      * Verifies the `x-paystack-signature` header: HMAC-SHA512 of the raw
      * request body, keyed with the secret key.
      */

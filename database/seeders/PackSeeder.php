@@ -8,6 +8,7 @@ use App\Models\GameType;
 use App\Models\Pack;
 use App\Models\PackCard;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 
 class PackSeeder extends Seeder
@@ -44,6 +45,14 @@ class PackSeeder extends Seeder
             );
 
             $pack->cards()->delete();
+
+            $curatedCards = $this->curatedCardsFor($data['name']);
+
+            if ($curatedCards !== null) {
+                $this->seedCuratedCards($pack, $data, $curatedCards);
+
+                continue;
+            }
 
             foreach ($data['preview'] as $position => [$kind, $text]) {
                 PackCard::query()->create([
@@ -138,7 +147,7 @@ class PackSeeder extends Seeder
                 ['truth', "What's a habit of mine you secretly find adorable?"],
                 ['dare', 'Give your partner a compliment in a fake accent.'],
             ]),
-            $this->catalogPack('family', 'Family Game Night', '👨‍👩‍👧', 'New', PackCategory::Family, 'Wholesome, all-ages prompts perfect for a living room full of family members of every age.', 0, 20, 20, [
+            $this->catalogPack('family', 'Family Game Night', '👨‍👩‍👧', 'New', PackCategory::Family, 'Wholesome, all-ages prompts perfect for a living room full of family members of every age.', 0, 52, 52, [
                 ['truth', "What's your favorite family memory from this year?"],
                 ['dare', 'Do your best animal impression.'],
                 ['truth', 'If you could have any superpower, what would it be?'],
@@ -177,7 +186,7 @@ class PackSeeder extends Seeder
                 ['truth', 'Would you rather give up music or good food for a year?'],
                 ['dare', 'Let the group pick the option you have to defend for the next round.'],
             ]),
-            $this->catalogPack('two-truths', 'Two Truths Starter', '🎯', 'Free', PackCategory::Corporate, 'Spot the fib. Built for teams and friends who think they know each other better than they do.', 0, 20, 20, [
+            $this->catalogPack('two-truths', 'Two Truths Starter', '🎯', 'Free', PackCategory::Corporate, 'Spot the fib. Built for teams and friends who think they know each other better than they do.', 0, 51, 51, [
                 ['truth', 'Tell the group two true things about yourself and one convincing lie.'],
                 ['dare', 'Reveal which of your statements from the last round was the lie.'],
                 ['truth', 'What is the most believable lie you have ever told?'],
@@ -202,6 +211,128 @@ class PackSeeder extends Seeder
                 ['truth', "What's the most overrated movie you have ever sat through?"],
             ]),
         ];
+    }
+
+    /**
+     * Curated full-deck card texts keyed by pack name. When present, the deck
+     * replaces the randomized factory filler so real content ships instead.
+     *
+     * @return array<int, array{kind: 'truth'|'dare', text: string}>|null
+     */
+    private function curatedCardsFor(string $packName): ?array
+    {
+        $file = match ($packName) {
+            'Two Truths Starter' => 'two_truths_starter_cards.json',
+            'Family Game Night' => 'family_game_night_cards.json',
+            default => null,
+        };
+
+        if ($file === null) {
+            return null;
+        }
+
+        /** @var array{cards?: array<int, array{kind?: string, text?: string}>} $data */
+        $data = json_decode(
+            File::get(database_path('data/'.$file)),
+            true,
+            512,
+            JSON_THROW_ON_ERROR
+        );
+
+        $cards = array_values(array_filter(
+            $data['cards'] ?? [],
+            fn (array $card): bool => isset($card['text']) && trim((string) $card['text']) !== ''
+                && in_array($card['kind'] ?? null, ['truth', 'dare'], true)
+        ));
+
+        /** @var array<int, array{kind: 'truth'|'dare', text: string}> $normalized */
+        $normalized = array_map(
+            fn (array $card): array => ['kind' => $card['kind'], 'text' => trim((string) $card['text'])],
+            $cards
+        );
+
+        return $normalized === [] ? null : $normalized;
+    }
+
+    /**
+     * Seed a curated deck: the four preview prompts first, then the curated
+     * texts that do not duplicate them. Counts reflect what was persisted.
+     *
+     * @param  array{preview: array<int, array{0: 'truth'|'dare', 1: string}>, truths: int, dares: int}  $data
+     * @param  array<int, array{kind: 'truth'|'dare', text: string}>  $curatedCards
+     */
+    private function seedCuratedCards(Pack $pack, array $data, array $curatedCards): void
+    {
+        $preview = $data['preview'];
+
+        foreach ($preview as $position => [$kind, $text]) {
+            PackCard::query()->create([
+                'pack_id' => $pack->id,
+                'kind' => $kind === 'truth' ? PackCardKind::Truth : PackCardKind::Dare,
+                'text' => $text,
+                'position' => $position,
+                'is_preview' => true,
+            ]);
+        }
+
+        $previewTexts = array_fill_keys(array_column(array_map(
+            fn (array $card): array => ['text' => trim($card[1])],
+            $preview
+        ), 'text'), true);
+
+        $position = count($preview);
+        $curatedTruths = 0;
+        $curatedDares = 0;
+
+        foreach ($curatedCards as $card) {
+            if (isset($previewTexts[$card['text']])) {
+                continue;
+            }
+
+            $previewTexts[$card['text']] = true;
+            $kind = $card['kind'] === 'truth' ? PackCardKind::Truth : PackCardKind::Dare;
+
+            PackCard::query()->create([
+                'pack_id' => $pack->id,
+                'kind' => $kind,
+                'text' => $card['text'],
+                'position' => $position++,
+                'is_preview' => false,
+            ]);
+
+            if ($kind === PackCardKind::Truth) {
+                $curatedTruths++;
+            } else {
+                $curatedDares++;
+            }
+        }
+
+        $previewTruths = count(array_filter($preview, fn (array $card) => $card[0] === 'truth'));
+        $previewDares = count($preview) - $previewTruths;
+
+        $remainingTruths = max($data['truths'] - ($previewTruths + $curatedTruths), 0);
+        $remainingDares = max($data['dares'] - ($previewDares + $curatedDares), 0);
+
+        PackCard::factory()
+            ->count($remainingTruths)
+            ->sequence(fn ($sequence) => ['position' => $position + $sequence->index])
+            ->state(['pack_id' => $pack->id, 'kind' => PackCardKind::Truth, 'is_preview' => false])
+            ->create();
+
+        PackCard::factory()
+            ->count($remainingDares)
+            ->sequence(fn ($sequence) => ['position' => $position + $remainingTruths + $sequence->index])
+            ->state(['pack_id' => $pack->id, 'kind' => PackCardKind::Dare, 'is_preview' => false])
+            ->create();
+
+        $finalTruths = $previewTruths + $curatedTruths + $remainingTruths;
+        $finalDares = $previewDares + $curatedDares + $remainingDares;
+
+        $pack->update([
+            'truths_count' => $finalTruths,
+            'dares_count' => $finalDares,
+            'cards_count' => $finalTruths + $finalDares,
+        ]);
     }
 
     /**

@@ -13,7 +13,10 @@ use App\Services\Clerk\ClerkBackendClient;
 use App\Services\Friends\FriendshipService;
 use App\Services\Notifications\PushTokenService;
 use App\Services\Parties\PartyMembershipService;
+use App\Services\Paystack\PaystackClient;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class AccountDeletionService
 {
@@ -22,6 +25,7 @@ class AccountDeletionService
         private readonly PartyMembershipService $memberships,
         private readonly FriendshipService $friendships,
         private readonly PushTokenService $pushTokens,
+        private readonly PaystackClient $paystack,
     ) {}
 
     /**
@@ -51,10 +55,15 @@ class AccountDeletionService
      * deleted through the API.
      *
      * Wallet, ledger, purchase, and gameplay history rows are kept, per the
-     * "never soft delete" policy for financial records.
+     * "never soft delete" policy for financial records. Saved payment
+     * methods are the one exception — a reusable charge credential is
+     * purged, not kept, since nothing should be able to charge a deleted
+     * account's card again.
      */
     public function deleteLocally(User $user): void
     {
+        $this->purgePaymentMethods($user);
+
         DB::transaction(function () use ($user) {
             $this->closeHostedParties($user);
             $this->leaveJoinedParties($user);
@@ -66,6 +75,49 @@ class AccountDeletionService
                 'deleted_at' => $user->deleted_at ?? now(),
             ])->save();
         });
+    }
+
+    /**
+     * Deactivates each saved Paystack authorization remotely (best-effort —
+     * a Paystack failure is logged, not thrown, so it never blocks account
+     * deletion), then removes the local payment_methods row regardless of
+     * whether the remote call succeeded, so a saved card is never left
+     * reachable for charging after the account is gone.
+     */
+    private function purgePaymentMethods(User $user): void
+    {
+        foreach ($user->paymentMethods as $method) {
+            if ($method->provider === 'paystack') {
+                try {
+                    $response = $this->paystack->deactivateAuthorization($method->authorization_code);
+
+                    if (($response['status'] ?? false) !== true) {
+                        // A completed-but-declined request (e.g. an already
+                        // revoked or unrecognized code) — PaystackClient
+                        // never throws for these, so they'd otherwise pass
+                        // silently. The authorization_code is logged (not
+                        // just the soon-to-be-deleted payment_method_id) so
+                        // it can still be deactivated manually via Paystack
+                        // after this row is gone.
+                        Log::warning('Paystack declined to deactivate an authorization during account deletion.', [
+                            'user_id' => $user->id,
+                            'payment_method_id' => $method->id,
+                            'authorization_code' => $method->authorization_code,
+                            'response' => $response,
+                        ]);
+                    }
+                } catch (Throwable $e) {
+                    Log::warning('Failed to deactivate Paystack authorization during account deletion.', [
+                        'user_id' => $user->id,
+                        'payment_method_id' => $method->id,
+                        'authorization_code' => $method->authorization_code,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            $method->delete();
+        }
     }
 
     /**

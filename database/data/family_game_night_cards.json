@@ -1,0 +1,404 @@
+{
+  "cards": [
+    {
+      "kind": "truth",
+      "text": "What is one family tradition you hope we always keep?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is your favorite holiday activity with the family?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is the funniest thing that happened on a family trip?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is your favorite birthday tradition?"
+    },
+    {
+      "kind": "truth",
+      "text": "What family meal would you happily eat every week?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is your favorite thing to do together on a quiet day?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one place you would love the whole family to visit?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is your favorite family game?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing a family member taught you that you still remember?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is your favorite thing about family game night?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is the best family celebration you can remember?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is your favorite memory from a family holiday?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one family recipe or meal you would like to learn?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is your favorite thing to help with in the kitchen?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is the funniest family nickname you have heard?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is your favorite family photo and why?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one family activity you would like to try together?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is your favorite thing about visiting relatives?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is the best surprise your family has given you?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing that always makes your family laugh?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is your favorite board game or card game?"
+    },
+    {
+      "kind": "truth",
+      "text": "What sport would you most enjoy playing with the family?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is your favorite movie to watch together?"
+    },
+    {
+      "kind": "truth",
+      "text": "What song always makes you want to sing along?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is your favorite thing to draw or doodle?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one skill you would love to teach the family?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one skill you would love a family member to teach you?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is your favorite family outing?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is the most interesting place you have visited with family?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is your favorite thing about road trips?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is your favorite road trip snack?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is the best family breakfast you can imagine?"
+    },
+    {
+      "kind": "truth",
+      "text": "What dessert would you choose for a family celebration?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is your favorite fruit or vegetable?"
+    },
+    {
+      "kind": "truth",
+      "text": "What food would you invent for a family picnic?"
+    },
+    {
+      "kind": "truth",
+      "text": "What pet would you choose if the family could have any animal?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is your favorite thing about pets?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is the funniest pet behavior you have seen?"
+    },
+    {
+      "kind": "truth",
+      "text": "What animal would you choose to be for one day?"
+    },
+    {
+      "kind": "truth",
+      "text": "What would your dream family treehouse look like?"
+    },
+    {
+      "kind": "truth",
+      "text": "What imaginary place would you take the family for a day?"
+    },
+    {
+      "kind": "truth",
+      "text": "What would you name a family spaceship?"
+    },
+    {
+      "kind": "truth",
+      "text": "What would your perfect family vacation look like?"
+    },
+    {
+      "kind": "truth",
+      "text": "What would you put in a family time capsule?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing you are grateful for about your family?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one kind thing someone in the family did for you?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing you enjoy doing with a younger family member?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing you enjoy learning from an older family member?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one family moment you would love to replay?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one new family tradition you would love to start?"
+    },
+    {
+      "kind": "dare",
+      "text": "Do your best robot dance while staying in one spot."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you are a friendly news reporter for ten seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Make your funniest surprised face and hold it for five seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend to conduct an orchestra using only your hands."
+    },
+    {
+      "kind": "dare",
+      "text": "Act like a superhero discovering your powers for the first time."
+    },
+    {
+      "kind": "dare",
+      "text": "Mime brushing your teeth like you are in a silent movie."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend to be a chef describing an imaginary meal."
+    },
+    {
+      "kind": "dare",
+      "text": "Do your best slow-motion celebration pose."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you are a weather presenter giving a sunny forecast."
+    },
+    {
+      "kind": "dare",
+      "text": "Make up a three-word family team cheer."
+    },
+    {
+      "kind": "dare",
+      "text": "Act like a penguin walking in place for ten seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend to answer a phone call from an imaginary friend."
+    },
+    {
+      "kind": "dare",
+      "text": "Do a tiny victory dance without moving from your spot."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you are a train announcing its next imaginary stop."
+    },
+    {
+      "kind": "dare",
+      "text": "Show us your best sleepy yawn without actually yawning loudly."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend to be a statue until someone counts to five."
+    },
+    {
+      "kind": "dare",
+      "text": "Act out opening the biggest imaginary present ever."
+    },
+    {
+      "kind": "dare",
+      "text": "Make up a silly handshake with the air."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you are a famous chef tasting an imaginary soup."
+    },
+    {
+      "kind": "dare",
+      "text": "Do your best marching band pose without marching away."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend to be a friendly alien visiting Earth."
+    },
+    {
+      "kind": "dare",
+      "text": "Act like you just won an imaginary family trophy."
+    },
+    {
+      "kind": "dare",
+      "text": "Make three different happy faces in five seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend to play an invisible piano for ten seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Act out riding an imaginary bicycle while staying in place."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you are a tour guide showing us an imaginary castle."
+    },
+    {
+      "kind": "dare",
+      "text": "Do a silent celebration using only your hands and face."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend to be a squirrel hiding an imaginary treasure."
+    },
+    {
+      "kind": "dare",
+      "text": "Make up a silly two-line rhyme about family."
+    },
+    {
+      "kind": "dare",
+      "text": "Act like a cartoon character who has just discovered a balloon."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend to be a drummer using your hands without hitting anything."
+    },
+    {
+      "kind": "dare",
+      "text": "Show your best imaginary magic trick without props."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you are a movie director saying 'Action' without speaking."
+    },
+    {
+      "kind": "dare",
+      "text": "Do your best statue pose as a family superhero."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend to be a friendly frog hopping in place."
+    },
+    {
+      "kind": "dare",
+      "text": "Act like you are carrying the world's tiniest suitcase."
+    },
+    {
+      "kind": "dare",
+      "text": "Make a funny face, then switch to your most serious face."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend to steer an imaginary spaceship from your seat."
+    },
+    {
+      "kind": "dare",
+      "text": "Act out making an enormous imaginary sandwich."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you are a librarian trying to tell everyone to whisper."
+    },
+    {
+      "kind": "dare",
+      "text": "Do a ten-second silent disco using only your upper body."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend to be a clock showing three different times."
+    },
+    {
+      "kind": "dare",
+      "text": "Act like you are receiving a very important imaginary phone call."
+    },
+    {
+      "kind": "dare",
+      "text": "Make up a silly family mascot pose and hold it for five seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend to be a monkey climbing an invisible tree while staying in place."
+    },
+    {
+      "kind": "dare",
+      "text": "Act out finding a surprise gift with an exaggerated reaction."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend to be a friendly robot greeting each person nearby."
+    },
+    {
+      "kind": "dare",
+      "text": "Do your best invisible rope-skipping motion without jumping."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend to be a sports commentator describing an imaginary play."
+    },
+    {
+      "kind": "dare",
+      "text": "Finish by striking your funniest superhero pose."
+    }
+  ]
+}

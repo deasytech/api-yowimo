@@ -2,11 +2,13 @@
 
 use App\Http\Controllers\Api\V1\BadgeController;
 use App\Http\Controllers\Api\V1\BlockController;
+use App\Http\Controllers\Api\V1\CardReportController;
 use App\Http\Controllers\Api\V1\ClerkWebhookController;
 use App\Http\Controllers\Api\V1\FriendshipController;
 use App\Http\Controllers\Api\V1\GameSessionController;
 use App\Http\Controllers\Api\V1\GameTypeController;
 use App\Http\Controllers\Api\V1\HealthController;
+use App\Http\Controllers\Api\V1\LeaderboardController;
 use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PackController;
@@ -43,6 +45,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/packs/{id}', [PackController::class, 'show'])->whereNumber('id');
         Route::get('/packs', [PackController::class, 'index']);
         Route::post('/packs/{id}/purchase', [PackPurchaseController::class, 'store'])->whereNumber('id')->middleware('throttle:purchases');
+        Route::post('/cards/{card}/report', [CardReportController::class, 'store'])->middleware('throttle:card-reports');
 
         Route::get('/token-bundles', [TokenBundleController::class, 'index']);
         Route::post('/token-bundles/{id}/purchase', [TokenBundlePurchaseController::class, 'store'])->whereNumber('id')->middleware('throttle:purchases');
@@ -56,6 +59,7 @@ Route::prefix('v1')->group(function () {
 
         Route::get('/badges', [BadgeController::class, 'index']);
         Route::get('/users/me/badges', [BadgeController::class, 'mine']);
+        Route::get('/leaderboards', [LeaderboardController::class, 'index']);
         Route::get('/users/me/parties/hosted', [PartyController::class, 'hosted']);
         Route::get('/users/me/parties/joined', [PartyController::class, 'joined']);
 
@@ -67,6 +71,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/parties/{party}/like', [PartyLikeController::class, 'store'])->middleware('throttle:party-actions');
         Route::delete('/parties/{party}/like', [PartyLikeController::class, 'destroy'])->middleware('throttle:party-actions');
         Route::get('/parties/{party}/players', [PartyMembershipController::class, 'players']);
+        Route::post('/parties/{party}/ready', [PartyMembershipController::class, 'ready'])->middleware('throttle:party-actions');
+        Route::delete('/parties/{party}/ready', [PartyMembershipController::class, 'unready'])->middleware('throttle:party-actions');
         Route::post('/parties/{party}/join', [PartyMembershipController::class, 'join'])->middleware('throttle:party-actions');
         Route::delete('/parties/{party}/leave', [PartyMembershipController::class, 'leave'])->middleware('throttle:party-actions');
         Route::post('/parties/{party}/start', [PartyMembershipController::class, 'start'])->middleware('throttle:party-actions');

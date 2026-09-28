@@ -3,6 +3,7 @@
 use App\Enums\PartyVisibility;
 use App\Models\AnalyticsEvent;
 use App\Models\Badge;
+use App\Models\CardReport;
 use App\Models\Friendship;
 use App\Models\GameSession;
 use App\Models\GameType;
@@ -78,6 +79,7 @@ it('renders the list and view pages for every resource added since the first pas
         'push-tokens' => PushToken::factory()->create(),
         'analytics-events' => AnalyticsEvent::factory()->create(),
         'webhook-events' => WebhookEvent::factory()->create(),
+        'card-reports' => CardReport::factory()->create(),
     ];
 
     foreach ($resources as $slug => $record) {
