@@ -5,6 +5,7 @@ namespace App\Services\Paystack;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Lean HTTP-facade wrapper around the Paystack REST API (no SDK package),
@@ -51,6 +52,40 @@ class PaystackClient
         return $this->request('post', '/customer/deactivate_authorization', [
             'authorization_code' => $authorizationCode,
         ]);
+    }
+
+    /**
+     * Best-effort wrapper around deactivateAuthorization() shared by every
+     * caller that removes a saved card (AccountDeletionService,
+     * PaymentMethodService): a Paystack failure is logged, never thrown, so
+     * it never blocks the local removal it's attached to. Catches both a
+     * thrown failure (connection/config) and a completed-but-declined
+     * response (`status: false`, which never throws — see request()) so
+     * neither passes silently. $context is merged into the log so the
+     * caller's identifying fields (payment_method_id, user_id, ...) show up
+     * without this method needing to know their shape.
+     *
+     * @param  array<string, mixed>  $context
+     */
+    public function deactivateAuthorizationSafely(string $authorizationCode, array $context = []): void
+    {
+        try {
+            $response = $this->deactivateAuthorization($authorizationCode);
+
+            if (($response['status'] ?? false) !== true) {
+                Log::warning('Paystack declined to deactivate an authorization.', [
+                    ...$context,
+                    'authorization_code' => $authorizationCode,
+                    'response' => $response,
+                ]);
+            }
+        } catch (Throwable $e) {
+            Log::warning('Failed to deactivate a Paystack authorization.', [
+                ...$context,
+                'authorization_code' => $authorizationCode,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

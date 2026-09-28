@@ -2,6 +2,8 @@
 
 use App\Models\PaymentMethod;
 use App\Models\User;
+use Illuminate\Http\Client\Request as HttpRequest;
+use Illuminate\Support\Facades\Http;
 use Tests\Support\FakesClerk;
 
 const API_V1_PAYMENT_METHODS_ENDPOINT = '/api/v1/wallet/payment-methods';
@@ -61,6 +63,40 @@ it('lets a user delete their own payment method', function () {
     $token = $this->clerkToken(['sub' => 'user_pm_delete']);
     $this->withHeader('Authorization', "Bearer {$token}")->getJson(API_V1_PM_ME_ENDPOINT)->assertOk();
     $viewer = User::where('clerk_user_id', 'user_pm_delete')->firstOrFail();
+
+    $method = PaymentMethod::factory()->create(['user_id' => $viewer->id]);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->deleteJson(API_V1_PAYMENT_METHODS_ENDPOINT."/{$method->id}")
+        ->assertOk();
+
+    expect(PaymentMethod::find($method->id))->toBeNull();
+});
+
+it('deactivates the Paystack authorization when a payment method is deleted', function () {
+    Http::fake(['https://api.paystack.co/customer/deactivate_authorization' => Http::response(['status' => true], 200)]);
+    config(['services.paystack.secret_key' => 'sk_test_pm_delete']);
+    $token = $this->clerkToken(['sub' => 'user_pm_delete_deactivates']);
+    $this->withHeader('Authorization', "Bearer {$token}")->getJson(API_V1_PM_ME_ENDPOINT)->assertOk();
+    $viewer = User::where('clerk_user_id', 'user_pm_delete_deactivates')->firstOrFail();
+
+    $method = PaymentMethod::factory()->create(['user_id' => $viewer->id, 'authorization_code' => 'AUTH_to_deactivate']);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->deleteJson(API_V1_PAYMENT_METHODS_ENDPOINT."/{$method->id}")
+        ->assertOk();
+
+    Http::assertSent(fn (HttpRequest $request) => $request->url() === 'https://api.paystack.co/customer/deactivate_authorization'
+        && $request['authorization_code'] === 'AUTH_to_deactivate');
+    expect(PaymentMethod::find($method->id))->toBeNull();
+});
+
+it('still deletes the payment method locally even if Paystack deactivation fails', function () {
+    Http::fake(['https://api.paystack.co/customer/deactivate_authorization' => Http::response(['status' => false], 500)]);
+    config(['services.paystack.secret_key' => 'sk_test_pm_delete_fails']);
+    $token = $this->clerkToken(['sub' => 'user_pm_delete_paystack_down']);
+    $this->withHeader('Authorization', "Bearer {$token}")->getJson(API_V1_PM_ME_ENDPOINT)->assertOk();
+    $viewer = User::where('clerk_user_id', 'user_pm_delete_paystack_down')->firstOrFail();
 
     $method = PaymentMethod::factory()->create(['user_id' => $viewer->id]);
 
