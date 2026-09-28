@@ -43,6 +43,46 @@ it('seeds the curated catalog in its marketplace display order', function () {
     }
 });
 
+it('seeds the two truths starter with its curated 100-card deck', function () {
+    (new GameTypeSeeder)->run();
+    (new PackSeeder)->run();
+
+    $pack = Pack::query()->where('slug', 'two-truths-starter')->firstOrFail();
+
+    expect($pack->name)->toBe('Two Truths Starter');
+    expect($pack->truths_count)->toBe(52);
+    expect($pack->dares_count)->toBe(51);
+    expect($pack->cards_count)->toBe(103);
+    expect($pack->cards()->count())->toBe(103);
+    expect($pack->cards()->where('is_preview', true)->count())->toBe(4);
+
+    $positions = PackCard::query()->where('pack_id', $pack->id)->orderBy('position')->pluck('position');
+
+    expect($positions->duplicates())->toBeEmpty();
+    expect($positions->toArray())->toBe(range(0, 102));
+
+    expect(Pack::query()->where('slug', 'two-truths-classic-100')->exists())->toBeFalse();
+});
+
+it('seeds family game night with its curated 100-card deck', function () {
+    (new GameTypeSeeder)->run();
+    (new PackSeeder)->run();
+
+    $pack = Pack::query()->where('slug', 'family-game-night')->firstOrFail();
+
+    expect($pack->name)->toBe('Family Game Night');
+    expect($pack->truths_count)->toBe(52);
+    expect($pack->dares_count)->toBe(52);
+    expect($pack->cards_count)->toBe(104);
+    expect($pack->cards()->count())->toBe(104);
+    expect($pack->cards()->where('is_preview', true)->count())->toBe(4);
+
+    $positions = PackCard::query()->where('pack_id', $pack->id)->orderBy('position')->pluck('position');
+
+    expect($positions->duplicates())->toBeEmpty();
+    expect($positions->toArray())->toBe(range(0, 103));
+});
+
 it('syncs the randomized marketplace packs count metadata to their actual attached cards', function () {
     (new GameTypeSeeder)->run();
     (new PackSeeder)->run();
