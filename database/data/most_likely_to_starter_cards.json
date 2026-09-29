@@ -1,0 +1,404 @@
+{
+  "cards": [
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to forget why they walked into a room?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to make everyone laugh without trying?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to become the group's unofficial leader?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to start a new hobby on a whim?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to win a game by accident?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to remember everyone's birthday?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to get excited about a tiny achievement?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to turn a simple story into a ten-minute adventure?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to bring the best snacks to a road trip?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to invent a new family tradition?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to become famous for an unusual talent?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to make friends with a stranger in five minutes?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to volunteer to organize the next group outing?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to laugh at the worst possible moment?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to win a cooking competition?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to become a great storyteller?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to learn a new language just for fun?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to get lost while following a map?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to find a shortcut nobody else noticed?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to remember a random fact years later?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to become a game-night champion?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to plan an adventure at the last minute?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to have the most creative excuse for being late?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to make an ordinary day feel like an adventure?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to become an excellent teacher?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to keep a secret the longest?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to adopt a new catchphrase?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to start a dance party without warning?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to solve a puzzle before everyone else?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to become the group's best photographer?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to make the best homemade gift?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to remember exactly what happened years ago?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to laugh until they cry?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to make up a song about something ordinary?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to try the strangest item on a menu?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to win a trivia night?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to turn a mistake into a funny story?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to discover a hidden talent by accident?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to stay calm when everyone else is confused?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to cheer everyone up?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to become the group's unofficial photographer?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to remember the lyrics to an old favorite song?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to build something impressive from simple materials?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to suggest a spontaneous road trip?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to make the best first impression?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to befriend every pet in the room?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to have the funniest reaction to a surprise?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to win a friendly competition through determination?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to notice when someone needs encouragement?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to create the funniest nickname for a group?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to become a successful storyteller or performer?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to find something everyone else thought was lost?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to turn a boring chore into a game?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to remember everyone's favorite snack?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to make a clever pun at exactly the right moment?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to learn a complicated game the fastest?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to keep laughing after everyone else has stopped?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to come up with the best party theme?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to make a brilliant plan five minutes before an event?"
+    },
+    {
+      "kind": "truth",
+      "text": "Who here is most likely to surprise everyone with an unexpected talent?"
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to forget their own plan, and explain your choice in ten seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to make everyone laugh, and give them a ten-second mock award."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to lead the group, and let them choose the next speaker."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to start a new hobby, and give them a playful reason why."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to win this game, and give them a ten-second victory speech."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to remember every birthday, and give them a sincere compliment."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to get excited over small wins, and celebrate them for ten seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to tell the longest story, and summarize their imaginary story in one sentence."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to bring great snacks, and give them a ten-second chef compliment."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to invent a tradition, and ask them to name it in ten seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to discover a hidden talent, and describe what you think it could be."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to make a new friend anywhere, and give them a ten-second friendship award."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to organize the next outing, and thank them like an event host."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to laugh at the wrong moment, and give them a playful ten-second warning."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to win a cooking contest, and announce their imaginary title."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to become a great storyteller, and give them a ten-second introduction."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to learn a new language, and invent a word they should learn."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to get lost, and give them a ten-second imaginary navigation lesson."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to find a shortcut, and let them explain their imaginary route."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to remember random facts, and give them a ten-second genius award."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to dominate game night, and give them a playful champion speech."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to plan something at the last minute, and describe their imaginary plan."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to have a funny excuse, and invent a harmless excuse for them."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to make an ordinary day fun, and give them a ten-second compliment."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to be a great teacher, and ask them to teach you one imaginary skill."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to keep a secret, and give them a ten-second trust award."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to invent a catchphrase, and create one for them."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to start a dance party, and give them a ten-second party introduction."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to solve a puzzle first, and call them the group's puzzle champion."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to take the best photos, and give them an imaginary photography award."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to make a great gift, and tell them what you think they would create."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to remember everything, and give them a ten-second memory champion speech."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to laugh the hardest, and give them a playful laugh trophy."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to make up a song, and give them a ten-second imaginary record deal."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to try unusual food, and invent a silly dish they should review."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to win trivia, and give them a ten-second quiz-show introduction."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to turn mistakes into stories, and give them a ten-second storytelling award."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to stay calm, and call them the group's calm captain."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to cheer everyone up, and give them a ten-second happiness award."
+    },
+    {
+      "kind": "dare",
+      "text": "Point at the player most likely to remember an old song, and give them an imaginary music award."
+    }
+  ]
+}

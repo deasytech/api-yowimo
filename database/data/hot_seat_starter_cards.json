@@ -1,0 +1,404 @@
+{
+  "cards": [
+    {
+      "kind": "truth",
+      "text": "What is one habit you have that your friends would find surprising?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is something you pretend to understand better than you actually do?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one small thing that annoys you more than it should?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is the last thing you changed your mind about?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one opinion you rarely say out loud?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is something you are secretly very competitive about?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing you always notice when you enter someone's home?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is a harmless secret you have never mentioned to this group?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing you would change about your daily routine?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is the most unusual thing you have searched online recently?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one task you always put off?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is something you are much better at than people expect?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing you wish people understood about you?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is a habit you picked up from someone else?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one compliment you still remember?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is something you often overthink?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one decision you made that turned out better than expected?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one decision you would make differently today?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is something you always have trouble saying no to?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one food you would never get tired of eating?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one popular thing you secretly do not care about?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is something you spend too much time thinking about?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing you would buy if money were no concern?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one skill you wish you had right now?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing you are proud of but rarely mention?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is a harmless excuse you use when you need extra time?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing you do when nobody else is watching?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is your most predictable habit?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing you always forget to do?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is something you have recently become curious about?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one rule you would happily change?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing that instantly improves your mood?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is something you wish you had started earlier?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one personal goal you have not told many people about?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing you are currently trying to improve about yourself?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing you are surprisingly picky about?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is a harmless habit you would be embarrassed to explain?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is something you often pretend does not bother you?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing you would never lend to someone?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one purchase you are especially glad you made?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one purchase you wish you had skipped?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is something you always do before going to bed?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing you would happily do every day?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing you could talk about for hours?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one topic you avoid discussing at family gatherings?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is something you think your closest friend understands about you best?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one quality you appreciate most in a friend?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one quality that makes you trust someone quickly?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing that can instantly make you lose patience?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one secret talent you have that people here may not know?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing you would never post on social media?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is something you have done just because your friends were doing it?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one opinion you have that your friends often disagree with?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is something you find difficult to admit when you are wrong?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing you wish you could ask someone here?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is something you would change about your last conversation?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing you value more now than you did a few years ago?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one promise to yourself you are trying to keep?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is something you always notice about a person's personality?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one harmless thing you have lied about to avoid an awkward moment?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing you would tell your younger self?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is something you wish you had more confidence to do?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing you are secretly excited about?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing you would happily give up for a month?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is a small luxury you really enjoy?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing you find difficult to share with others?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is something you would like people to ask you about more often?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing you are glad you learned the hard way?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing you would change about your phone habits?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing you hope people remember about you?"
+    },
+    {
+      "kind": "dare",
+      "text": "Let the group choose which harmless question you must answer next."
+    },
+    {
+      "kind": "dare",
+      "text": "Answer the next question in one sentence with no explanations."
+    },
+    {
+      "kind": "dare",
+      "text": "Let the player on your left ask you one extra question."
+    },
+    {
+      "kind": "dare",
+      "text": "Give the group one honest answer you would normally keep brief."
+    },
+    {
+      "kind": "dare",
+      "text": "Let the group vote on which topic you should answer next."
+    },
+    {
+      "kind": "dare",
+      "text": "Answer one follow-up question chosen by the person across from you."
+    },
+    {
+      "kind": "dare",
+      "text": "Let another player choose your next truth card."
+    },
+    {
+      "kind": "dare",
+      "text": "Give your next answer without using the words yes or no."
+    },
+    {
+      "kind": "dare",
+      "text": "Let the group ask one question you can only answer with complete honesty."
+    },
+    {
+      "kind": "dare",
+      "text": "Choose one player to ask you the question you are most likely to dodge."
+    },
+    {
+      "kind": "dare",
+      "text": "Answer the next two questions before anyone else speaks."
+    },
+    {
+      "kind": "dare",
+      "text": "Let the group decide whether your next answer needs more detail."
+    },
+    {
+      "kind": "dare",
+      "text": "Let the group choose the exact wording of your next question."
+    },
+    {
+      "kind": "dare",
+      "text": "Give the most honest short answer you can to the next question."
+    },
+    {
+      "kind": "dare",
+      "text": "Let another player choose whether your next answer is one sentence or three."
+    },
+    {
+      "kind": "dare",
+      "text": "Answer one question that you would usually answer with 'it depends.'"
+    },
+    {
+      "kind": "dare",
+      "text": "Let the group choose one harmless habit for you to explain."
+    },
+    {
+      "kind": "dare",
+      "text": "Give one honest answer without using the phrase 'I don't know.'"
+    },
+    {
+      "kind": "dare",
+      "text": "Let the player on your right choose your next question."
+    },
+    {
+      "kind": "dare",
+      "text": "Answer the next question immediately without taking time to think."
+    },
+    {
+      "kind": "dare",
+      "text": "Let the group ask one follow-up question after your next answer."
+    },
+    {
+      "kind": "dare",
+      "text": "Choose a player to summarize what they think your answer says about you."
+    },
+    {
+      "kind": "dare",
+      "text": "Let the group vote on whether you should explain your next answer further."
+    },
+    {
+      "kind": "dare",
+      "text": "Answer your next question using exactly five words."
+    },
+    {
+      "kind": "dare",
+      "text": "Let another player choose one of your answers to question further."
+    },
+    {
+      "kind": "dare",
+      "text": "Give one honest answer about a habit you usually keep private."
+    },
+    {
+      "kind": "dare",
+      "text": "Let the group choose one harmless opinion for you to defend for ten seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Answer the next question without changing the subject."
+    },
+    {
+      "kind": "dare",
+      "text": "Let the person who knows you best ask your next question."
+    },
+    {
+      "kind": "dare",
+      "text": "Let the group choose one harmless question you must answer before your turn ends."
+    }
+  ]
+}

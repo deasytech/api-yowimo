@@ -1,0 +1,484 @@
+{
+  "cards": [
+    {
+      "kind": "truth",
+      "text": "What's a secret opinion you've kept quiet because the room would disagree?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something you've pretended to understand when you actually had no idea?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a decision you made on impulse that you still think about?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the closest you've come to getting caught doing something you shouldn't?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a harmless lie you've told that somehow became difficult to undo?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something you secretly judge people for even though you know you shouldn't?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a promise you made to yourself and quietly broke?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the most unexpected thing you've ever been jealous of?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a compliment you received that you still think about?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something you've done just to impress someone?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a rumor about someone else that you believed for far too long?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a rumor you wish people would stop believing about you?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's an opinion you changed recently but haven't told anyone about?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something you once claimed to hate because everyone else did?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a moment when you realized you were completely wrong about someone?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something you've blamed on bad luck when you knew it was your fault?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a small betrayal you never confronted someone about?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something you regret saying because you wish you had kept it private?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the most awkward misunderstanding you've never fully explained?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something you've secretly wanted to be praised for?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a habit you hide when you're trying to make a good impression?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the pettiest reason you've ever stopped talking to someone?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something you said confidently that you immediately wished you could take back?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a friendship decision you still wonder whether you got right?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something you have pretended not to care about?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the boldest excuse you've ever used to get out of something?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a harmless secret you've kept from your closest friend?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something you wish you had admitted sooner?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a time you acted confident while secretly panicking?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a choice you made mainly because you wanted other people's approval?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something you secretly hope people notice about you?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the most ridiculous thing you've ever taken personally?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's an embarrassing mistake you have never corrected because too much time has passed?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something you once did that sounded like a terrible idea but worked out?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a conversation you replay in your head because you wish you'd answered differently?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a bold opinion you usually keep to yourself?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something you have done out of pure curiosity that you would not normally admit?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a moment when you knew you were being stubborn but refused to back down?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something you have quietly forgiven but never forgotten?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the most surprising thing you've learned about yourself recently?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a harmless secret you've carried for years?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something you wish someone in this room understood about you?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a time you pretended to be busy because you didn't want to join a plan?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the most unnecessary thing you've ever been competitive about?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something you have secretly wanted to try but kept postponing?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a personal rule you follow that most people would find strange?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the biggest harmless exaggeration you've ever made about yourself?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something you once thought made you look cool but now makes you laugh?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a moment when you realized someone knew you better than you expected?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something you would change about your reputation if you could do it instantly?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a harmless grudge you still remember the reason for?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something you have never admitted because it felt too awkward to say out loud?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a choice you would make differently if nobody could judge you?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something you secretly find impressive even though you pretend not to?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the most daring thing you've done purely because someone challenged you?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a harmless secret about your younger self that would surprise this group?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something you have wanted to say in this group but never found the right moment?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a moment when your pride stopped you from admitting you were wrong?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something you once promised yourself you'd never do but eventually did?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's one thing about your personality you think people misunderstand?"
+    },
+    {
+      "kind": "dare",
+      "text": "Hand your phone to a player for 30 seconds and let them choose which harmless photo to show the group."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a completely serious one-minute speech defending an opinion you do not actually hold."
+    },
+    {
+      "kind": "dare",
+      "text": "Let the group choose a harmless nickname for you that everyone must use for the next three rounds."
+    },
+    {
+      "kind": "dare",
+      "text": "Look around the room and give each player one brutally honest but kind compliment."
+    },
+    {
+      "kind": "dare",
+      "text": "Tell the group one harmless secret using your most dramatic storytelling voice."
+    },
+    {
+      "kind": "dare",
+      "text": "Let another player choose a word you must naturally work into every answer for the next two rounds."
+    },
+    {
+      "kind": "dare",
+      "text": "Give an acceptance speech for an imaginary award the group invents for you."
+    },
+    {
+      "kind": "dare",
+      "text": "Act like you are being interviewed about the most ridiculous scandal you've ever been involved in."
+    },
+    {
+      "kind": "dare",
+      "text": "Choose one player and let them ask you one question you must answer immediately."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a 20-second motivational speech about something completely ordinary."
+    },
+    {
+      "kind": "dare",
+      "text": "Let the group choose an emotion, then tell a completely normal story while acting as if you feel it intensely."
+    },
+    {
+      "kind": "dare",
+      "text": "Read your last harmless notification out loud without explaining the context."
+    },
+    {
+      "kind": "dare",
+      "text": "Make a dramatic apology to an everyday object in the room."
+    },
+    {
+      "kind": "dare",
+      "text": "Let another player choose your speaking style for the next round, such as whispering or sounding overly formal."
+    },
+    {
+      "kind": "dare",
+      "text": "Tell the group your most embarrassing harmless habit while maintaining completely serious eye contact."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a fake press conference defending yourself against an imaginary accusation chosen by the group."
+    },
+    {
+      "kind": "dare",
+      "text": "Choose someone and let them give you a harmless challenge you can complete in 20 seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Stand up and deliver your most convincing fake campaign speech for yourself as if you were running for an absurd title."
+    },
+    {
+      "kind": "dare",
+      "text": "Let the group choose a random word and invent a believable story explaining why it changed your life."
+    },
+    {
+      "kind": "dare",
+      "text": "Give the person across from you a completely sincere compliment in the most dramatic voice possible."
+    },
+    {
+      "kind": "dare",
+      "text": "Act out how you look when you think nobody is watching."
+    },
+    {
+      "kind": "dare",
+      "text": "Tell the group a harmless confession while pretending you are revealing a world-changing secret."
+    },
+    {
+      "kind": "dare",
+      "text": "Let another player pick one of your recent emojis, then explain an imaginary dramatic story behind it."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a 30-second dramatic monologue about the last thing you ate or drank."
+    },
+    {
+      "kind": "dare",
+      "text": "Choose one player and imitate their completely harmless mannerism until they guess what you are doing."
+    },
+    {
+      "kind": "dare",
+      "text": "Let the group ask you three rapid-fire questions and answer each without pausing."
+    },
+    {
+      "kind": "dare",
+      "text": "Make up a ridiculous headline about your life and read it like breaking news."
+    },
+    {
+      "kind": "dare",
+      "text": "Give yourself a new stage name and explain the story behind it with total confidence."
+    },
+    {
+      "kind": "dare",
+      "text": "Let another player choose a harmless pose you must hold while answering your next question."
+    },
+    {
+      "kind": "dare",
+      "text": "Deliver a serious weather report describing the mood inside this room."
+    },
+    {
+      "kind": "dare",
+      "text": "Pick a player and give them an exaggerated celebrity-style introduction."
+    },
+    {
+      "kind": "dare",
+      "text": "Tell the group one thing you would never put on a dating profile, without revealing anything sexual or deeply personal."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a dramatic courtroom defense of the most questionable harmless choice you've made today."
+    },
+    {
+      "kind": "dare",
+      "text": "Let the group choose an ordinary object and convince everyone it is secretly extremely valuable."
+    },
+    {
+      "kind": "dare",
+      "text": "Perform a 20-second commercial advertising yourself as if you were a product."
+    },
+    {
+      "kind": "dare",
+      "text": "Choose one player and tell them a truth about yourself that you have never mentioned to them before."
+    },
+    {
+      "kind": "dare",
+      "text": "Speak only in questions for the next minute while everyone tries to make you break the rule."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a completely sincere thank-you speech to someone for something extremely small."
+    },
+    {
+      "kind": "dare",
+      "text": "Act out your reaction to receiving the most unbelievable good news imaginable."
+    },
+    {
+      "kind": "dare",
+      "text": "Let another player choose a harmless word you are forbidden to say until your next turn."
+    },
+    {
+      "kind": "truth",
+      "text": "What's a harmless secret you've kept because revealing it would surprise everyone?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something you did once that you would probably never volunteer to tell the story about?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's an opinion you've softened about someone after getting to know them?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the closest you've ever come to admitting something and then changing your mind?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something you secretly wish you were better at?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a harmless thing you've done that you hope nobody in this room remembers?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something you have exaggerated because you wanted a story to sound better?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a moment when you realized you cared more than you were willing to admit?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a harmless secret you would trust this group to keep?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something you've avoided admitting because it would make you look overly sentimental?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a time you let someone take the blame for something that was partly your fault?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a harmless assumption people make about you that isn't true?"
+    },
+    {
+      "kind": "dare",
+      "text": "Let a player choose one harmless question and answer it instantly without preparing."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a dramatic confession about something completely ordinary, like choosing your favorite snack."
+    },
+    {
+      "kind": "dare",
+      "text": "Let another player choose your opening line for a fake speech you must deliver for 20 seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Pick someone and tell them one genuinely unexpected thing you appreciate about them."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you are famous and answer three questions from the group about your imaginary scandal."
+    },
+    {
+      "kind": "dare",
+      "text": "Let the group choose a harmless emotion and use it while delivering your next answer."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a completely serious tutorial on how to do something you are terrible at."
+    },
+    {
+      "kind": "dare",
+      "text": "Choose a player and let them invent a harmless rumor about you that you must dramatically deny."
+    }
+  ]
+}

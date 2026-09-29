@@ -1,0 +1,404 @@
+{
+  "cards": [
+    {
+      "kind": "truth",
+      "text": "Which song always puts you in a better mood?"
+    },
+    {
+      "kind": "truth",
+      "text": "What kind of music do you play when you need to relax?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which artist would you most like to see perform live?"
+    },
+    {
+      "kind": "truth",
+      "text": "What song instantly reminds you of your childhood?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which decade of music would you listen to for a whole week?"
+    },
+    {
+      "kind": "truth",
+      "text": "What song makes you want to dance as soon as it starts?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which music genre surprised you by becoming one of your favorites?"
+    },
+    {
+      "kind": "truth",
+      "text": "What song would you choose to open your dream concert?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which album can you listen to from beginning to end?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is your favorite song to hear on a road trip?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which singer has the most recognizable voice to you?"
+    },
+    {
+      "kind": "truth",
+      "text": "What song always reminds you of a particular person?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which music style would you love to understand better?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is your favorite song from an animated movie?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which old song do you think still sounds great today?"
+    },
+    {
+      "kind": "truth",
+      "text": "What song would you choose for a family karaoke night?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which artist do you think has the best stage presence?"
+    },
+    {
+      "kind": "truth",
+      "text": "What type of music helps you focus best?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which song makes you feel like you are in a movie scene?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is your favorite song for celebrating good news?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which instrument do you most enjoy hearing in a song?"
+    },
+    {
+      "kind": "truth",
+      "text": "What song would you choose as the soundtrack to your weekend?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which music era has your favorite fashion and sound?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is the funniest song you genuinely enjoy?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which song would you play to introduce someone to your music taste?"
+    },
+    {
+      "kind": "truth",
+      "text": "What kind of music do you prefer first thing in the morning?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which concert or live performance do you remember most clearly?"
+    },
+    {
+      "kind": "truth",
+      "text": "What song makes you think of a holiday or celebration?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which artist have you listened to for the longest time?"
+    },
+    {
+      "kind": "truth",
+      "text": "What song would you choose for a big victory moment?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which genre do you enjoy more now than you did a few years ago?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is your favorite song to sing when nobody is listening?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which song has a beat you can recognize almost instantly?"
+    },
+    {
+      "kind": "truth",
+      "text": "What music do you like to hear while traveling?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which artist would you trust to create the soundtrack to your life?"
+    },
+    {
+      "kind": "truth",
+      "text": "What song always makes you feel nostalgic?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which 80s or 90s song would you happily bring back to the charts?"
+    },
+    {
+      "kind": "truth",
+      "text": "What current song do you think you will still enjoy years from now?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which song would you choose for your grand entrance at a party?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is your favorite type of music for a quiet evening?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which song have you discovered through a movie or TV show?"
+    },
+    {
+      "kind": "truth",
+      "text": "What musical sound or instrument always grabs your attention?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which song would you choose for a group singalong?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is your favorite memory connected to music?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which artist would you swap playlists with for a day?"
+    },
+    {
+      "kind": "truth",
+      "text": "What song would you choose to wake you up every morning?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which genre would you pick if you could only hear one for a month?"
+    },
+    {
+      "kind": "truth",
+      "text": "What song makes an ordinary day feel more exciting?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which musical performance have you watched more than once?"
+    },
+    {
+      "kind": "truth",
+      "text": "What song would you put first on a playlist made for your friends?"
+    },
+    {
+      "kind": "dare",
+      "text": "Sing one note for as long as you comfortably can."
+    },
+    {
+      "kind": "dare",
+      "text": "Dance like you are starring in a 1980s music video for 15 seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend to play an invisible guitar solo for 15 seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Beatbox a simple rhythm for 10 seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Perform a dramatic opera-style note for five seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Dance in slow motion as if your favorite song is playing."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend to conduct a huge orchestra for 15 seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Make up a three-word song title and sing it dramatically."
+    },
+    {
+      "kind": "dare",
+      "text": "Clap a rhythm and have the group copy you."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend to be a pop star making a grand stage entrance."
+    },
+    {
+      "kind": "dare",
+      "text": "Perform an invisible piano solo for 10 seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Sing your own name as if it is the chorus of a hit song."
+    },
+    {
+      "kind": "dare",
+      "text": "Do a 15-second dance using only your arms."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend to be a rock singer greeting a huge imaginary crowd."
+    },
+    {
+      "kind": "dare",
+      "text": "Make three different musical sounds using only your voice."
+    },
+    {
+      "kind": "dare",
+      "text": "Perform a tiny victory dance to an imaginary anthem."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend to play invisible drums for 10 seconds without making a sound."
+    },
+    {
+      "kind": "dare",
+      "text": "Sing a made-up jingle about the room you are in."
+    },
+    {
+      "kind": "dare",
+      "text": "Do your best air-guitar power pose and hold it for five seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you are a DJ introducing the next big song."
+    },
+    {
+      "kind": "dare",
+      "text": "Hum a well-known song one note at a time until the group guesses it."
+    },
+    {
+      "kind": "dare",
+      "text": "Dance like you are in a cheerful 1990s music video."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend to play an invisible violin with maximum drama."
+    },
+    {
+      "kind": "dare",
+      "text": "Sing one sentence about your day in a classical style."
+    },
+    {
+      "kind": "dare",
+      "text": "Make up a short tune using only the word la."
+    },
+    {
+      "kind": "dare",
+      "text": "Do a dance move for each of three imaginary drum beats."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you are accepting an award for Song of the Year."
+    },
+    {
+      "kind": "dare",
+      "text": "Perform a 10-second marching-band routine while staying in place."
+    },
+    {
+      "kind": "dare",
+      "text": "Sing a made-up weather forecast like a pop chorus."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend to be the lead singer of an imaginary rock band."
+    },
+    {
+      "kind": "dare",
+      "text": "Create a five-second sound effect for a dramatic song intro."
+    },
+    {
+      "kind": "dare",
+      "text": "Dance for 15 seconds as if the music keeps changing genres."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend to play an invisible saxophone solo."
+    },
+    {
+      "kind": "dare",
+      "text": "Sing the days of the week in your most dramatic voice."
+    },
+    {
+      "kind": "dare",
+      "text": "Create a short melody using only humming and hand claps."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend to teach the group one simple dance move."
+    },
+    {
+      "kind": "dare",
+      "text": "Perform a silent dance as if you can hear an amazing song."
+    },
+    {
+      "kind": "dare",
+      "text": "Introduce yourself as if you are about to headline a huge concert."
+    },
+    {
+      "kind": "dare",
+      "text": "Make up a two-line song about your favorite snack."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend to play three different invisible instruments in 15 seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Do your best disco dance while staying in one spot."
+    },
+    {
+      "kind": "dare",
+      "text": "Sing a made-up superhero theme for 10 seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you are a choir director warming up an imaginary choir."
+    },
+    {
+      "kind": "dare",
+      "text": "Create a rhythm using only finger snaps and claps."
+    },
+    {
+      "kind": "dare",
+      "text": "Dance like a robot hearing music for the first time."
+    },
+    {
+      "kind": "dare",
+      "text": "Perform a dramatic final pose as if you just finished a concert."
+    },
+    {
+      "kind": "dare",
+      "text": "Make up a short country-style song about your day."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend to sing into an invisible microphone for 15 seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Create a 10-second hip-hop beat using only your voice."
+    },
+    {
+      "kind": "dare",
+      "text": "Do a quick dance inspired by your favorite music decade."
+    }
+  ]
+}
