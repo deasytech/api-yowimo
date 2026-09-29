@@ -14,10 +14,7 @@ beforeEach(function () {
     $this->fakeClerk();
 });
 
-// authAs() (provision a user via a real request, matching this app's
-// auto-provision-on-first-request behavior, and leave the Authorization
-// header set for the rest of the test) is declared globally in
-// FriendshipControllerTest.php and reused here rather than redeclared.
+// authAs() is a shared helper declared in tests/Pest.php.
 
 it('rejects requests with no bearer token', function () {
     $this->getJson(API_V1_PAYMENT_METHODS_ENDPOINT)->assertStatus(401);

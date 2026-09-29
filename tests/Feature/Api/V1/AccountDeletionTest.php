@@ -160,10 +160,6 @@ it('logs a warning and still removes the payment method when Paystack declines d
 
     $this->deleteJson(API_V1_ME_ENDPOINT)->assertOk();
 
-    // authorization_code is deliberately not logged (it's the reusable charge
-    // credential PaymentMethod::$hidden keeps out of API responses too) —
-    // assert on payment_method_id/response instead to confirm the right
-    // failure was caught.
     $log->shouldHaveReceived('warning')
         ->once()
         ->withArgs(fn (string $message, array $context) => ! array_key_exists('authorization_code', $context)

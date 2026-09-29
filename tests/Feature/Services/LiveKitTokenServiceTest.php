@@ -9,11 +9,23 @@ use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
 beforeEach(function () {
-    config(['services.livekit.api_key' => 'lk_test_key', 'services.livekit.api_secret' => 'lk_test_secret_at_least_32_characters_long']);
+    config([
+        'services.livekit.api_key' => 'lk_test_key',
+        'services.livekit.api_secret' => 'lk_test_secret_at_least_32_characters_long',
+        'services.livekit.url' => 'wss://example.livekit.cloud',
+    ]);
 });
 
 it('throws when LiveKit is not configured', function () {
     config(['services.livekit.api_key' => null, 'services.livekit.api_secret' => null]);
+    $party = Party::factory()->create(['mode' => PartyMode::Online]);
+    $user = User::factory()->create();
+
+    app(LiveKitTokenService::class)->tokenFor($user, $party);
+})->throws(LiveKitNotConfiguredException::class);
+
+it('throws when LIVEKIT_URL specifically is missing, even with keys configured', function () {
+    config(['services.livekit.url' => null]);
     $party = Party::factory()->create(['mode' => PartyMode::Online]);
     $user = User::factory()->create();
 
@@ -39,6 +51,7 @@ it('mints a token scoped to the party room with publish and subscribe granted', 
     expect($video['roomJoin'])->toBeTrue();
     expect($video['canPublish'])->toBeTrue();
     expect($video['canSubscribe'])->toBeTrue();
+    expect($video['canPublishData'])->toBeFalse();
 });
 
 it('falls back to username, then a generic label, when display_name is missing', function () {

@@ -63,7 +63,11 @@ class PaystackClient
      * response (`status: false`, which never throws — see request()) so
      * neither passes silently. $context is merged into the log so the
      * caller's identifying fields (payment_method_id, user_id, ...) show up
-     * without this method needing to know their shape.
+     * without this method needing to know their shape. authorizationCode
+     * itself is deliberately never logged — it's the reusable charge
+     * credential PaymentMethod::$hidden already keeps out of API responses,
+     * and logs (ingested by Sentry) are a broader exposure surface than this
+     * app's own DB.
      *
      * @param  array{user_id?: int, payment_method_id?: int}  $context
      */
@@ -73,10 +77,6 @@ class PaystackClient
             $response = $this->deactivateAuthorization($authorizationCode);
 
             if (($response['status'] ?? false) !== true) {
-                // authorization_code is deliberately not logged — it's the
-                // reusable charge credential PaymentMethod::$hidden already
-                // keeps out of API responses, and logs (ingested by Sentry)
-                // are a broader exposure surface than this app's own DB.
                 Log::warning('Paystack declined to deactivate an authorization.', [
                     ...$context,
                     'response' => $response,

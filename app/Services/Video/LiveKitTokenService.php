@@ -42,7 +42,10 @@ class LiveKitTokenService
         $apiKey = config('services.livekit.api_key');
         $apiSecret = config('services.livekit.api_secret');
 
-        if (! $apiKey || ! $apiSecret) {
+        // LIVEKIT_URL is required too — a token with nowhere to connect
+        // (the controller returns it alongside this token) would otherwise
+        // look like a 200 success while the client has no usable room.
+        if (! $apiKey || ! $apiSecret || ! config('services.livekit.url')) {
             throw new LiveKitNotConfiguredException;
         }
 
@@ -60,6 +63,10 @@ class LiveKitTokenService
                 'roomJoin' => true,
                 'canPublish' => true,
                 'canSubscribe' => true,
+                // Explicit, not omitted: chat rides LiveKit's data channel,
+                // and v0 doesn't build chat — an omitted grant shouldn't be
+                // left to whatever LiveKit's own default happens to be.
+                'canPublishData' => false,
             ],
         ];
 
