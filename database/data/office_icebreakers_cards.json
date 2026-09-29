@@ -1,0 +1,404 @@
+{
+  "cards": [
+    {
+      "kind": "truth",
+      "text": "What's a food you could happily eat for lunch every day?"
+    },
+    {
+      "kind": "truth",
+      "text": "What hobby would you love to make more time for?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the funniest thing that has happened on your commute?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a skill you learned completely by yourself?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your go-to snack during a busy workday?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the most unusual job you'd try for one day?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a small routine that makes your workday better?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the best piece of career advice you've received?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something you always keep on your desk or nearby?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a hobby people might not guess you have?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the most interesting place you've visited?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a harmless talent you rarely get to use at work?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite way to spend a free afternoon?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a childhood interest you still enjoy today?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the funniest autocorrect or typo you've ever sent?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's one thing you learned recently just for fun?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite quick breakfast before a busy day?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the longest commute you've ever had?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a small thing that reliably makes you smile?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite way to recharge after a busy week?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the most memorable school project you ever worked on?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a simple task you're surprisingly good at?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite type of team activity?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a place nearby you'd recommend for a quick break?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's one app you use more than you expected?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a harmless habit you have when you're concentrating?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the most useful thing someone taught you outside school?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a work task you secretly find satisfying?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite kind of puzzle or game?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a small purchase that improved your daily routine?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the most unexpected thing you've learned from a coworker?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a topic you could happily talk about for ten minutes?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite way to organize your day?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a funny misunderstanding you've had while traveling?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's one everyday convenience you really appreciate?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a song you enjoy that always lifts your mood?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite kind of weekend activity?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a harmless thing you are unusually particular about?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a place you've visited that surprised you?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a simple skill everyone should learn?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite way to learn something new?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a funny phrase or saying you use often?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's one thing that makes a great team meeting?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite kind of weather for getting things done?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a hobby you'd recommend to someone who has little free time?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the most useful shortcut you've discovered?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a harmless office habit you have that makes you laugh at yourself?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a place you'd happily visit again?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite kind of team lunch?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a small goal you're working toward this year?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something you can do quickly that others often find difficult?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a book, show, or podcast you would recommend to the team?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a funny thing you believed when you were younger?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite way to celebrate finishing a big task?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's one everyday skill you wish you had learned earlier?"
+    },
+    {
+      "kind": "dare",
+      "text": "Give a 10-second weather report for the room you're in."
+    },
+    {
+      "kind": "dare",
+      "text": "Describe your morning using only three dramatic sound effects."
+    },
+    {
+      "kind": "dare",
+      "text": "Share one surprising fun fact with the group in 15 seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a 10-second advertisement for your favorite snack."
+    },
+    {
+      "kind": "dare",
+      "text": "Speak like a news anchor while announcing the next meeting topic."
+    },
+    {
+      "kind": "dare",
+      "text": "Make up a cheerful team motto and deliver it like a rallying cry."
+    },
+    {
+      "kind": "dare",
+      "text": "Describe your desk or workspace like you're hosting a home tour."
+    },
+    {
+      "kind": "dare",
+      "text": "Give your best impression of a robot trying to join a meeting."
+    },
+    {
+      "kind": "dare",
+      "text": "Explain how to make tea or coffee like you're teaching a masterclass."
+    },
+    {
+      "kind": "dare",
+      "text": "Send a harmless celebratory emoji to the team chat."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a 15-second speech about why Mondays deserve more respect."
+    },
+    {
+      "kind": "dare",
+      "text": "Describe your current task using only movie-trailer style language."
+    },
+    {
+      "kind": "dare",
+      "text": "Make up a fictional company slogan and pitch it in 10 seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a dramatic countdown from ten to one."
+    },
+    {
+      "kind": "dare",
+      "text": "Do your best impression of a computer starting up."
+    },
+    {
+      "kind": "dare",
+      "text": "Share one harmless productivity tip in exactly one sentence."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you're a tour guide giving a 15-second tour of the room."
+    },
+    {
+      "kind": "dare",
+      "text": "Explain your favorite snack using only three clues."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a 10-second motivational speech to your keyboard or laptop."
+    },
+    {
+      "kind": "dare",
+      "text": "Speak in an overly formal voice while saying what you plan to do next."
+    },
+    {
+      "kind": "dare",
+      "text": "Create a fictional award and explain why the team deserves it."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a 15-second review of the last thing you ate or drank."
+    },
+    {
+      "kind": "dare",
+      "text": "Make up a three-word team catchphrase and say it with confidence."
+    },
+    {
+      "kind": "dare",
+      "text": "Describe your weekend plans like you're reporting breaking news."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a 10-second tutorial on something extremely simple."
+    },
+    {
+      "kind": "dare",
+      "text": "Make a harmless sound effect for every step of opening an imaginary door."
+    },
+    {
+      "kind": "dare",
+      "text": "Share one fun fact about your hometown in 15 seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you're hosting a radio show and introduce the next speaker."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a dramatic reading of the phrase 'back to the agenda.'"
+    },
+    {
+      "kind": "dare",
+      "text": "Invent a fictional office holiday and explain how the team celebrates it."
+    },
+    {
+      "kind": "dare",
+      "text": "Describe your favorite hobby like you're pitching it to investors."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a 15-second acceptance speech for an imaginary teamwork award."
+    },
+    {
+      "kind": "dare",
+      "text": "Use three different voices to say the same harmless sentence."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend your laptop is a sports commentator and narrate its next action."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a quick team-safe riddle and reveal the answer."
+    },
+    {
+      "kind": "dare",
+      "text": "Describe a normal office object as if it were a luxury product."
+    },
+    {
+      "kind": "dare",
+      "text": "Send a thumbs-up emoji to the team chat if appropriate for your team."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a 10-second pep talk about getting through a busy afternoon."
+    },
+    {
+      "kind": "dare",
+      "text": "Invent a fictional job title for yourself and explain it in one sentence."
+    },
+    {
+      "kind": "dare",
+      "text": "Act like a game-show host and announce the next person's turn."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a 15-second pitch for an imaginary app that solves a silly problem."
+    },
+    {
+      "kind": "dare",
+      "text": "Describe your favorite place without naming it and let the group guess."
+    },
+    {
+      "kind": "dare",
+      "text": "Say three positive words that describe a great teammate."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you're giving a museum tour of an ordinary object nearby."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a 10-second celebration for completing an imaginary difficult task."
+    }
+  ]
+}

@@ -1,0 +1,404 @@
+{
+  "cards": [
+    {
+      "kind": "truth",
+      "text": "What's the funniest excuse you've ever used to avoid a plan?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a food combination you love that others might find strange?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the weirdest compliment you've ever received?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something you were convinced was true as a kid?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your most useless hidden talent?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the last thing that made you laugh really hard?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a small thing that instantly puts you in a good mood?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the most unusual place you've ever fallen asleep?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a game you could play for hours?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the funniest nickname you've ever had?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something you would try if you knew you couldn't fail?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your go-to karaoke song?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a harmless habit you have that makes no sense?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the funniest misunderstanding you've ever had?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's one food you could never get tired of?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the most random thing currently in your pocket or bag?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a skill you wish you could instantly master?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the most memorable surprise you've experienced?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite way to spend an unexpected free hour?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a childhood dream you still secretly like?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the funniest photo of yourself you remember?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a movie you can quote way too easily?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the most adventurous food you've tried?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a simple thing you're surprisingly competitive about?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's one thing you would bring to a deserted island?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the strangest thing you've ever collected?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a harmless rule you would happily break?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the most random reason you've ever stayed awake late?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a sound that always makes you laugh?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the first thing you'd buy if you suddenly got a small windfall?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a hobby you'd try if you had a free weekend?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite party game?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a silly fear you had when you were younger?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the funniest thing you've ever seen happen in public?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a song you know almost all the words to?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite way to celebrate good news?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a tiny luxury you really enjoy?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the most spontaneous snack you've ever bought?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's one fictional world you'd visit for a day?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a talent you wish you could show off more often?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the most unexpected thing you've ever said yes to?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a funny phrase you catch yourself saying?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the most memorable party you've attended?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's one ordinary thing you could turn into a competition?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite excuse for taking a break?"
+    },
+    {
+      "kind": "dare",
+      "text": "Dance like nobody is watching for 15 seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Start a 10-second group clap that everyone must join."
+    },
+    {
+      "kind": "dare",
+      "text": "Do your best impression of a robot receiving surprising news."
+    },
+    {
+      "kind": "dare",
+      "text": "Pick a player and invent a silly handshake together."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a dramatic movie-trailer voice-over for the room."
+    },
+    {
+      "kind": "dare",
+      "text": "Lead everyone in a 15-second victory dance."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you're a game-show host and introduce the next player."
+    },
+    {
+      "kind": "dare",
+      "text": "Do a 10-second runway walk across the room."
+    },
+    {
+      "kind": "dare",
+      "text": "Make up a three-move dance and teach it to the group."
+    },
+    {
+      "kind": "dare",
+      "text": "Speak in a cartoon voice until your next turn."
+    },
+    {
+      "kind": "dare",
+      "text": "Start a rhythm using claps and have the group copy it."
+    },
+    {
+      "kind": "dare",
+      "text": "Act out your favorite animal and let everyone guess it."
+    },
+    {
+      "kind": "dare",
+      "text": "Give an over-the-top acceptance speech for an imaginary award."
+    },
+    {
+      "kind": "dare",
+      "text": "Choose someone and challenge them to a 10-second dance-off."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend the floor is a stage and perform your biggest entrance."
+    },
+    {
+      "kind": "dare",
+      "text": "Make up a silly slogan for tonight's party."
+    },
+    {
+      "kind": "dare",
+      "text": "Do your best impression of a dramatic sports commentator."
+    },
+    {
+      "kind": "dare",
+      "text": "Get everyone to pose like a group photo for five seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Perform a 15-second air-guitar solo."
+    },
+    {
+      "kind": "dare",
+      "text": "Create a silly sound effect for every step you take across the room."
+    },
+    {
+      "kind": "dare",
+      "text": "Give the person on your left a superhero introduction."
+    },
+    {
+      "kind": "dare",
+      "text": "Lead a 10-second round of synchronized shoulder moves."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you're a famous chef describing an imaginary dish."
+    },
+    {
+      "kind": "dare",
+      "text": "Make up a dance move and give it a ridiculous name."
+    },
+    {
+      "kind": "dare",
+      "text": "Do a 15-second silent performance of someone missing a bus."
+    },
+    {
+      "kind": "dare",
+      "text": "Start a group countdown from ten, then celebrate dramatically."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a weather report describing the party atmosphere."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you're a news anchor reporting breaking party news."
+    },
+    {
+      "kind": "dare",
+      "text": "Make the group laugh using only three facial expressions."
+    },
+    {
+      "kind": "dare",
+      "text": "Do your best impression of a phone trying to get a signal."
+    },
+    {
+      "kind": "dare",
+      "text": "Lead everyone in a quick call-and-response chant."
+    },
+    {
+      "kind": "dare",
+      "text": "Walk in slow motion while giving a completely serious speech."
+    },
+    {
+      "kind": "dare",
+      "text": "Invent a party rule that lasts for one round."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you're accepting a trophy for being extremely energetic."
+    },
+    {
+      "kind": "dare",
+      "text": "Do a 10-second dance using only your arms."
+    },
+    {
+      "kind": "dare",
+      "text": "Choose a player and give them a ridiculous but positive stage name."
+    },
+    {
+      "kind": "dare",
+      "text": "Perform an imaginary drum solo using only your hands."
+    },
+    {
+      "kind": "dare",
+      "text": "Make up a 10-second commercial for the room you're in."
+    },
+    {
+      "kind": "dare",
+      "text": "Get two players to join you in a synchronized pose."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you're a tour guide showing everyone around the party."
+    },
+    {
+      "kind": "dare",
+      "text": "Do a dramatic reading of the words 'let's get this party started.'"
+    },
+    {
+      "kind": "dare",
+      "text": "Make up a two-line song about everyone in the room."
+    },
+    {
+      "kind": "dare",
+      "text": "Perform a 15-second celebration for finding something you lost."
+    },
+    {
+      "kind": "dare",
+      "text": "Do an exaggerated slow-motion high five with another player."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you're a fitness instructor and lead three silly movements."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a 10-second motivational speech to the whole group."
+    },
+    {
+      "kind": "dare",
+      "text": "Act like you're walking on an invisible red carpet."
+    },
+    {
+      "kind": "dare",
+      "text": "Make up a secret agent mission and assign everyone a silly code name."
+    },
+    {
+      "kind": "dare",
+      "text": "Do your best impression of a confused superhero."
+    },
+    {
+      "kind": "dare",
+      "text": "Lead a 10-second group wave from one side of the room to the other."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you're announcing the final round of a championship."
+    },
+    {
+      "kind": "dare",
+      "text": "Do a 15-second dance using only your feet."
+    },
+    {
+      "kind": "dare",
+      "text": "Make a dramatic entrance from where you're already standing."
+    },
+    {
+      "kind": "dare",
+      "text": "Pick a player and copy their completely harmless movement for 10 seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a 10-second celebration pose and hold it until the group cheers."
+    }
+  ]
+}

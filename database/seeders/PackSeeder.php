@@ -224,6 +224,16 @@ class PackSeeder extends Seeder
         $file = match ($packName) {
             'Two Truths Starter' => 'two_truths_starter_cards.json',
             'Family Game Night' => 'family_game_night_cards.json',
+            'Guess the Movie Starter' => 'guess_the_movie_starter_cards.json',
+            'Guess the Song Starter' => 'guess_the_song_starter_cards.json',
+            'Hot Seat Starter' => 'hot_seat_starter_cards.json',
+            'Midnight Spice' => 'midnight_spice_cards.json',
+            'Most Likely To Starter' => 'most_likely_to_starter_cards.json',
+            'Neon Confessions' => 'neon_confessions_cards.json',
+            'Office Icebreakers' => 'office_icebreakers_cards.json',
+            'Party Starter Pack' => 'party_starter_pack_cards.json',
+            'Sweet & Silly Couples' => 'sweet_and_silly_couples_cards.json',
+            'Would You Rather Starter' => 'would_you_rather_starter_cards.json',
             default => null,
         };
 

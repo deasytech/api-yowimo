@@ -1,0 +1,404 @@
+{
+  "cards": [
+    {
+      "kind": "truth",
+      "text": "What is your favorite memory of us being completely silly together?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which of my everyday expressions makes you laugh the most?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing we always seem to agree on?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which of our shared memories would make the funniest movie scene?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is something I do that instantly tells you I'm in a good mood?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which snack best represents our relationship?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is the funniest misunderstanding we've ever had together?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which of us is more likely to forget where we put something?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one ordinary activity you think we make more fun together?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which of our inside jokes would be hardest to explain to someone else?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is the first thing you remember noticing about my personality?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which of us is more likely to suggest an unnecessary adventure?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing we are surprisingly good at doing as a team?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which song reminds you of a funny memory we share?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is the most ridiculous thing we've ever laughed about?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which of my reactions is easiest for you to predict?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one tiny routine we have that you hope never changes?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which of us would survive longer on a road trip without getting lost?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is your favorite photo or video memory of us?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which of us is more likely to turn a simple task into a whole event?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing about us that makes you smile when you think about it?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which of us is better at remembering little details?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is the funniest nickname you could give our team?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which shared meal do you remember most fondly?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing we both find funny that other people might not understand?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which of us is more likely to start singing for no reason?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is a small adventure we've had that you would happily repeat?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which of us is more likely to say, 'Let's just see what happens'?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing you think we balance well as a pair?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which of us would be more likely to win a silly trivia contest?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is the funniest thing we've ever tried to do together?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which of my harmless habits would you miss if it suddenly disappeared?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one place we've been that became more fun because we were together?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which of us is more likely to make a joke at exactly the wrong moment?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing you think I am unexpectedly good at?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which of us would be better at planning a completely ridiculous party?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is a memory of us that always makes you laugh when you retell it?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which of us is more likely to become distracted halfway through a task?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing we should definitely do together someday just for fun?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which of us is more likely to remember a random detail from years ago?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is the funniest phrase or saying we've created together?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which of us would be more likely to adopt a completely random hobby?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing about our personalities that makes us a funny combination?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which of us is more likely to make friends with someone while waiting in line?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is a simple moment with me that turned out to be surprisingly memorable?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which of us is more likely to laugh when we're supposed to be serious?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's one silly challenge you think we would surprisingly win together?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which of us is more likely to choose the weirdest item on a menu?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing we can usually make each other laugh about?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which of us is more likely to remember an old joke years later?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is a childhood story of mine you enjoy hearing?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which of us would be better at hosting a game show?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one harmless thing I do that always makes you smile?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which of us is more likely to make a last-minute plan?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is the funniest thing we've ever disagreed about?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which shared tradition would you happily keep forever?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one thing you think we have learned about each other over time?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which of us would be more likely to win a contest for making silly faces?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is a moment when we worked together and everything somehow went right?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which of us is more likely to start a conversation with a stranger?"
+    },
+    {
+      "kind": "truth",
+      "text": "What is one silly thing we should make a tradition?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which of us would be more likely to laugh at our own joke first?"
+    },
+    {
+      "kind": "dare",
+      "text": "Give each other a ridiculous superhero name and announce them dramatically."
+    },
+    {
+      "kind": "dare",
+      "text": "Recreate a funny shared memory using only gestures for 20 seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Take turns making your silliest serious faces until one of you laughs."
+    },
+    {
+      "kind": "dare",
+      "text": "Create a two-line song about something ordinary you both did today."
+    },
+    {
+      "kind": "dare",
+      "text": "Give your partner a completely goofy award and present it like a ceremony."
+    },
+    {
+      "kind": "dare",
+      "text": "Do a 20-second synchronized dance with your partner."
+    },
+    {
+      "kind": "dare",
+      "text": "Describe your partner like a wildlife narrator describing a very rare creature."
+    },
+    {
+      "kind": "dare",
+      "text": "Invent a secret handshake using three completely silly moves."
+    },
+    {
+      "kind": "dare",
+      "text": "Take turns saying one nice thing about each other in your most dramatic voices."
+    },
+    {
+      "kind": "dare",
+      "text": "Reenact a funny moment you both remember without saying any words."
+    },
+    {
+      "kind": "dare",
+      "text": "Give your partner a compliment as if you are announcing them at an awards show."
+    },
+    {
+      "kind": "dare",
+      "text": "Create a silly team motto and say it together three times."
+    },
+    {
+      "kind": "dare",
+      "text": "Act out how each of you looks when you are trying not to laugh."
+    },
+    {
+      "kind": "dare",
+      "text": "Make up a fictional TV show about your everyday life and pitch it together."
+    },
+    {
+      "kind": "dare",
+      "text": "Do a 20-second synchronized celebration for an imaginary victory."
+    },
+    {
+      "kind": "dare",
+      "text": "Take turns giving each other ridiculous but wholesome superhero powers."
+    },
+    {
+      "kind": "dare",
+      "text": "Recreate a favorite shared memory using only five words."
+    },
+    {
+      "kind": "dare",
+      "text": "Give each other funny new names based on your personalities."
+    },
+    {
+      "kind": "dare",
+      "text": "Perform a tiny dramatic scene about deciding what snack to choose."
+    },
+    {
+      "kind": "dare",
+      "text": "Hold hands and do a synchronized 10-second victory pose."
+    },
+    {
+      "kind": "dare",
+      "text": "Take turns imitating an animal while your partner guesses it."
+    },
+    {
+      "kind": "dare",
+      "text": "Invent a silly holiday that celebrates your teamwork."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a dramatic weather report about your partner's current mood."
+    },
+    {
+      "kind": "dare",
+      "text": "Create a three-move dance that you both perform together."
+    },
+    {
+      "kind": "dare",
+      "text": "Tell your partner a compliment using the voice of a cartoon character."
+    },
+    {
+      "kind": "dare",
+      "text": "Act like two news anchors reporting on a completely ordinary day together."
+    },
+    {
+      "kind": "dare",
+      "text": "Make up a silly jingle about your favorite thing to do together."
+    },
+    {
+      "kind": "dare",
+      "text": "Give each other imaginary medals for something you both do well."
+    },
+    {
+      "kind": "dare",
+      "text": "Recreate your first shared laugh without explaining what happened."
+    },
+    {
+      "kind": "dare",
+      "text": "Do a 15-second mirror challenge where one partner leads and the other copies."
+    },
+    {
+      "kind": "dare",
+      "text": "Invent a ridiculous team mascot and demonstrate its signature move."
+    },
+    {
+      "kind": "dare",
+      "text": "Take turns finishing the sentence, 'Our team is great because...'"
+    },
+    {
+      "kind": "dare",
+      "text": "Perform a 20-second commercial advertising your teamwork."
+    },
+    {
+      "kind": "dare",
+      "text": "Give your partner a funny introduction as if they are a famous celebrity."
+    },
+    {
+      "kind": "dare",
+      "text": "Make up a two-person victory chant and perform it with enthusiasm."
+    },
+    {
+      "kind": "dare",
+      "text": "Act out your partner's most recognizable harmless habit without teasing them."
+    },
+    {
+      "kind": "dare",
+      "text": "Create a silly handshake and give it an unnecessarily grand name."
+    },
+    {
+      "kind": "dare",
+      "text": "Make up a funny team cheer and perform it together for 15 seconds."
+    }
+  ]
+}

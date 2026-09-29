@@ -1,0 +1,404 @@
+{
+  "cards": [
+    {
+      "kind": "truth",
+      "text": "Which movie have you rewatched more than any other?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the most overrated movie you have ever sat through?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which movie always makes you laugh no matter how many times you watch it?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite animated movie of all time?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which movie villain do you find the most entertaining?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite superhero movie?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which movie has the best opening scene in your opinion?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a movie you loved as a kid but see differently now?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which movie would you happily watch again tonight?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite movie soundtrack?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which movie character would you want as your best friend?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the funniest movie you have ever watched with your family?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which classic movie do you think everyone should see?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a movie you expected to dislike but ended up enjoying?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which movie ending surprised you the most?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite movie from the last few years?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which movie has the most memorable costumes in your opinion?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite movie set in space?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which fantasy movie world would you love to visit?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite action movie?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which movie makes you feel nostalgic every time you see it?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a movie you think deserves a sequel?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which movie character would you trust to lead your team?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite family movie?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which movie has the best funny side character?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a movie you would recommend to almost anyone?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which movie genre do you enjoy most?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a movie you watched mainly because someone recommended it?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which movie has your favorite hero?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite movie involving animals?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which movie scene has stayed in your memory the longest?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a movie you wish you could watch again for the first time?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which movie has the best imaginary world?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite movie featuring a detective or mystery?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which movie friendship do you like the most?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite movie about an adventure?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which movie character has the funniest personality?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a movie you think is perfect for a rainy day?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which movie has your favorite chase scene?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite movie with a magical setting?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which movie would you choose for a family movie night?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a movie you enjoy even though you know it is silly?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which movie has the most satisfying ending?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite movie featuring a team of heroes?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which movie character would you most like to meet?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite movie from your childhood?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which movie has made you want to travel somewhere?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a movie you think is better than its reputation suggests?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which movie would you choose if you could only watch one this weekend?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite movie about friendship?"
+    },
+    {
+      "kind": "dare",
+      "text": "Act out one scene from a famous movie in under 20 seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Deliver a famous movie line in the worst accent you can manage."
+    },
+    {
+      "kind": "dare",
+      "text": "Act like a movie villain giving a dramatic warning for 15 seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you are an action hero entering a room in slow motion."
+    },
+    {
+      "kind": "dare",
+      "text": "Give an imaginary acceptance speech for winning Best Actor."
+    },
+    {
+      "kind": "dare",
+      "text": "Act out a dramatic movie trailer using only your voice."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you are a superhero discovering your powers."
+    },
+    {
+      "kind": "dare",
+      "text": "Perform a 15-second silent scene where you are escaping an imaginary villain."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a weather report as if you are narrating an epic movie."
+    },
+    {
+      "kind": "dare",
+      "text": "Act like a detective who has just discovered an important clue."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you are directing everyone in an imaginary movie scene."
+    },
+    {
+      "kind": "dare",
+      "text": "Do your best impression of a dramatic movie hero without naming one."
+    },
+    {
+      "kind": "dare",
+      "text": "Act out an imaginary car chase while staying completely in place."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a 20-second trailer voice-over for the movie of your life."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you are a movie villain trying to sound extremely friendly."
+    },
+    {
+      "kind": "dare",
+      "text": "Act out a superhero landing without leaving your spot."
+    },
+    {
+      "kind": "dare",
+      "text": "Give an emotional speech about losing an imaginary movie trophy."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you are a movie star walking the red carpet."
+    },
+    {
+      "kind": "dare",
+      "text": "Act like a robot character meeting humans for the first time."
+    },
+    {
+      "kind": "dare",
+      "text": "Perform a silent version of a dramatic movie argument."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you are a pirate captain in an adventure movie."
+    },
+    {
+      "kind": "dare",
+      "text": "Act out discovering a magical object without using any words."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a dramatic countdown as if the movie is about to reach its finale."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you are a sports movie coach giving a 15-second pep talk."
+    },
+    {
+      "kind": "dare",
+      "text": "Act like a movie character who has just seen something unbelievable."
+    },
+    {
+      "kind": "dare",
+      "text": "Create a movie title for yourself and announce it dramatically."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you are a spy trying to deliver an important message."
+    },
+    {
+      "kind": "dare",
+      "text": "Act out a superhero flying without actually moving around."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a dramatic movie narration of what you are doing right now."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you are a chef in a cooking movie describing an imaginary masterpiece."
+    },
+    {
+      "kind": "dare",
+      "text": "Act like a classic movie star greeting an audience."
+    },
+    {
+      "kind": "dare",
+      "text": "Perform a 15-second monster movie scene without making scary sounds."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you are an explorer discovering a hidden world."
+    },
+    {
+      "kind": "dare",
+      "text": "Act out a funny movie fight using only facial expressions."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a dramatic speech about finding the last seat in the cinema."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you are a movie narrator introducing every person in the room."
+    },
+    {
+      "kind": "dare",
+      "text": "Act like a famous action hero ordering an imaginary snack."
+    },
+    {
+      "kind": "dare",
+      "text": "Create a 10-second movie trailer using only sound effects from your mouth."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you are trapped in a time-travel movie and explain what happened."
+    },
+    {
+      "kind": "dare",
+      "text": "Act out a romantic-comedy misunderstanding without using romantic dialogue."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you are a wizard preparing for the biggest scene of a fantasy movie."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a dramatic reaction to an imaginary plot twist."
+    },
+    {
+      "kind": "dare",
+      "text": "Act like a movie sidekick trying to save the day."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you are a superhero giving an interview after saving the city."
+    },
+    {
+      "kind": "dare",
+      "text": "Perform a silent animated-movie scene using exaggerated expressions."
+    },
+    {
+      "kind": "dare",
+      "text": "Act like a movie detective interrogating an imaginary suspect."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you are the narrator of an old-fashioned adventure movie."
+    },
+    {
+      "kind": "dare",
+      "text": "Give a 15-second motivational speech worthy of a sports movie."
+    },
+    {
+      "kind": "dare",
+      "text": "Act out a famous movie-style entrance using your most dramatic walk."
+    },
+    {
+      "kind": "dare",
+      "text": "Pretend you are an alien explaining Earth to your imaginary home planet."
+    }
+  ]
+}

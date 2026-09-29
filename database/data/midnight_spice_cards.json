@@ -1,0 +1,404 @@
+{
+  "cards": [
+    {
+      "kind": "truth",
+      "text": "What's a romantic fantasy you've never quite found the courage to mention?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which kind of compliment makes you feel most desired?"
+    },
+    {
+      "kind": "truth",
+      "text": "What instantly makes an ordinary evening feel more romantic to you?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite kind of kiss?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which look from your partner can completely distract you?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something your partner does that secretly gives you butterflies?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite way for a partner to build romantic tension?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's one place you'd love to share a private romantic moment together?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which of your partner's qualities do you find hardest to resist?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the most memorable romantic moment you've shared with someone?"
+    },
+    {
+      "kind": "truth",
+      "text": "What kind of flirting works on you every time?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something you'd love your partner to whisper to you?"
+    },
+    {
+      "kind": "truth",
+      "text": "How do you like a partner to initiate a romantic moment?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's one romantic surprise you'd secretly love to receive?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite kind of date when you want more than dinner?"
+    },
+    {
+      "kind": "truth",
+      "text": "What makes you feel especially confident and attractive?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's one outfit your partner wears that you find irresistible?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite way to spend a slow evening together?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which matters more to you: anticipation or spontaneity?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a small gesture that instantly makes you feel wanted?"
+    },
+    {
+      "kind": "truth",
+      "text": "What kind of eye contact makes you lose your train of thought?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's one romantic memory you'd happily relive?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something you find unexpectedly attractive in your partner?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite setting for a private date night?"
+    },
+    {
+      "kind": "truth",
+      "text": "How important is playful teasing to your idea of romance?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's one thing your partner could do to make you blush instantly?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite kind of affectionate touch?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's one romantic adventure you'd like to experience together?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's the most daring compliment you've ever wanted to give your partner?"
+    },
+    {
+      "kind": "truth",
+      "text": "What makes a kiss especially memorable for you?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's one thing you wish your partner knew about your romantic side?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite way to end a perfect date?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which is more tempting to you: a whispered secret or a lingering look?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a romantic movie moment you'd love to recreate in your own way?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's one harmless rule you'd break for a memorable romantic evening?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something about your partner that still makes you nervous in a good way?"
+    },
+    {
+      "kind": "truth",
+      "text": "What kind of music makes you want to get closer to your partner?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your ideal amount of flirting during an ordinary day?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's one romantic habit you'd love for the two of you to develop?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's something your partner can do that makes you feel instantly appreciated?"
+    },
+    {
+      "kind": "truth",
+      "text": "Which feels more intimate to you: talking late at night or sharing comfortable silence?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's one thing that makes you feel especially connected to your partner?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite kind of slow dance?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's one romantic place you've always wanted to visit with a partner?"
+    },
+    {
+      "kind": "truth",
+      "text": "What kind of surprise would make your heart race in the best way?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's one thing you find more attractive about your partner now than when you first met?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite way to show someone you're attracted to them without saying it?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's a flirty question you've always wanted someone to ask you?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's one romantic challenge you would be curious to try together?"
+    },
+    {
+      "kind": "truth",
+      "text": "What's your favorite part of getting ready for a special date?"
+    },
+    {
+      "kind": "dare",
+      "text": "Hold your partner's gaze for 15 seconds without looking away."
+    },
+    {
+      "kind": "dare",
+      "text": "Whisper one genuine compliment into your partner's ear."
+    },
+    {
+      "kind": "dare",
+      "text": "Slow dance together for 20 seconds without speaking."
+    },
+    {
+      "kind": "dare",
+      "text": "Give your partner a lingering kiss on the hand."
+    },
+    {
+      "kind": "dare",
+      "text": "Tell your partner one thing about them that always makes you smile."
+    },
+    {
+      "kind": "dare",
+      "text": "Move close and share your most charming smile for 10 seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Whisper a romantic secret you have never said quite that way before."
+    },
+    {
+      "kind": "dare",
+      "text": "Give your partner a gentle 15-second shoulder massage."
+    },
+    {
+      "kind": "dare",
+      "text": "Let your partner choose a romantic nickname for you to use for one round."
+    },
+    {
+      "kind": "dare",
+      "text": "Hold hands and tell your partner one thing you find irresistible about them."
+    },
+    {
+      "kind": "dare",
+      "text": "Give your partner three slow kisses on the back of their hand."
+    },
+    {
+      "kind": "dare",
+      "text": "Stand close together and maintain eye contact while smiling for 15 seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Tell your partner your favorite thing about their appearance."
+    },
+    {
+      "kind": "dare",
+      "text": "Give your partner a 20-second slow dance with no music."
+    },
+    {
+      "kind": "dare",
+      "text": "Whisper what your perfect date night with them would look like."
+    },
+    {
+      "kind": "dare",
+      "text": "Let your partner choose one innocent place for a gentle kiss."
+    },
+    {
+      "kind": "dare",
+      "text": "Give your partner a warm hug and hold it for 15 seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Tell your partner one compliment you've been thinking but never said."
+    },
+    {
+      "kind": "dare",
+      "text": "Trace a tiny heart on your partner's palm with your finger."
+    },
+    {
+      "kind": "dare",
+      "text": "Lean close and whisper one reason you enjoy being near your partner."
+    },
+    {
+      "kind": "dare",
+      "text": "Give your partner a playful wink and hold it for five seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Share one romantic promise you would happily make to your partner."
+    },
+    {
+      "kind": "dare",
+      "text": "Let your partner choose your next affectionate gesture."
+    },
+    {
+      "kind": "dare",
+      "text": "Give your partner a gentle forehead kiss."
+    },
+    {
+      "kind": "dare",
+      "text": "Tell your partner how you would plan your dream date together."
+    },
+    {
+      "kind": "dare",
+      "text": "Hold your partner's hand and give it three gentle squeezes."
+    },
+    {
+      "kind": "dare",
+      "text": "Whisper a flirty compliment without using the word beautiful."
+    },
+    {
+      "kind": "dare",
+      "text": "Give your partner a slow, gentle kiss on the cheek."
+    },
+    {
+      "kind": "dare",
+      "text": "Sit close and exchange your most confident smiles for 15 seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Tell your partner one thing they do that gives you butterflies."
+    },
+    {
+      "kind": "dare",
+      "text": "Give your partner a 20-second hand massage."
+    },
+    {
+      "kind": "dare",
+      "text": "Let your partner choose one piece of romantic music to imagine dancing to."
+    },
+    {
+      "kind": "dare",
+      "text": "Whisper your favorite memory of the two of you in a playful voice."
+    },
+    {
+      "kind": "dare",
+      "text": "Give your partner a gentle kiss on the shoulder if they are comfortable."
+    },
+    {
+      "kind": "dare",
+      "text": "Hold each other's hands and count slowly to ten while making eye contact."
+    },
+    {
+      "kind": "dare",
+      "text": "Tell your partner one outfit of theirs you especially love."
+    },
+    {
+      "kind": "dare",
+      "text": "Give your partner your most convincing flirtatious look for 10 seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Share a one-sentence fantasy date that stays completely romantic."
+    },
+    {
+      "kind": "dare",
+      "text": "Give your partner a gentle kiss on the forehead, then smile at them."
+    },
+    {
+      "kind": "dare",
+      "text": "Let your partner choose whether you give them a compliment or a kiss on the hand."
+    },
+    {
+      "kind": "dare",
+      "text": "Whisper three words that describe how your partner makes you feel."
+    },
+    {
+      "kind": "dare",
+      "text": "Give your partner a 15-second hug without saying anything."
+    },
+    {
+      "kind": "dare",
+      "text": "Tell your partner what first caught your attention about them."
+    },
+    {
+      "kind": "dare",
+      "text": "Give your partner a slow kiss on the hand while maintaining eye contact."
+    },
+    {
+      "kind": "dare",
+      "text": "Let your partner choose a sweet nickname and use it once."
+    },
+    {
+      "kind": "dare",
+      "text": "Share one thing you would love to do together on a romantic weekend."
+    },
+    {
+      "kind": "dare",
+      "text": "Give your partner a playful look from across the room for 10 seconds."
+    },
+    {
+      "kind": "dare",
+      "text": "Tell your partner one quality of theirs that you find especially attractive."
+    },
+    {
+      "kind": "dare",
+      "text": "Hold your partner close and quietly count to fifteen together."
+    },
+    {
+      "kind": "dare",
+      "text": "End the dare by giving your partner one sincere, slightly flirty compliment."
+    }
+  ]
+}
