@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\V1\PackPurchaseController;
 use App\Http\Controllers\Api\V1\PartyController;
 use App\Http\Controllers\Api\V1\PartyLikeController;
 use App\Http\Controllers\Api\V1\PartyMembershipController;
+use App\Http\Controllers\Api\V1\PartyVideoController;
 use App\Http\Controllers\Api\V1\PaymentMethodController;
 use App\Http\Controllers\Api\V1\PaystackWebhookController;
 use App\Http\Controllers\Api\V1\PushTokenController;
@@ -78,6 +79,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/parties/{party}/start', [PartyMembershipController::class, 'start'])->middleware('throttle:party-actions');
         Route::post('/parties/{party}/end', [PartyMembershipController::class, 'end'])->middleware('throttle:party-actions');
         Route::post('/parties/{party}/cancel', [PartyMembershipController::class, 'cancel'])->middleware('throttle:party-actions');
+        Route::post('/parties/{party}/video-token', [PartyVideoController::class, 'token'])->middleware('throttle:party-actions');
         Route::post('/parties/{party}/game/start', [GameSessionController::class, 'start'])->middleware('throttle:party-actions');
         Route::get('/parties/{party}/game', [GameSessionController::class, 'current']);
         Route::get('/game/{gameSession}', [GameSessionController::class, 'show'])->whereNumber('gameSession');

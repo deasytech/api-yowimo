@@ -162,7 +162,9 @@ it('logs a warning and still removes the payment method when Paystack declines d
 
     $log->shouldHaveReceived('warning')
         ->once()
-        ->withArgs(fn (string $message, array $context) => $context['authorization_code'] === 'AUTH_declined');
+        ->withArgs(fn (string $message, array $context) => ! array_key_exists('authorization_code', $context)
+            && $context['payment_method_id'] === $method->id
+            && $context['response']['message'] === 'Authorization not found');
     expect(PaymentMethod::whereKey($method->id)->exists())->toBeFalse();
 });
 

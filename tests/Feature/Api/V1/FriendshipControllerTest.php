@@ -13,13 +13,7 @@ beforeEach(function () {
     $this->fakeClerk();
 });
 
-function authAs(string $clerkSub): User
-{
-    $token = test()->clerkToken(['sub' => $clerkSub]);
-    test()->withHeader('Authorization', "Bearer {$token}")->getJson('/api/v1/users/me')->assertOk();
-
-    return User::where('clerk_user_id', $clerkSub)->firstOrFail();
-}
+// authAs() is a shared helper declared in tests/Pest.php.
 
 it('rejects sending a friend request with no bearer token', function () {
     $this->postJson(API_V1_FRIEND_REQUESTS_ENDPOINT, ['receiver_id' => User::factory()->create()->id])

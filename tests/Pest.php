@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\GameSession;
+use App\Models\User;
 use App\Services\Game\GameSessionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -57,4 +58,18 @@ function finishGameVotingWindow(GameSession|int $session): ?GameSession
 
     return app(GameSessionService::class)
         ->finishVoting($session instanceof GameSession ? $session->id : $session);
+}
+
+/**
+ * Provisions (via a real request, matching this app's auto-provision-on-first-
+ * request behavior) and returns the authenticated user for the rest of the
+ * test — the Authorization header set here persists on $this for every later
+ * request in the same test, so callers don't need to repeat it.
+ */
+function authAs(string $clerkSub): User
+{
+    $token = test()->clerkToken(['sub' => $clerkSub]);
+    test()->withHeader('Authorization', "Bearer {$token}")->getJson('/api/v1/users/me')->assertOk();
+
+    return User::where('clerk_user_id', $clerkSub)->firstOrFail();
 }

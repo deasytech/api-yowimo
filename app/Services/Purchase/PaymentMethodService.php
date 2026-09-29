@@ -4,10 +4,13 @@ namespace App\Services\Purchase;
 
 use App\Models\PaymentMethod;
 use App\Models\User;
+use App\Services\Paystack\PaystackClient;
 use Illuminate\Database\Eloquent\Collection;
 
 class PaymentMethodService
 {
+    public function __construct(private readonly PaystackClient $paystack) {}
+
     /**
      * @return Collection<int, PaymentMethod>
      */
@@ -86,10 +89,23 @@ class PaymentMethodService
 
     /**
      * Deletes a saved payment method, promoting the next most recent one to
-     * default if the one removed was the default.
+     * default if the one removed was the default. Deactivates the Paystack
+     * authorization remotely first, via
+     * PaystackClient::deactivateAuthorizationSafely() (shared with
+     * AccountDeletionService::purgePaymentMethods()) — best-effort only: a
+     * Paystack decline or an unreachable Paystack doesn't block the local
+     * removal, so the authorization may still be technically valid if that
+     * happens, not guaranteed dead the moment this returns.
      */
     public function delete(PaymentMethod $method): void
     {
+        if ($method->provider === 'paystack') {
+            $this->paystack->deactivateAuthorizationSafely($method->authorization_code, [
+                'user_id' => $method->user_id,
+                'payment_method_id' => $method->id,
+            ]);
+        }
+
         $wasDefault = $method->is_default;
         $userId = $method->user_id;
 

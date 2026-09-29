@@ -17,6 +17,7 @@ use App\Exceptions\Api\InvalidClerkWebhookException;
 use App\Exceptions\Api\InvalidFriendshipTransitionException;
 use App\Exceptions\Api\InvalidPartyTransitionException;
 use App\Exceptions\Api\InvalidPaystackWebhookException;
+use App\Exceptions\Api\LiveKitNotConfiguredException;
 use App\Exceptions\Api\PackAlreadyOwnedException;
 use App\Exceptions\Api\PackNotInGameTypeException;
 use App\Exceptions\Api\PartyFullException;
@@ -54,6 +55,7 @@ class ApiExceptionRegistrar
         self::registerPartyExceptions($exceptions);
         self::registerFriendshipExceptions($exceptions);
         self::registerGameSessionExceptions($exceptions);
+        self::registerVideoExceptions($exceptions);
         self::registerGenericHttpExceptions($exceptions);
     }
 
@@ -294,6 +296,18 @@ class ApiExceptionRegistrar
             fn (VotingNotAllowedException $e) => ApiResponse::error(
                 $e->getMessage(),
                 status: 422
+            )
+        );
+    }
+
+    private static function registerVideoExceptions(Exceptions $exceptions): void
+    {
+        self::registerHandler(
+            $exceptions,
+            LiveKitNotConfiguredException::class,
+            fn (LiveKitNotConfiguredException $e) => ApiResponse::error(
+                $e->getMessage(),
+                status: 503
             )
         );
     }
