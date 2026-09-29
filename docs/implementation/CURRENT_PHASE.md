@@ -1,11 +1,21 @@
 # Current Phase — Yowimo Backend
 
-**Assessed:** 2026-09-28, against `dev` after the documentation-gap resolution pass, by direct code inspection.
+**Assessed:** 2026-09-29, against `dev` after a v0 Voice/Video (LiveKit) slice landed, by direct code inspection.
 **Basis:** `docs/audit/*`, `docs/implementation/IMPLEMENTATION_ORDER.md`, `.claude/PROJECT_CONTEXT.md`.
 
 ---
 
 ## Current Sprint
+
+**Voice/Video v0 (LiveKit)** (2026-09-29, picked up from Tier 4's deferred Voice/Video item by user decision, scoped down and confirmed up front: LiveKit Cloud — not self-hosted, since this project has no infra to run a media server on and the user explicitly asked to launch as cheaply as possible — one room per party, everyone can publish/subscribe with no host controls, no chat, no recording), **done.** Adds one new route (`POST /parties/{party}/video-token`); no existing route, request/response shape, or business logic changed.
+
+- ✅ `App\Services\Video\LiveKitTokenService` mints a LiveKit access token directly — no SDK package, signed with `firebase/php-jwt` (already a dependency for Clerk verification), mirroring `PaystackClient`/`OpenAiProvider`'s lean-HTTP-facade pattern. The JWT shape (`iss`/`sub`/`nbf`/`exp`/`jti`/`name` claims, nested `video: {room, roomJoin, canPublish, canSubscribe}` grant, HS256 signing) was verified against LiveKit's own docs before implementing, not assumed from memory.
+- ✅ Room name is `party-{id}`; no LiveKit server API call is made at all — LiveKit itself creates a room when the first participant joins with a valid `roomJoin` grant and closes it once the last one leaves, so there's nothing for this app to provision or tear down. This is the main reason v0 needed no new infrastructure beyond the token endpoint.
+- ✅ `PartyPolicy::joinVideo()` — active membership (host included), party must be `live`, and `mode` must be `online` or `hybrid` (`in_person` has no video component, 403s). Gated in one Policy ability, matching the existing `manageGame`/`start` pattern of folding multiple conditions into one boolean.
+- ✅ `LiveKitNotConfiguredException` → 503 (via `ApiExceptionRegistrar`) when `LIVEKIT_API_KEY`/`LIVEKIT_API_SECRET` aren't set — inert until configured, same pattern as Firebase/OpenAI/Sentry. No LiveKit project exists in any environment yet.
+- Explicitly out of scope, confirmed with the user: chat (deferred entirely — its own module), recording/egress (consent implications, deliberately not decided here), host moderation controls (mute/kick/spotlight — LiveKit supports these via its Room Service API, which v0 doesn't call at all), and a refresh flow (token TTL is a flat 6 hours instead).
+- ✅ Tests: `LiveKitTokenServiceTest` (JWT claim shape, not-configured exception, display-name fallback), `PartyVideoControllerTest` (auth, membership, mode-gating including in-person 403, live-status-gating, 503 when unconfigured, success shape for both online and hybrid). Full suite 608 passing (up from 598), Pint clean.
+- API reference (`resources/docs/api-reference.html`) documents the new endpoint, including the "nothing to tear down" room-lifecycle note for whoever integrates the mobile client.
 
 **Documentation-gap resolution pass** (2026-09-28, following a full audit-doc review against the current code; the user confirmed building all four undecided items alongside the doc refresh and the three clear bug fixes), **done.**
 
@@ -170,6 +180,7 @@ Real code exists but the module is narrower than its documented scope, or is unr
 | **Sponsorship** | `parties.is_sponsored` / `sponsor_name` columns exist. | No sponsor entity, no sponsor-facing flow of any kind — schema hint only. |
 | **Game Engine (rounds/turns/timers)** | `game_sessions`/`rounds`/`turns` tables + `GameSessionService`; host-only start/next-turn, randomized turn order, host-configurable rounds, Truth/Dare card dealing with no-repeat-until-exhausted, auto-completion, single-kind (truth-only/dare-only) packs playable; 30s server-authoritative turn timer with AFK-skip (tracked per turn), crash-recovery sweep, `RoundCompleted`/`GameCompleted`/`TurnCompleted` events. Voting + XP scoring (Reward Engine Phase 1): `votes` table, Winner/Funny/Creativity vote XP, Challenge Completed XP, MVP bonus. Badges/Achievements (Reward Engine Phase 2): 7 badges, `GET /badges`, `GET /users/me/badges`. A global XP leaderboard (`GET /leaderboards`, see Current Sprint above). | The rest of the documented Reward/Scoring/Achievement Engine — daily streaks, combo multipliers, sponsor/advertisement rewards — none of that was built; still unscheduled (see `.claude/NEXT_TASK.md`). |
 | **Moderation / Trust & Safety** | Card reporting (`POST /cards/{card}/report`), log-only — a fixed 4-reason enum, no automatic action on the card, reviewed manually via a read-only Filament `CardReportResource` (see Current Sprint above). | Everything else: a trust score, reports on anything other than cards, auto-hide/auto-action thresholds, a dedicated moderation review workflow beyond the admin list. |
+| **Voice/Video (LiveKit)** | `POST /parties/{party}/video-token` mints a LiveKit access token for a live online/hybrid party's own room (see Current Sprint above); no LiveKit server API calls needed for v0 — LiveKit auto-creates/closes the room itself. | Chat, recording, host moderation controls (mute/kick/spotlight), a token refresh flow, and an actual LiveKit project configured in any environment (inert until `LIVEKIT_API_KEY`/`LIVEKIT_API_SECRET`/`LIVEKIT_URL` are set). No client (React Native) has integrated it yet. |
 | **Realtime (Reverb)** | `laravel/reverb` installed; `party.{id}` presence channel + `game-session.{id}` private channel, both membership-gated; a per-user `App.Models.User.{id}` private channel (used by `FriendRequestSent`/`FriendRequestAccepted`/`WalletCredited`/`WalletDebited`/`PurchaseCompleted`/`PartyCreated`); `PartyMemberJoined`/`PartyMemberLeft`/`PartyStarted`/`TurnStarted`/`RoundCompleted`/`GameCompleted`/`FriendRequestSent`/`FriendRequestAccepted`/`WalletCredited`/`WalletDebited`/`PurchaseCompleted`/`PartyCreated` all broadcast. | No live client (React Native) has verified the integration end-to-end. |
 | **Notifications** | `push_tokens` table/API; FCM channel; `PartyMemberJoinedNotification`/`RoundCompletedNotification`/`WalletCreditedNotification`/`FriendRequestSentNotification`/`FriendRequestAcceptedNotification`/`PartyStartedNotification`/`GameCompletedNotification`/`PartyMemberLeftNotification`/`WalletDebitedNotification`/`PurchaseCompletedNotification`, each queued off a new listener, delivered over both `FcmChannel` and the new `InAppChannel`; `notifications` table + `GET /notifications`/`PATCH /notifications/read`/`PATCH /notifications/read-all`. | No real Firebase project/credentials configured in any environment yet (push is wired but inert until `FIREBASE_CREDENTIALS` is set); `PartyCreated` (self-triggered) and `TurnStarted` (fires up to every ~30s) are deliberately not wired to either channel; no `notification_preferences` (per-channel opt-in/opt-out); no client (React Native) has verified receiving a real push. |
 
@@ -179,9 +190,9 @@ Real code exists but the module is narrower than its documented scope, or is unr
 
 No migration, model, route, or config exists for any of these:
 
-Chat/Messaging, Voice/Video (LiveKit), Creator Economy, Corporate/Multi-Tenant/Enterprise, Internationalization, CD (deploy) pipeline — CI exists, see above.
+Chat/Messaging, Creator Economy, Corporate/Multi-Tenant/Enterprise, Internationalization, CD (deploy) pipeline — CI exists, see above.
 
-(Marketplace purchase flow/inventory/ownership and Notifications moved to Partially Complete above — token bundle and pack purchase both now exist, only a real payment gateway is missing; Notifications now covers push and in-app delivery, only a real Firebase project and `notification_preferences` are missing. Friends/social graph, Admin Panel v0, Analytics & Observability baseline, and AI Host v0 moved to Completed above. Moderation/Trust & Safety moved to Partially Complete above — card reporting (log-only) now exists.)
+(Marketplace purchase flow/inventory/ownership and Notifications moved to Partially Complete above — token bundle and pack purchase both now exist, only a real payment gateway is missing; Notifications now covers push and in-app delivery, only a real Firebase project and `notification_preferences` are missing. Friends/social graph, Admin Panel v0, Analytics & Observability baseline, and AI Host v0 moved to Completed above. Moderation/Trust & Safety moved to Partially Complete above — card reporting (log-only) now exists. Voice/Video (LiveKit) moved to Partially Complete above — a v0 token endpoint now exists.)
 
 ---
 
@@ -206,7 +217,7 @@ Lower-priority, not blocking:
 
 ## Next Recommended Sprint
 
-None scheduled — the documentation-gap resolution pass (the prior recommendation) has landed (see Current Sprint above). Remaining work is the unscheduled items above (needs product/design decisions, or external credentials this agent can't provide) and Tier 4 (`§G`, deferred pending a business trigger). See `.claude/NEXT_TASK.md` for the current candidate list.
+None scheduled — Voice/Video v0 (the prior recommendation) has landed (see Current Sprint above). Remaining work is the unscheduled items above (needs product/design decisions, or external credentials this agent can't provide) and the rest of Tier 4 (`§G`, deferred pending a business trigger). See `.claude/NEXT_TASK.md` for the current candidate list.
 
 ---
 
@@ -218,6 +229,6 @@ A single number is misleading given the scope gap between the documented vision 
 |---|---|---|
 | **Pre-roadmap foundation** (Clerk auth, catalog, party create/like, wallet engine) | **~100%** of its own scope | This slice is finished, tested, and stable — no further work planned against it except the Sprint 1 exposure fix. |
 | **`docs/implementation/IMPLEMENTATION_ORDER.md`** (14-sprint actionable plan to a complete, playable core product) | **14 of 14 sprints executed (100%)** | Sprints 1–14 done (Sprint 7 minus reward-granting, descoped per the user). The plan itself is complete; remaining work is unscheduled (see Current Priority). |
-| **Full documented platform vision** (`docs/architecture/`, ~26 modules incl. Marketplace, Realtime, AI, Admin, Enterprise, Creator Economy) | **~44%** | 11 of ~26 modules fully built+exposed (Auth, Game Catalog, Party Likes, Wallet, Marketplace-purchase, Domain Events, Push token registration, Friends/social graph, Admin Panel v0, Analytics & Observability baseline, AI Host v0), 7 partial (incl. Game Engine, Realtime, Notifications, and now Moderation/Trust & Safety via log-only card reporting), ~8 with zero code. Weighted toward "exists and works," not toward doc page count. |
+| **Full documented platform vision** (`docs/architecture/`, ~26 modules incl. Marketplace, Realtime, AI, Admin, Enterprise, Creator Economy) | **~46%** | 11 of ~26 modules fully built+exposed (Auth, Game Catalog, Party Likes, Wallet, Marketplace-purchase, Domain Events, Push token registration, Friends/social graph, Admin Panel v0, Analytics & Observability baseline, AI Host v0), 8 partial (incl. Game Engine, Realtime, Notifications, Moderation/Trust & Safety via log-only card reporting, and now Voice/Video via a v0 LiveKit token endpoint), ~7 with zero code. Weighted toward "exists and works," not toward doc page count. |
 
 For context: `docs/architecture/60_PLATFORM_ROADMAP.md` claims "Phase 1: Foundation" is `Status: Completed` including Friends, Marketplace, Notifications, Realtime, and Voice — that claim does not hold against the code (see `docs/audit/ARCHITECTURE_GAP_ANALYSIS.md`). The figures above are the code-verified numbers; treat any completion claim inside `docs/architecture/` as aspirational framing, not status.

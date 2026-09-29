@@ -335,6 +335,7 @@
         <a class="nav-link" data-search="post parties start host" href="#post-parties-start"><span class="m post">POST</span><span class="p">/parties/{party}/start</span></a>
         <a class="nav-link" data-search="post parties end host" href="#post-parties-end"><span class="m post">POST</span><span class="p">/parties/{party}/end</span></a>
         <a class="nav-link" data-search="post parties cancel host moderation" href="#post-parties-cancel"><span class="m post">POST</span><span class="p">/parties/{party}/cancel</span></a>
+        <a class="nav-link" data-search="post parties video token livekit voice call" href="#post-parties-video-token"><span class="m post">POST</span><span class="p">/parties/{party}/video-token</span></a>
       </div>
       <div class="nav-group" data-group="gamesessions">
         <div class="nav-group-title">Game Sessions</div>
@@ -1977,6 +1978,37 @@
             <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403 non-host</span><span class="status-pill err">404</span><span class="status-pill err">422 wrong status</span><span class="status-pill err">429</span></div>
           </div>
           <div class="endpoint-code"><div class="code-block"><div class="code-head"><span>Shape</span></div><pre>Full <span class="tok-str">PartyResource</span> with <span class="tok-key">status</span>: <span class="tok-str">"cancelled"</span>, message "Party cancelled successfully."</pre></div></div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="post-parties-video-token">
+        <div class="endpoint-head"><span class="method post">POST</span><code class="path">/parties/{party}/video-token</code></div>
+        <p class="desc">Issue a LiveKit access token to join this party's voice/video room. Online and hybrid parties only, once the party is live.</p>
+        <div class="meta-line"><span><b>Rate limit</b> party-actions (30/min)</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <p>v0 scope: one room per party (<code>party-{id}</code>), everyone can publish and subscribe (audio + video) &mdash; no host mute/spotlight controls, no chat, no recording. Connect with any LiveKit client SDK using the returned <code>url</code> and <code>token</code>. The room is created automatically by LiveKit when the first participant joins, and closes automatically once everyone leaves &mdash; there's nothing to explicitly tear down.</p>
+            <div class="note"><b>In-person parties have no video</b><code>mode: "in_person"</code> 403s here &mdash; there's no remote component to join.</div>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403 not a member / wrong mode / not live</span><span class="status-pill err">404</span><span class="status-pill err">429</span><span class="status-pill err">503 video not configured yet</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='curl -X POST https://api.yowimo.com/api/v1/parties/902/video-token \
+  -H "Authorization: Bearer $TOKEN"'><span class="tok-flag">curl -X POST</span> https://api.yowimo.com/api/v1/parties/902/video-token \
+  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span></pre>
+            </div>
+            <div class="code-block">
+              <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": true, "message": "Video token issued successfully.",
+  "data": { "token": "eyJhbGciOiJIUzI1NiIs...", "url": "wss://your-project.livekit.cloud", "room": "party-902" }
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"Video token issued successfully."</span>,
+  <span class="tok-key">"data"</span>: { <span class="tok-key">"token"</span>: <span class="tok-str">"eyJhbGciOiJIUzI1NiIs..."</span>, <span class="tok-key">"url"</span>: <span class="tok-str">"wss://your-project.livekit.cloud"</span>, <span class="tok-key">"room"</span>: <span class="tok-str">"party-902"</span> }
+}</pre>
+            </div>
+          </div>
         </div>
       </section>
 

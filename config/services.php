@@ -54,4 +54,10 @@ return [
         'base_url' => env('PAYSTACK_BASE_URL', 'https://api.paystack.co'),
     ],
 
+    'livekit' => [
+        'api_key' => env('LIVEKIT_API_KEY'),
+        'api_secret' => env('LIVEKIT_API_SECRET'),
+        'url' => env('LIVEKIT_URL'),
+    ],
+
 ];

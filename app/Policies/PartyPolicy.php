@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\PartyMode;
 use App\Enums\PartyStatus;
 use App\Enums\PartyVisibility;
 use App\Models\Party;
@@ -132,6 +133,18 @@ class PartyPolicy
     public function cancel(User $user, Party $party): bool
     {
         return $party->host_id === $user->id;
+    }
+
+    /**
+     * Determine whether the user can request a video token. Any current
+     * (active) member, but only once the party is live and only for an
+     * online/hybrid party — an in-person party has no video component.
+     */
+    public function joinVideo(User $user, Party $party): bool
+    {
+        return $party->isMemberOf($user)
+            && $party->status === PartyStatus::Live
+            && in_array($party->mode, [PartyMode::Online, PartyMode::Hybrid], true);
     }
 
     /**
