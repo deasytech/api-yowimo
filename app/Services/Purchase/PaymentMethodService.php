@@ -90,10 +90,12 @@ class PaymentMethodService
     /**
      * Deletes a saved payment method, promoting the next most recent one to
      * default if the one removed was the default. Deactivates the Paystack
-     * authorization remotely first, best-effort via
+     * authorization remotely first, via
      * PaystackClient::deactivateAuthorizationSafely() (shared with
-     * AccountDeletionService::purgePaymentMethods()), so a removed card
-     * can't still be charged via its authorization code.
+     * AccountDeletionService::purgePaymentMethods()) — best-effort only: a
+     * Paystack decline or an unreachable Paystack doesn't block the local
+     * removal, so the authorization may still be technically valid if that
+     * happens, not guaranteed dead the moment this returns.
      */
     public function delete(PaymentMethod $method): void
     {

@@ -65,7 +65,7 @@ class PaystackClient
      * caller's identifying fields (payment_method_id, user_id, ...) show up
      * without this method needing to know their shape.
      *
-     * @param  array<string, mixed>  $context
+     * @param  array{user_id?: int, payment_method_id?: int}  $context
      */
     public function deactivateAuthorizationSafely(string $authorizationCode, array $context = []): void
     {
@@ -73,16 +73,18 @@ class PaystackClient
             $response = $this->deactivateAuthorization($authorizationCode);
 
             if (($response['status'] ?? false) !== true) {
+                // authorization_code is deliberately not logged — it's the
+                // reusable charge credential PaymentMethod::$hidden already
+                // keeps out of API responses, and logs (ingested by Sentry)
+                // are a broader exposure surface than this app's own DB.
                 Log::warning('Paystack declined to deactivate an authorization.', [
                     ...$context,
-                    'authorization_code' => $authorizationCode,
                     'response' => $response,
                 ]);
             }
         } catch (Throwable $e) {
             Log::warning('Failed to deactivate a Paystack authorization.', [
                 ...$context,
-                'authorization_code' => $authorizationCode,
                 'error' => $e->getMessage(),
             ]);
         }

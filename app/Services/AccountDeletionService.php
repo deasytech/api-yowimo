@@ -76,12 +76,14 @@ class AccountDeletionService
     }
 
     /**
-     * Deactivates each saved Paystack authorization remotely, best-effort
-     * via PaystackClient::deactivateAuthorizationSafely() (shared with
+     * Deactivates each saved Paystack authorization remotely via
+     * PaystackClient::deactivateAuthorizationSafely() (shared with
      * PaymentMethodService::delete()), then removes the local
-     * payment_methods row regardless of whether the remote call succeeded,
-     * so a saved card is never left reachable for charging after the
-     * account is gone.
+     * payment_methods row regardless of whether the remote call succeeded —
+     * best-effort only: a Paystack decline or an unreachable Paystack
+     * doesn't block the local removal, so the authorization may still be
+     * technically valid if that happens, not guaranteed dead the moment
+     * this returns.
      */
     private function purgePaymentMethods(User $user): void
     {
