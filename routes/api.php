@@ -37,6 +37,7 @@ if (! defined('API_USERS_ME_PATH')) {
 Route::prefix('v1')->group(function () {
     Route::middleware(['auth:clerk', 'throttle:api'])->group(function () {
         Route::get(API_USERS_ME_PATH, [MeController::class, 'show']);
+        Route::get('/users/me/stats', [MeController::class, 'stats']);
         Route::patch(API_USERS_ME_PATH, [MeController::class, 'update']);
         Route::delete(API_USERS_ME_PATH, [MeController::class, 'destroy'])->middleware('throttle:account-deletion');
         Route::get('/users/{user}', [UserController::class, 'show'])->whereNumber('user');
