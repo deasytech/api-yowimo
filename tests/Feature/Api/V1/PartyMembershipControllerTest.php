@@ -417,7 +417,8 @@ it('lets the host add a pass-and-play guest and increments players_count', funct
         ->assertJsonPath('data.guest_emoji', '🎉')
         ->assertJsonPath('data.join_mode', 'local')
         ->assertJsonPath('data.user_id', null)
-        ->assertJsonPath('data.is_host', false);
+        ->assertJsonPath('data.is_host', false)
+        ->assertJsonPath('data.is_ready', false);
 
     expect($party->fresh()->players_count)->toBe(2);
     expect(PartyMember::where('party_id', $party->id)->whereNull('user_id')->where('guest_name', 'Sam')->exists())->toBeTrue();

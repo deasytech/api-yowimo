@@ -139,6 +139,7 @@ class PartyMembershipService
                 'guest_emoji' => $data['guest_emoji'] ?? null,
                 'join_mode' => $data['join_mode'],
                 'status' => PartyMemberStatus::Active,
+                'is_ready' => false,
                 'joined_at' => now(),
             ]);
 
