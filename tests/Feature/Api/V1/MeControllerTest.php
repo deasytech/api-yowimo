@@ -1,11 +1,17 @@
 <?php
 
+use App\Enums\PartyStatus;
+use App\Enums\XpTransactionType;
+use App\Models\Party;
+use App\Models\PartyMember;
 use App\Models\User;
+use App\Models\XpTransaction;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\Support\FakesClerk;
 
 const API_V1_ME_ENDPOINT = '/api/v1/users/me';
+const API_V1_ME_STATS_ENDPOINT = '/api/v1/users/me/stats';
 
 uses(FakesClerk::class);
 
@@ -222,4 +228,64 @@ it('never deletes another users real avatar file even if avatar_url is spoofed t
         ->assertStatus(200);
 
     Storage::disk('public')->assertExists(str($victimAvatarUrl)->after('/storage/')->toString());
+});
+
+it('rejects profile stats requests with no bearer token', function () {
+    $this->getJson(API_V1_ME_STATS_ENDPOINT)->assertStatus(401);
+});
+
+it('returns zeroed stats for a user with no history', function () {
+    $token = $this->clerkToken(['sub' => 'user_stats_none']);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->getJson(API_V1_ME_STATS_ENDPOINT)
+        ->assertStatus(200)
+        ->assertJson([
+            'success' => true,
+            'message' => 'Profile stats retrieved successfully.',
+            'data' => ['parties_count' => 0, 'mvp_count' => 0],
+        ]);
+});
+
+it('counts only ended parties toward parties_count, whether hosted or joined', function () {
+    $token = $this->clerkToken(['sub' => 'user_stats_parties']);
+    $this->withHeader('Authorization', "Bearer {$token}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
+    $user = User::where('clerk_user_id', 'user_stats_parties')->firstOrFail();
+
+    // Hosted and ended — counts.
+    $hostedEnded = Party::factory()->create(['host_id' => $user->id, 'status' => PartyStatus::Ended]);
+    PartyMember::factory()->create(['party_id' => $hostedEnded->id, 'user_id' => $user->id]);
+
+    // Joined (not hosted) and ended — counts.
+    $joinedEnded = Party::factory()->create(['status' => PartyStatus::Ended]);
+    PartyMember::factory()->create(['party_id' => $joinedEnded->id, 'user_id' => $user->id]);
+
+    // Hosted but still a draft — doesn't count.
+    $draft = Party::factory()->create(['host_id' => $user->id, 'status' => PartyStatus::Draft]);
+    PartyMember::factory()->create(['party_id' => $draft->id, 'user_id' => $user->id]);
+
+    // Joined but the party was cancelled before it happened — doesn't count.
+    $cancelled = Party::factory()->create(['status' => PartyStatus::Cancelled]);
+    PartyMember::factory()->create(['party_id' => $cancelled->id, 'user_id' => $user->id]);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->getJson(API_V1_ME_STATS_ENDPOINT)
+        ->assertStatus(200)
+        ->assertJsonPath('data.parties_count', 2);
+});
+
+it('counts mvp_bonus xp transactions toward mvp_count, ignoring other xp types', function () {
+    $token = $this->clerkToken(['sub' => 'user_stats_mvp']);
+    $this->withHeader('Authorization', "Bearer {$token}")->getJson(API_V1_ME_ENDPOINT)->assertOk();
+    $user = User::where('clerk_user_id', 'user_stats_mvp')->firstOrFail();
+
+    XpTransaction::factory()->create(['user_id' => $user->id, 'type' => XpTransactionType::MvpBonus]);
+    XpTransaction::factory()->create(['user_id' => $user->id, 'type' => XpTransactionType::MvpBonus]);
+    XpTransaction::factory()->create(['user_id' => $user->id, 'type' => XpTransactionType::ChallengeCompleted]);
+    XpTransaction::factory()->create(['type' => XpTransactionType::MvpBonus]); // another user's MVP bonus
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->getJson(API_V1_ME_STATS_ENDPOINT)
+        ->assertStatus(200)
+        ->assertJsonPath('data.mvp_count', 2);
 });

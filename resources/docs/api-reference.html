@@ -278,6 +278,7 @@
       <div class="nav-group" data-group="profile">
         <div class="nav-group-title">Profile</div>
         <a class="nav-link" data-search="get users me profile" href="#get-users-me"><span class="m get">GET</span><span class="p">/users/me</span></a>
+        <a class="nav-link" data-search="get users me stats profile tiles parties mvp" href="#get-users-me-stats"><span class="m get">GET</span><span class="p">/users/me/stats</span></a>
         <a class="nav-link" data-search="patch users me update profile" href="#patch-users-me"><span class="m patch">PATCH</span><span class="p">/users/me</span></a>
         <a class="nav-link" data-search="delete users me account deletion close" href="#delete-users-me"><span class="m delete">DEL</span><span class="p">/users/me</span></a>
         <a class="nav-link" data-search="get users id public profile player" href="#get-users-id"><span class="m get">GET</span><span class="p">/users/{user}</span></a>
@@ -549,6 +550,38 @@
     <span class="tok-key">"updated_at"</span>: <span class="tok-str">"2026-08-28T10:02:31Z"</span>,
     <span class="tok-key">"wallet"</span>: { <span class="tok-key">"balance"</span>: <span class="tok-num">340</span>, <span class="tok-key">"currency"</span>: <span class="tok-str">"tokens"</span> }
   }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="get-users-me-stats">
+        <div class="endpoint-head"><span class="method get">GET</span><code class="path">/users/me/stats</code></div>
+        <p class="desc">Profile screen stat tiles: lifetime parties played and MVP count.</p>
+        <div class="meta-line"><span><b>Rate limit</b> api</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <p><code>parties_count</code> counts a party once it has actually happened (<code>status: "ended"</code>) &mdash; hosting or joining a party that's still a draft, scheduled, live, or was cancelled doesn't count yet. <code>mvp_count</code> is the lifetime count of games where you earned the MVP bonus (same signal <code>is_mvp</code> on <code>GET /game/{id}/results</code> and the <code>party_king</code> badge come from).</p>
+            <div class="note"><b>Kept off GET /users/me</b><code>GET /users/me</code> is called constantly as a plain auth/session check and stays a single-row lookup; these two are aggregate queries, split out so they only run when the Profile screen actually needs them.</div>
+            <div class="note"><b>No streak yet</b>A third tile, a "streak," isn't in this response &mdash; what counts as a streak day, and whether it resets or has a grace period, hasn't been defined yet. Keep that tile client-side/hardcoded until a follow-up adds it.</div>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='curl https://api.yowimo.com/api/v1/users/me/stats \
+  -H "Authorization: Bearer $TOKEN"'><span class="tok-flag">curl</span> https://api.yowimo.com/api/v1/users/me/stats \
+  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span></pre>
+            </div>
+            <div class="code-block">
+              <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": true, "message": "Profile stats retrieved successfully.",
+  "data": { "parties_count": 47, "mvp_count": 12 }
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"Profile stats retrieved successfully."</span>,
+  <span class="tok-key">"data"</span>: { <span class="tok-key">"parties_count"</span>: <span class="tok-num">47</span>, <span class="tok-key">"mvp_count"</span>: <span class="tok-num">12</span> }
 }</pre>
             </div>
           </div>
