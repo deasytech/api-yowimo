@@ -2,6 +2,7 @@
 
 namespace App\Services\Parties;
 
+use App\Enums\JoinMode;
 use App\Enums\PartyMemberStatus;
 use App\Enums\PartyStatus;
 use App\Events\PartyMemberJoined;
@@ -91,7 +92,8 @@ class PartyMembershipService
     /**
      * Everyone who has been in the party — current members and those who
      * left — in join order, with their user loaded. Members whose account
-     * has been deleted are left out.
+     * has been deleted are left out; guest (pass-and-play) members have no
+     * account to begin with and are always included.
      *
      * @return Collection<int, PartyMember>
      */
@@ -99,12 +101,51 @@ class PartyMembershipService
     {
         return PartyMember::query()
             ->where('party_id', $party->id)
-            ->whereHas('user')
+            ->where(fn ($query) => $query->whereHas('user')->orWhereNull('user_id'))
             ->with('user')
             ->orderBy('joined_at')
             ->orderBy('id')
             ->get()
             ->each(fn (PartyMember $member) => $member->setRelation('party', $party));
+    }
+
+    /**
+     * Adds an in-room guest (pass-and-play, no account) to the party. Only
+     * the host can do this — they're physically present and vouching for
+     * who's in the room — so unlike join(), there's no rejoin-reuse case: a
+     * new guest is always a new row.
+     *
+     * @param  array{guest_name: string, guest_emoji: ?string, join_mode: JoinMode}  $data
+     *
+     * @throws PartyNotJoinableException if the party's current status doesn't allow joining.
+     * @throws PartyFullException if the party is already at capacity.
+     */
+    public function addGuest(Party $party, array $data): PartyMember
+    {
+        return DB::transaction(function () use ($party, $data) {
+            $party = Party::query()->whereKey($party->id)->lockForUpdate()->firstOrFail();
+
+            if (! in_array($party->status, self::JOINABLE_STATUSES, true)) {
+                throw new PartyNotJoinableException;
+            }
+
+            if ($party->players_count >= $party->max_players) {
+                throw new PartyFullException;
+            }
+
+            $member = PartyMember::create([
+                'party_id' => $party->id,
+                'guest_name' => $data['guest_name'],
+                'guest_emoji' => $data['guest_emoji'] ?? null,
+                'join_mode' => $data['join_mode'],
+                'status' => PartyMemberStatus::Active,
+                'joined_at' => now(),
+            ]);
+
+            $party->increment('players_count');
+
+            return $member;
+        });
     }
 
     /**

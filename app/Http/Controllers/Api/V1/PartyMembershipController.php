@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\JoinPartyRequest;
+use App\Http\Requests\Api\V1\StorePartyPlayerRequest;
 use App\Http\Resources\Api\V1\PartyPlayerResource;
 use App\Http\Resources\Api\V1\PartyResource;
 use App\Models\Party;
@@ -32,6 +33,20 @@ class PartyMembershipController extends Controller
         $party = $this->memberships->join($request->user(), $party);
 
         return ApiResponse::success(new PartyResource($party), 'Joined party successfully.');
+    }
+
+    /**
+     * Host-only: adds an in-room guest (pass-and-play, no account) to the
+     * party, for the hybrid "In-Room Players" and in-person/local-register
+     * flows where the player has no Clerk session of their own.
+     */
+    public function storePlayer(StorePartyPlayerRequest $request, Party $party): JsonResponse
+    {
+        $this->authorize('addGuest', $party);
+
+        $member = $this->memberships->addGuest($party, $request->validated());
+
+        return ApiResponse::success(new PartyPlayerResource($member->setRelation('party', $party)), 'Guest added successfully.', 201);
     }
 
     public function leave(Request $request, Party $party): JsonResponse

@@ -40,6 +40,11 @@ function cancelEndpoint(Party $party): string
     return "/api/v1/parties/{$party->id}/cancel";
 }
 
+function storePlayerEndpoint(Party $party): string
+{
+    return "/api/v1/parties/{$party->id}/players";
+}
+
 /**
  * Provisions (via a real request, matching this app's auto-provision-on-first-
  * request behavior) and returns [User, bearer token] for a Clerk-authenticated
@@ -394,4 +399,80 @@ it('rejects cancelling a party that is already live', function () {
         ->assertStatus(422);
 
     expect($party->fresh()->status)->toBe(PartyStatus::Live);
+});
+
+it('lets the host add a pass-and-play guest and increments players_count', function () {
+    [$host, $hostToken] = provisionPartyHost($this, $this->clerkToken(['sub' => 'user_host_add_guest']), 'user_host_add_guest');
+    $party = Party::factory()->create([
+        'host_id' => $host->id,
+        'visibility' => PartyVisibility::Public,
+        'status' => PartyStatus::Live,
+        'players_count' => 1,
+    ]);
+    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $host->id]);
+
+    $this->withHeader('Authorization', "Bearer {$hostToken}")
+        ->postJson(storePlayerEndpoint($party), ['guest_name' => 'Sam', 'guest_emoji' => '🎉', 'join_mode' => 'local'])
+        ->assertStatus(201)
+        ->assertJsonPath('data.guest_name', 'Sam')
+        ->assertJsonPath('data.guest_emoji', '🎉')
+        ->assertJsonPath('data.join_mode', 'local')
+        ->assertJsonPath('data.user_id', null)
+        ->assertJsonPath('data.is_host', false);
+
+    expect($party->fresh()->players_count)->toBe(2);
+    expect(PartyMember::where('party_id', $party->id)->whereNull('user_id')->where('guest_name', 'Sam')->exists())->toBeTrue();
+});
+
+it('forbids a non-host from adding a guest', function () {
+    $host = User::factory()->create();
+    $party = Party::factory()->create([
+        'host_id' => $host->id,
+        'visibility' => PartyVisibility::Public,
+        'status' => PartyStatus::Live,
+    ]);
+
+    $token = $this->clerkToken(['sub' => 'user_non_host_add_guest']);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->postJson(storePlayerEndpoint($party), ['guest_name' => 'Sam', 'join_mode' => 'local'])
+        ->assertStatus(403);
+
+    expect(PartyMember::where('party_id', $party->id)->whereNull('user_id')->exists())->toBeFalse();
+});
+
+it('requires guest_name and a valid join_mode when adding a guest', function () {
+    [$host, $hostToken] = provisionPartyHost($this, $this->clerkToken(['sub' => 'user_host_add_guest_invalid']), 'user_host_add_guest_invalid');
+    $party = Party::factory()->create(['host_id' => $host->id, 'status' => PartyStatus::Live]);
+
+    $this->withHeader('Authorization', "Bearer {$hostToken}")
+        ->postJson(storePlayerEndpoint($party), ['join_mode' => 'not-a-mode'])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['guest_name', 'join_mode']);
+});
+
+it('rejects adding a guest to a full party', function () {
+    [$host, $hostToken] = provisionPartyHost($this, $this->clerkToken(['sub' => 'user_host_add_guest_full']), 'user_host_add_guest_full');
+    $party = Party::factory()->create([
+        'host_id' => $host->id,
+        'status' => PartyStatus::Live,
+        'max_players' => 1,
+        'players_count' => 1,
+    ]);
+    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $host->id]);
+
+    $this->withHeader('Authorization', "Bearer {$hostToken}")
+        ->postJson(storePlayerEndpoint($party), ['guest_name' => 'Sam', 'join_mode' => 'local'])
+        ->assertStatus(409);
+
+    expect($party->fresh()->players_count)->toBe(1);
+});
+
+it('rejects adding a guest to a party that is not in a joinable status', function () {
+    [$host, $hostToken] = provisionPartyHost($this, $this->clerkToken(['sub' => 'user_host_add_guest_draft']), 'user_host_add_guest_draft');
+    $party = Party::factory()->create(['host_id' => $host->id, 'status' => PartyStatus::Draft]);
+
+    $this->withHeader('Authorization', "Bearer {$hostToken}")
+        ->postJson(storePlayerEndpoint($party), ['guest_name' => 'Sam', 'join_mode' => 'local'])
+        ->assertStatus(422);
 });

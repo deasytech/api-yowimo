@@ -85,6 +85,16 @@ class PartyPolicy
     }
 
     /**
+     * Determine whether the user can add a guest (pass-and-play) player to
+     * the party. Host-only — they're physically present and vouching for
+     * who's in the room, so guests don't need their own invitation proof.
+     */
+    public function addGuest(User $user, Party $party): bool
+    {
+        return $party->host_id === $user->id;
+    }
+
+    /**
      * Determine whether the user can toggle their ready state. Any current
      * (active) member, including the host.
      */

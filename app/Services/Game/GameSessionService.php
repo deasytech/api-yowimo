@@ -97,9 +97,12 @@ class GameSessionService
                 throw new GameSessionPackUnavailableException('This pack has no playable cards.');
             }
 
+            // Guests (no user_id) sit in the room but have no account to
+            // record a digital turn against, so they're excluded here.
             $turnOrder = PartyMember::query()
                 ->where('party_id', $party->id)
                 ->where('status', PartyMemberStatus::Active)
+                ->whereNotNull('user_id')
                 ->pluck('user_id')
                 ->shuffle()
                 ->values()

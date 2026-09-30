@@ -72,6 +72,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/parties/{party}/like', [PartyLikeController::class, 'store'])->middleware('throttle:party-actions');
         Route::delete('/parties/{party}/like', [PartyLikeController::class, 'destroy'])->middleware('throttle:party-actions');
         Route::get('/parties/{party}/players', [PartyMembershipController::class, 'players']);
+        Route::post('/parties/{party}/players', [PartyMembershipController::class, 'storePlayer'])->middleware('throttle:party-actions');
         Route::post('/parties/{party}/ready', [PartyMembershipController::class, 'ready'])->middleware('throttle:party-actions');
         Route::delete('/parties/{party}/ready', [PartyMembershipController::class, 'unready'])->middleware('throttle:party-actions');
         Route::post('/parties/{party}/join', [PartyMembershipController::class, 'join'])->middleware('throttle:party-actions');
