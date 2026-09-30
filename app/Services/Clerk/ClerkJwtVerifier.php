@@ -6,6 +6,7 @@ use App\Exceptions\Api\InvalidClerkTokenException;
 use Firebase\JWT\JWK;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Throwable;
@@ -56,7 +57,15 @@ class ClerkJwtVerifier
         $ttl = (int) config('services.clerk.jwks_cache_ttl', 3600);
 
         $jwks = Cache::remember('clerk:jwks', $ttl, function () use ($jwksUrl) {
-            $response = Http::acceptJson()->get($jwksUrl);
+            try {
+                $response = Http::acceptJson()->get($jwksUrl);
+            } catch (ConnectionException $e) {
+                // A TLS/DNS/timeout failure talking to Clerk itself — never a
+                // response to inspect via $response->failed() below, and
+                // otherwise propagates as an unhandled 500 instead of the
+                // same clean 401 every other "can't verify" path here uses.
+                throw new InvalidClerkTokenException('Unable to reach Clerk to fetch signing keys.');
+            }
 
             if ($response->failed()) {
                 throw new InvalidClerkTokenException('Unable to fetch Clerk signing keys.');

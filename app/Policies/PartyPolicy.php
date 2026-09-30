@@ -85,6 +85,16 @@ class PartyPolicy
     }
 
     /**
+     * Determine whether the user can add a guest (pass-and-play) player to
+     * the party. Host-only — they're physically present and vouching for
+     * who's in the room, so guests don't need their own invitation proof.
+     */
+    public function addGuest(User $user, Party $party): bool
+    {
+        return $party->host_id === $user->id;
+    }
+
+    /**
      * Determine whether the user can toggle their ready state. Any current
      * (active) member, including the host.
      */
@@ -145,6 +155,17 @@ class PartyPolicy
         return $party->isMemberOf($user)
             && $party->status === PartyStatus::Live
             && in_array($party->mode, [PartyMode::Online, PartyMode::Hybrid], true);
+    }
+
+    /**
+     * Determine whether the user can request a TV pairing code. Any current
+     * (active) member, once the party is live — unlike joinVideo, not
+     * restricted to online/hybrid: casting to a physical TV is exactly the
+     * in-person/hybrid case, not something an online-only party needs less of.
+     */
+    public function pairTv(User $user, Party $party): bool
+    {
+        return $party->isMemberOf($user) && $party->status === PartyStatus::Live;
     }
 
     /**

@@ -48,6 +48,23 @@ it('lists every player with public identity, host flag, and membership status', 
         ->assertJsonStructure(['data' => [['user_id', 'user' => ['id', 'username', 'display_name', 'avatar_url'], 'is_host', 'status', 'joined_at', 'left_at']]]);
 });
 
+it('includes pass-and-play guests in the roster', function () {
+    $host = User::factory()->create(['clerk_user_id' => 'players_host_guest']);
+    $party = Party::factory()->create(['host_id' => $host->id, 'status' => PartyStatus::Live]);
+    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $host->id, 'joined_at' => now()->subMinutes(2)]);
+    PartyMember::factory()->guest()->create(['party_id' => $party->id, 'guest_name' => 'Sam', 'joined_at' => now()->subMinute()]);
+
+    authAsPlayer($host);
+
+    $this->getJson(partyPlayersEndpoint($party))
+        ->assertOk()
+        ->assertJsonCount(2, 'data')
+        ->assertJsonPath('data.1.user_id', null)
+        ->assertJsonPath('data.1.guest_name', 'Sam')
+        ->assertJsonPath('data.1.is_host', false)
+        ->assertJsonPath('data.1.user', null);
+});
+
 it('leaves out members whose account was deleted', function () {
     $host = User::factory()->create(['clerk_user_id' => 'players_host_deleted']);
     $party = Party::factory()->create(['host_id' => $host->id, 'status' => PartyStatus::Live]);

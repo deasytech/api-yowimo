@@ -504,6 +504,26 @@ Join party.
 
 ---
 
+## POST /parties/{id}/players
+
+Add an in-room guest (pass-and-play, no account). Host only.
+
+Request
+
+```json
+{
+    "guest_name": "Priya",
+    "guest_emoji": "🎉",
+    "join_mode": "local"
+}
+```
+
+Response
+
+PartyPlayerResource (`user_id`/`user` null, `guest_name`/`guest_emoji`/`join_mode` set)
+
+---
+
 ## POST /parties/{id}/leave
 
 Leave party.

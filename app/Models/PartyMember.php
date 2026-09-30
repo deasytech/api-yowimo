@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\JoinMode;
 use App\Enums\PartyMemberStatus;
 use Database\Factories\PartyMemberFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -12,6 +13,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'party_id',
     'user_id',
+    'guest_name',
+    'guest_emoji',
+    'join_mode',
     'status',
     'is_ready',
     'joined_at',
@@ -29,10 +33,20 @@ class PartyMember extends Model
     {
         return [
             'status' => PartyMemberStatus::class,
+            'join_mode' => JoinMode::class,
             'is_ready' => 'boolean',
             'joined_at' => 'datetime',
             'left_at' => 'datetime',
         ];
+    }
+
+    /**
+     * A pass-and-play / in-room player added by the host, with no account
+     * of their own — has guest_name/guest_emoji instead of a user_id.
+     */
+    public function isGuest(): bool
+    {
+        return $this->user_id === null;
     }
 
     /**
