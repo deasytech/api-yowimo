@@ -60,14 +60,25 @@ function provisionPartyHost(TestCase $test, string $token, string $sub): array
     return [User::where('clerk_user_id', $sub)->firstOrFail(), $token];
 }
 
-function makeLivePartyWithHostMember(int $maxPlayers = 8, int $playersCount = 1): Party
+/**
+ * Optionally takes an already-provisioned host (one with a real Clerk token,
+ * via provisionPartyHost()) for tests that need to act as the host — without
+ * one, the party factory's own generated host is used, as before.
+ */
+function makeLivePartyWithHostMember(int $maxPlayers = 8, int $playersCount = 1, ?User $host = null): Party
 {
-    $party = Party::factory()->create([
+    $attributes = [
         'visibility' => PartyVisibility::Public,
         'status' => PartyStatus::Live,
         'max_players' => $maxPlayers,
         'players_count' => $playersCount,
-    ]);
+    ];
+
+    if ($host) {
+        $attributes['host_id'] = $host->id;
+    }
+
+    $party = Party::factory()->create($attributes);
 
     PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $party->host_id]);
 
@@ -279,13 +290,7 @@ it('does not go below zero when leaving without having joined', function () {
 it('blocks the host from leaving their own party', function () {
     [$host, $hostToken] = provisionPartyHost($this, $this->clerkToken(['sub' => 'user_host_leave_block']), 'user_host_leave_block');
 
-    $party = Party::factory()->create([
-        'host_id' => $host->id,
-        'visibility' => PartyVisibility::Public,
-        'status' => PartyStatus::Live,
-        'players_count' => 1,
-    ]);
-    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $host->id]);
+    $party = makeLivePartyWithHostMember(host: $host);
 
     $this->withHeader('Authorization', "Bearer {$hostToken}")
         ->deleteJson(leaveEndpoint($party))
@@ -403,13 +408,7 @@ it('rejects cancelling a party that is already live', function () {
 
 it('lets the host add a pass-and-play guest and increments players_count', function () {
     [$host, $hostToken] = provisionPartyHost($this, $this->clerkToken(['sub' => 'user_host_add_guest']), 'user_host_add_guest');
-    $party = Party::factory()->create([
-        'host_id' => $host->id,
-        'visibility' => PartyVisibility::Public,
-        'status' => PartyStatus::Live,
-        'players_count' => 1,
-    ]);
-    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $host->id]);
+    $party = makeLivePartyWithHostMember(host: $host);
 
     $this->withHeader('Authorization', "Bearer {$hostToken}")
         ->postJson(storePlayerEndpoint($party), ['guest_name' => 'Sam', 'guest_emoji' => '🎉', 'join_mode' => 'local'])
@@ -453,13 +452,7 @@ it('requires guest_name and a valid join_mode when adding a guest', function () 
 
 it('rejects adding a guest to a full party', function () {
     [$host, $hostToken] = provisionPartyHost($this, $this->clerkToken(['sub' => 'user_host_add_guest_full']), 'user_host_add_guest_full');
-    $party = Party::factory()->create([
-        'host_id' => $host->id,
-        'status' => PartyStatus::Live,
-        'max_players' => 1,
-        'players_count' => 1,
-    ]);
-    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $host->id]);
+    $party = makeLivePartyWithHostMember(maxPlayers: 1, playersCount: 1, host: $host);
 
     $this->withHeader('Authorization', "Bearer {$hostToken}")
         ->postJson(storePlayerEndpoint($party), ['guest_name' => 'Sam', 'join_mode' => 'local'])

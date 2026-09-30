@@ -158,6 +158,17 @@ class PartyPolicy
     }
 
     /**
+     * Determine whether the user can request a TV pairing code. Any current
+     * (active) member, once the party is live — unlike joinVideo, not
+     * restricted to online/hybrid: casting to a physical TV is exactly the
+     * in-person/hybrid case, not something an online-only party needs less of.
+     */
+    public function pairTv(User $user, Party $party): bool
+    {
+        return $party->isMemberOf($user) && $party->status === PartyStatus::Live;
+    }
+
+    /**
      * Determine whether the user can view the party's game session state.
      * The host and any current (active) member — the same people who play it.
      */
