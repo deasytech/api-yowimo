@@ -25,12 +25,17 @@ it('leaves genuine external URLs and null values untouched', function () {
     // The overwhelming majority of real avatar_url values: Clerk's own
     // hosted CDN link, synced in directly — never a local path.
     $clerkAvatar = User::factory()->create(['avatar_url' => 'https://img.clerk.com/some-avatar.png']);
+    // A CDN that happens to use "storage" as a path segment too — the naive
+    // "contains /storage/" match alone would have mangled this; it's only
+    // left alone because what follows isn't this app's own upload prefix.
+    $lookalikeCdn = Party::factory()->create(['cover_image_url' => 'https://mycdn.example.com/storage/assets/photo-456.jpg']);
 
     $this->artisan('images:backfill-relative-paths')->assertExitCode(0);
 
     expect($external->fresh()->cover_image_url)->toBe('https://images.unsplash.com/photo-123.jpg');
     expect($empty->fresh()->cover_image_url)->toBeNull();
     expect($clerkAvatar->fresh()->avatar_url)->toBe('https://img.clerk.com/some-avatar.png');
+    expect($lookalikeCdn->fresh()->cover_image_url)->toBe('https://mycdn.example.com/storage/assets/photo-456.jpg');
 });
 
 it('is safe to run again once everything is already backfilled', function () {
