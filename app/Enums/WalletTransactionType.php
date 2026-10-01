@@ -10,4 +10,5 @@ enum WalletTransactionType: string
     case Bonus = 'bonus';
     case Adjustment = 'adjustment';
     case Reward = 'reward';
+    case PartyEntry = 'party_entry';
 }

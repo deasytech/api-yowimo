@@ -5,7 +5,9 @@ namespace App\Services\Parties;
 use App\Enums\PartyMemberStatus;
 use App\Enums\PartyStatus;
 use App\Enums\PartyVisibility;
+use App\Enums\WalletTransactionType;
 use App\Events\PartyCreated;
+use App\Exceptions\Api\InsufficientWalletBalanceException;
 use App\Exceptions\Api\PackNotInGameTypeException;
 use App\Exceptions\Api\PartyGameAlreadyStartedException;
 use App\Models\GameType;
@@ -13,6 +15,7 @@ use App\Models\Pack;
 use App\Models\Party;
 use App\Models\PartyMember;
 use App\Models\User;
+use App\Services\Wallet\WalletService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\CursorPaginator;
@@ -26,6 +29,7 @@ class PartyService
     public function __construct(
         private readonly RoomCodeGenerator $roomCodes,
         private readonly PartyCoverImageService $coverImages,
+        private readonly WalletService $wallets,
     ) {}
 
     /**
@@ -222,9 +226,42 @@ class PartyService
             'joined_at' => now(),
         ]);
 
+        $this->chargePartyEntry($host, $party, $data['game_type_id'] ?? null);
+
         PartyCreated::dispatch($party->id, $host->id);
 
         return $party;
+    }
+
+    /**
+     * Debits the game type's entry cost, if any. Runs after the party/member
+     * rows above rather than before them — both are still inside the same
+     * per-attempt transaction (see attemptInsert()), so a failed debit rolls
+     * the whole thing back regardless of ordering; doing it last means the
+     * wallet_transaction's reference can point at the party it paid for,
+     * instead of just the game type.
+     *
+     * @throws InsufficientWalletBalanceException
+     */
+    private function chargePartyEntry(User $host, Party $party, ?int $gameTypeId): void
+    {
+        if ($gameTypeId === null) {
+            return;
+        }
+
+        $gameType = GameType::query()->whereKey($gameTypeId)->firstOrFail();
+
+        if ($gameType->cost <= 0) {
+            return;
+        }
+
+        $this->wallets->debit(
+            $host,
+            $gameType->cost,
+            WalletTransactionType::PartyEntry,
+            reference: $party,
+            description: "Party entry: {$gameType->name}",
+        );
     }
 
     /**
