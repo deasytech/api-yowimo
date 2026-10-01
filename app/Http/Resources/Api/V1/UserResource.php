@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Api\V1;
 
 use App\Models\User;
+use App\Support\StoredImageUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -21,7 +22,7 @@ class UserResource extends JsonResource
             'first_name' => $this->first_name,
             'last_name' => $this->last_name,
             'display_name' => $this->display_name,
-            'avatar_url' => $this->avatar_url,
+            'avatar_url' => StoredImageUrl::resolve($this->avatar_url),
             'bio' => $this->bio,
             'date_of_birth' => $this->date_of_birth?->toDateString(),
             'country_code' => $this->country_code,

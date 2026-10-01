@@ -12,7 +12,10 @@ use Illuminate\Support\Str;
 /**
  * Stores a user's uploaded avatar, re-encoded/resized the same way a party
  * cover image is (see ImageOptimizer/PartyCoverImageService), and returns
- * its public URL.
+ * its disk-relative path. The path is stored as-is in avatar_url — resolving
+ * it to an absolute URL happens at read time instead (see StoredImageUrl),
+ * so a path stored under one APP_URL/tunnel still resolves correctly after
+ * it changes.
  */
 class AvatarUploadService
 {
@@ -26,11 +29,9 @@ class AvatarUploadService
     ];
 
     /**
-     * @return array{url: string, path: string}
-     *
      * @throws AvatarUploadException if the file's type isn't supported or the disk write fails.
      */
-    public function store(UploadedFile $file): array
+    public function store(UploadedFile $file): string
     {
         $mimeType = $file->getMimeType();
         $extension = self::EXTENSION_BY_MIME_TYPE[$mimeType] ?? null;
@@ -50,10 +51,7 @@ class AvatarUploadService
             throw new AvatarUploadException('Failed to store the uploaded avatar.');
         }
 
-        return [
-            'url' => Storage::disk('public')->url($path),
-            'path' => $path,
-        ];
+        return $path;
     }
 
     /**

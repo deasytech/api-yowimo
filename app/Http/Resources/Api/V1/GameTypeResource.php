@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Api\V1;
 
 use App\Models\GameType;
+use App\Support\StoredImageUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -23,7 +24,7 @@ class GameTypeResource extends JsonResource
             'audience' => $this->audience,
             'intensity' => $this->intensity->value,
             'cost' => $this->cost,
-            'image_url' => $this->image_url,
+            'image_url' => StoredImageUrl::resolve($this->image_url),
             'default_pack_id' => $this->default_pack_id,
             'gradient' => $this->gradient ?? [],
             'created_at' => $this->created_at,

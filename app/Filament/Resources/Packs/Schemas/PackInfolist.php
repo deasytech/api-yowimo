@@ -52,7 +52,13 @@ class PackInfolist
                     ->icon(Heroicon::OutlinedPhoto)
                     ->schema([
                         ImageEntry::make('cover_image_url')
-                            ->label('Cover image'),
+                            ->label('Cover image')
+                            // Pinned explicitly: without it Filament resolves
+                            // against FILESYSTEM_DISK (local), not where
+                            // uploads actually land — masked until now only
+                            // because every stored value used to be an
+                            // already-absolute URL.
+                            ->disk('public'),
                     ]),
 
                 InfolistSections::visibilityAndOrdering(),

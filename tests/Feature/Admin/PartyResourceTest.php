@@ -61,7 +61,7 @@ it('lets an admin edit a party', function () {
         ->status->toBe(PartyStatus::Ended);
 });
 
-it('stores a newly uploaded cover image as a full public URL', function () {
+it('stores a newly uploaded cover image as a disk-relative path', function () {
     Storage::fake('public');
     $party = Party::factory()->create(['cover_image_url' => null]);
 
@@ -70,10 +70,13 @@ it('stores a newly uploaded cover image as a full public URL', function () {
         ->call('save')
         ->assertHasNoFormErrors();
 
-    $url = $party->refresh()->cover_image_url;
+    // A relative path, not a resolved URL — see StoredImageUrl: resolving
+    // to a URL happens at API read time so it survives an APP_URL change.
+    $path = $party->refresh()->cover_image_url;
 
-    expect($url)->toStartWith(Storage::disk('public')->url('parties'));
-    expect(Storage::disk('public')->files('parties'))->not->toBeEmpty();
+    expect($path)->toStartWith('parties/');
+    expect($path)->not->toContain('://');
+    Storage::disk('public')->assertExists($path);
 });
 
 it('rejects a cover image upload with an unsupported mime type', function () {

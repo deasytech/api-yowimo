@@ -151,12 +151,12 @@ class PartyService
         // the same image twice and orphan the first copy. store() throws
         // rather than returning null, so a failed upload never silently
         // creates the party without the image the caller asked for.
-        $coverImageUrl = $coverImage ? $this->coverImages->store($coverImage) : null;
+        $coverImagePath = $coverImage ? $this->coverImages->store($coverImage) : null;
 
         try {
-            return DB::transaction(function () use ($host, $data, $coverImageUrl) {
+            return DB::transaction(function () use ($host, $data, $coverImagePath) {
                 try {
-                    $party = $this->attemptInsert($host, $data, $this->roomCodes->generate(), $coverImageUrl);
+                    $party = $this->attemptInsert($host, $data, $this->roomCodes->generate(), $coverImagePath);
                 } catch (QueryException $exception) {
                     if (! $this->isRoomCodeUniqueViolation($exception)) {
                         throw $exception;
@@ -167,7 +167,7 @@ class PartyService
                     // its own nested transaction/savepoint so the failed first
                     // insert is rolled back cleanly instead of aborting the
                     // outer transaction before the retry runs.
-                    $party = $this->attemptInsert($host, $data, $this->roomCodes->generate(), $coverImageUrl);
+                    $party = $this->attemptInsert($host, $data, $this->roomCodes->generate(), $coverImagePath);
                 }
 
                 return $party->load(['host', 'gameType', 'pack']);
@@ -176,8 +176,8 @@ class PartyService
             // The upload already committed to disk before the transaction
             // started; if the party itself never ends up created, the file
             // would otherwise be orphaned forever.
-            if ($coverImageUrl !== null) {
-                $this->coverImages->delete($coverImageUrl);
+            if ($coverImagePath !== null) {
+                $this->coverImages->delete($coverImagePath);
             }
 
             throw $exception;
@@ -187,15 +187,15 @@ class PartyService
     /**
      * @param  array<string, mixed>  $data
      */
-    private function attemptInsert(User $host, array $data, string $roomCode, ?string $coverImageUrl): Party
+    private function attemptInsert(User $host, array $data, string $roomCode, ?string $coverImagePath): Party
     {
-        return DB::transaction(fn () => $this->insertParty($host, $data, $roomCode, $coverImageUrl));
+        return DB::transaction(fn () => $this->insertParty($host, $data, $roomCode, $coverImagePath));
     }
 
     /**
      * @param  array<string, mixed>  $data
      */
-    private function insertParty(User $host, array $data, string $roomCode, ?string $coverImageUrl): Party
+    private function insertParty(User $host, array $data, string $roomCode, ?string $coverImagePath): Party
     {
         $party = Party::create([
             'host_id' => $host->id,
@@ -212,7 +212,7 @@ class PartyService
             'starts_at' => $data['starts_at'] ?? null,
             'location' => $data['location'] ?? null,
             'tags' => $data['tags'] ?? [],
-            'cover_image_url' => $coverImageUrl,
+            'cover_image_url' => $coverImagePath,
         ]);
 
         PartyMember::create([

@@ -20,9 +20,8 @@ class UserProfileService
         $newAvatarPath = null;
 
         if ($avatar) {
-            $stored = $this->avatars->store($avatar);
-            $data['avatar_url'] = $stored['url'];
-            $newAvatarPath = $stored['path'];
+            $newAvatarPath = $this->avatars->store($avatar);
+            $data['avatar_url'] = $newAvatarPath;
             $user->avatar_path = $newAvatarPath;
         }
 

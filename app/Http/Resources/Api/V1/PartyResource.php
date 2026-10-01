@@ -4,6 +4,7 @@ namespace App\Http\Resources\Api\V1;
 
 use App\Enums\PartyVisibility;
 use App\Models\Party;
+use App\Support\StoredImageUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -39,7 +40,7 @@ class PartyResource extends JsonResource
             'tags' => $this->tags ?? [],
             'starts_at' => $this->starts_at,
             'location' => $this->location,
-            'cover_image_url' => $this->cover_image_url,
+            'cover_image_url' => StoredImageUrl::resolve($this->cover_image_url),
             'gradient' => $this->gradient ?? [],
             'host' => PartyHostResource::make($this->whenLoaded('host')),
             'game_type' => GameTypeResource::make($this->whenLoaded('gameType')),

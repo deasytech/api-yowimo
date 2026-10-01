@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Api\V1;
 
 use App\Models\User;
+use App\Support\StoredImageUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -18,7 +19,7 @@ class PartyHostResource extends JsonResource
             'id' => $this->id,
             'username' => $this->username,
             'display_name' => $this->display_name,
-            'avatar_url' => $this->avatar_url,
+            'avatar_url' => StoredImageUrl::resolve($this->avatar_url),
         ];
     }
 }

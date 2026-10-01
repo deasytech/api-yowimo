@@ -67,7 +67,7 @@ it('preserves an existing external image_url when the image field is left untouc
         ->image_url->toBe('https://example.com/cover.jpg');
 });
 
-it('stores a newly uploaded image as a full public URL', function () {
+it('stores a newly uploaded image as a disk-relative path', function () {
     Storage::fake('public');
 
     $gameType = GameType::factory()->create(['image_url' => null]);
@@ -77,10 +77,13 @@ it('stores a newly uploaded image as a full public URL', function () {
         ->call('save')
         ->assertHasNoFormErrors();
 
-    $url = $gameType->refresh()->image_url;
+    // A relative path, not a resolved URL — see StoredImageUrl: resolving
+    // to a URL happens at API read time so it survives an APP_URL change.
+    $path = $gameType->refresh()->image_url;
 
-    expect($url)->toStartWith(Storage::disk('public')->url('game-types'));
-    expect(Storage::disk('public')->files('game-types'))->not->toBeEmpty();
+    expect($path)->toStartWith('game-types/');
+    expect($path)->not->toContain('://');
+    Storage::disk('public')->assertExists($path);
 });
 
 it('rejects an image upload with an unsupported mime type', function () {

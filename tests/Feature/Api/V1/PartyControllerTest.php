@@ -201,17 +201,50 @@ it('creates a party with an uploaded cover image that appears in the discover fe
     $coverImageUrl = $response->json('data.cover_image_url');
     expect($coverImageUrl)->not->toBeNull();
 
-    $party = Party::where('title', 'Party With A Cover')->firstOrFail();
-    expect($party->cover_image_url)->toBe($coverImageUrl);
+    // The API response resolves a full URL; the stored column holds just
+    // the disk-relative path (see StoredImageUrl) so it survives an
+    // APP_URL/tunnel change instead of baking in whatever's active now.
+    $relativePath = str($coverImageUrl)->after('/storage/')->toString();
 
-    Storage::disk('public')->assertExists(
-        str($coverImageUrl)->after('/storage/')->toString()
-    );
+    $party = Party::where('title', 'Party With A Cover')->firstOrFail();
+    expect($party->cover_image_url)->toBe($relativePath);
+
+    Storage::disk('public')->assertExists($relativePath);
 
     $this->withHeader('Authorization', "Bearer {$token}")
         ->getJson(API_V1_PARTIES_ENDPOINT)
         ->assertStatus(200)
         ->assertJsonPath('data.0.cover_image_url', $coverImageUrl);
+});
+
+it('resolves the cover image URL against the current APP_URL, not whatever was active at upload time', function () {
+    Storage::fake('public', ['url' => 'https://tunnel-one.test/storage']);
+    $token = $this->clerkToken(['sub' => 'user_create_cover_url_rotation']);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->post(API_V1_PARTIES_ENDPOINT, [
+            'title' => 'Party URL Rotation',
+            'mode' => 'online',
+            'visibility' => 'public',
+            'cover_image' => UploadedFile::fake()->image('cover.jpg'),
+        ])
+        ->assertStatus(201);
+
+    $party = Party::where('title', 'Party URL Rotation')->firstOrFail();
+    expect($party->cover_image_url)->not->toContain('://');
+
+    // Simulates the dev tunnel/APP_URL rotating after the upload — the
+    // stored path doesn't change, so it should resolve under whichever
+    // host is active *now*, not the one active when the file was uploaded.
+    Storage::fake('public', ['url' => 'https://tunnel-two.test/storage']);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->getJson(API_V1_PARTIES_ENDPOINT.'/'.$party->id)
+        ->assertStatus(200)
+        ->assertJsonPath(
+            'data.cover_image_url',
+            fn (string $url) => str_starts_with($url, 'https://tunnel-two.test/storage/')
+        );
 });
 
 it('rejects a non-image file as the cover image', function () {
