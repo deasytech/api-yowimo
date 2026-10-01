@@ -3,12 +3,15 @@
 use App\Enums\PartyMode;
 use App\Enums\PartyStatus;
 use App\Enums\PartyVisibility;
+use App\Enums\WalletTransactionType;
 use App\Models\GameSession;
 use App\Models\GameType;
 use App\Models\Pack;
 use App\Models\Party;
 use App\Models\PartyMember;
 use App\Models\User;
+use App\Models\Wallet;
+use App\Models\WalletTransaction;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\Support\FakesClerk;
@@ -273,6 +276,85 @@ it('creates a party with no cover image when none is provided', function () {
         ])
         ->assertStatus(201)
         ->assertJsonPath('data.cover_image_url', null);
+});
+
+it('debits the wallet for the game types entry cost and records a party_entry transaction', function () {
+    $token = $this->clerkToken(['sub' => 'user_party_entry_paid']);
+    $user = provisionUserFromToken($this, $token, 'user_party_entry_paid');
+    Wallet::factory()->create(['user_id' => $user->id, 'balance' => 100]);
+    WalletTransaction::factory()->create(['wallet_id' => $user->wallet->id, 'amount' => 100, 'balance_after' => 100]);
+    $gameType = GameType::factory()->create(['cost' => 30]);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->postJson(API_V1_PARTIES_ENDPOINT, [
+            'title' => 'Paid Entry Party',
+            'game_type_id' => $gameType->id,
+            'mode' => 'online',
+            'visibility' => 'public',
+        ])
+        ->assertStatus(201);
+
+    expect($user->wallet->fresh()->balance)->toBe(70);
+
+    $party = Party::where('title', 'Paid Entry Party')->firstOrFail();
+    $transaction = WalletTransaction::where('wallet_id', $user->wallet->id)
+        ->where('type', WalletTransactionType::PartyEntry)
+        ->firstOrFail();
+
+    expect($transaction->amount)->toBe(-30);
+    expect($transaction->reference_type)->toBe($party->getMorphClass());
+    expect((int) $transaction->reference_id)->toBe($party->id);
+});
+
+it('rejects party creation when the host cannot afford the game types entry cost', function () {
+    $token = $this->clerkToken(['sub' => 'user_party_entry_poor']);
+    $user = provisionUserFromToken($this, $token, 'user_party_entry_poor');
+    $gameType = GameType::factory()->create(['cost' => 30]);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->postJson(API_V1_PARTIES_ENDPOINT, [
+            'title' => 'Unaffordable Party',
+            'game_type_id' => $gameType->id,
+            'mode' => 'online',
+            'visibility' => 'public',
+        ])
+        ->assertStatus(422)
+        ->assertJson(['success' => false, 'message' => 'Insufficient token balance.']);
+
+    expect(Party::where('title', 'Unaffordable Party')->exists())->toBeFalse();
+    expect($user->wallet()->exists())->toBeFalse();
+});
+
+it('does not charge anything for a free game type', function () {
+    $token = $this->clerkToken(['sub' => 'user_party_entry_free']);
+    $user = provisionUserFromToken($this, $token, 'user_party_entry_free');
+    $gameType = GameType::factory()->create(['cost' => 0]);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->postJson(API_V1_PARTIES_ENDPOINT, [
+            'title' => 'Free Entry Party',
+            'game_type_id' => $gameType->id,
+            'mode' => 'online',
+            'visibility' => 'public',
+        ])
+        ->assertStatus(201);
+
+    expect(WalletTransaction::where('type', WalletTransactionType::PartyEntry)->exists())->toBeFalse();
+    expect($user->wallet()->exists())->toBeFalse();
+});
+
+it('does not charge anything when creating a party without a game type', function () {
+    $token = $this->clerkToken();
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->postJson(API_V1_PARTIES_ENDPOINT, [
+            'title' => 'No Game Type Party',
+            'mode' => 'online',
+            'visibility' => 'public',
+        ])
+        ->assertStatus(201);
+
+    expect(WalletTransaction::where('type', WalletTransactionType::PartyEntry)->exists())->toBeFalse();
 });
 
 it('creates a draft party when save_as_draft is true', function () {

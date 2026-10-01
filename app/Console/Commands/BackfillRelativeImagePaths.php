@@ -24,7 +24,7 @@ use Illuminate\Support\Str;
  * contain "/storage/" (a CDN path segment, say) won't also happen to be
  * followed by one of these exact directory names, so it's left alone.
  */
-#[Signature('images:backfill-relative-paths')]
+#[Signature('images:backfill-relative-paths {--chunk=1000 : Rows per batch}')]
 #[Description('Converts locally-resolved absolute image URLs back into disk-relative paths, leaving external URLs untouched.')]
 class BackfillRelativeImagePaths extends Command
 {
@@ -42,15 +42,27 @@ class BackfillRelativeImagePaths extends Command
 
     public function handle(): int
     {
+        $chunkSize = (int) $this->option('chunk');
+
+        if ($chunkSize < 1) {
+            $this->error('--chunk must be at least 1.');
+
+            return self::FAILURE;
+        }
+
         foreach (self::UPLOAD_PREFIX_BY_TABLE as $table => ['column' => $column, 'prefix' => $prefix]) {
             $updated = 0;
             $skipped = 0;
 
+            // eachById(), not each(): each() paginates by offset, and every
+            // successful update here removes that row from the WHERE match —
+            // on an offset basis that silently skips whatever the next page
+            // shifted past. eachById() pages by "id > last seen", which stays
+            // correct no matter how the matched set shrinks underneath it.
             DB::table($table)
                 ->whereNotNull($column)
                 ->where($column, 'like', "%/storage/{$prefix}%")
-                ->orderBy('id')
-                ->each(function ($row) use ($table, $column, $prefix, &$updated, &$skipped) {
+                ->eachById(function ($row) use ($table, $column, $prefix, &$updated, &$skipped) {
                     $relativePath = Str::after($row->{$column}, '/storage/');
 
                     // Guards against a coincidental "/storage/" match further
@@ -63,7 +75,7 @@ class BackfillRelativeImagePaths extends Command
 
                     DB::table($table)->where('id', $row->id)->update([$column => $relativePath]);
                     $updated++;
-                });
+                }, $chunkSize);
 
             $message = "{$table}.{$column}: backfilled {$updated} row(s).";
             $this->info($skipped ? "{$message} Skipped {$skipped} ambiguous match(es)." : $message);

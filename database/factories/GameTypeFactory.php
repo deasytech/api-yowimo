@@ -33,7 +33,12 @@ class GameTypeFactory extends Factory
             'tagline' => $this->faker->sentence(4),
             'audience' => $this->faker->randomElement(['Friends', 'All', 'Teams', 'Family', 'Couples', 'Adults']),
             'intensity' => $this->faker->randomElement(GameIntensity::cases()),
-            'cost' => $this->faker->randomElement([0, 0, 0, 10, 20, 50]),
+            // Free by default: cost now actually gates party creation
+            // (PartyService debits it), so a random non-zero value here
+            // would make any test that creates a party for a factory-default
+            // game type flaky depending on the host's wallet balance. Tests
+            // that specifically want a paid game type set 'cost' themselves.
+            'cost' => 0,
             'image_url' => null,
             'gradient' => [$this->faker->hexColor(), $this->faker->hexColor()],
             'is_active' => true,

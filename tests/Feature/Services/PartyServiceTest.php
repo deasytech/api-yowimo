@@ -2,12 +2,16 @@
 
 use App\Enums\PartyMode;
 use App\Enums\PartyVisibility;
+use App\Enums\WalletTransactionType;
+use App\Exceptions\Api\InsufficientWalletBalanceException;
 use App\Exceptions\Api\PackNotInGameTypeException;
 use App\Exceptions\Api\PartyCoverImageUploadException;
 use App\Models\GameType;
 use App\Models\Pack;
 use App\Models\Party;
 use App\Models\User;
+use App\Models\Wallet;
+use App\Models\WalletTransaction;
 use App\Services\Parties\PartyCoverImageService;
 use App\Services\Parties\PartyService;
 use App\Services\Parties\RoomCodeGenerator;
@@ -44,6 +48,53 @@ it('retries once with a new room code when it loses a race to a duplicate', func
 
     expect($party->room_code)->toBe('FRESH1');
     expect($party->id)->not->toBe($existing->id);
+});
+
+it('does not double-charge the party entry cost on a room-code collision retry', function () {
+    $host = User::factory()->create();
+    Wallet::factory()->create(['user_id' => $host->id, 'balance' => 100]);
+    WalletTransaction::factory()->create(['wallet_id' => $host->wallet->id, 'amount' => 100, 'balance_after' => 100]);
+    $gameType = GameType::factory()->create(['cost' => 30]);
+
+    Party::factory()->create(['room_code' => 'DUPE02']);
+
+    $fakeGenerator = new class extends RoomCodeGenerator
+    {
+        private int $calls = 0;
+
+        public function generate(): string
+        {
+            $this->calls++;
+
+            return $this->calls === 1 ? 'DUPE02' : 'FRESH2';
+        }
+    };
+
+    $this->app->instance(RoomCodeGenerator::class, $fakeGenerator);
+
+    app(PartyService::class)->create($host, [
+        'title' => 'Paid Race Condition Party',
+        'game_type_id' => $gameType->id,
+        'mode' => PartyMode::Online->value,
+        'visibility' => PartyVisibility::Public->value,
+    ]);
+
+    expect($host->wallet->fresh()->balance)->toBe(70);
+    expect(WalletTransaction::where('wallet_id', $host->wallet->id)->where('type', WalletTransactionType::PartyEntry)->count())->toBe(1);
+});
+
+it('rejects party creation when the host cannot afford the game types entry cost, without persisting the party', function () {
+    $host = User::factory()->create();
+    $gameType = GameType::factory()->create(['cost' => 30]);
+
+    expect(fn () => app(PartyService::class)->create($host, [
+        'title' => 'Unaffordable Service Party',
+        'game_type_id' => $gameType->id,
+        'mode' => PartyMode::Online->value,
+        'visibility' => PartyVisibility::Public->value,
+    ]))->toThrow(InsufficientWalletBalanceException::class);
+
+    expect(Party::where('title', 'Unaffordable Service Party')->exists())->toBeFalse();
 });
 
 it('lets non-duplicate database errors propagate unchanged', function () {

@@ -4,6 +4,7 @@ use App\Models\GameType;
 use App\Models\Pack;
 use App\Models\Party;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 it('converts locally-resolved absolute URLs back to relative paths, across all four tables', function () {
     $party = Party::factory()->create(['cover_image_url' => 'http://old-tunnel.test/storage/parties/covers/abc.jpg']);
@@ -37,6 +38,36 @@ it('leaves genuine external URLs and null values untouched', function () {
     expect($clerkAvatar->fresh()->avatar_url)->toBe('https://img.clerk.com/some-avatar.png');
     expect($lookalikeCdn->fresh()->cover_image_url)->toBe('https://mycdn.example.com/storage/assets/photo-456.jpg');
 });
+
+it('converts every matching row even past a single chunk boundary', function () {
+    // --chunk lets this exercise the real bug each() had here without 1,000+
+    // rows: a successful update removes that row from the WHERE match, so
+    // offset-based paging (each()) would skip whatever the next page's
+    // offset shifted past as the matched set shrank underneath it —
+    // reproducible with as few as chunk-size-plus-one rows, not just at the
+    // real default of 1,000.
+    $now = now();
+
+    collect(range(1, 7))->each(fn (int $i) => DB::table('users')->insert([
+        'clerk_user_id' => "chunk_boundary_user_{$i}",
+        'avatar_url' => 'http://old-tunnel.test/storage/avatars/photo.jpg',
+        'created_at' => $now,
+        'updated_at' => $now,
+    ]));
+
+    $this->artisan('images:backfill-relative-paths', ['--chunk' => 3])->assertExitCode(0);
+
+    expect(DB::table('users')->where('avatar_url', 'avatars/photo.jpg')->count())->toBe(7);
+    expect(DB::table('users')->where('avatar_url', 'like', '%old-tunnel%')->count())->toBe(0);
+});
+
+it('rejects a chunk size below 1 without touching any rows', function (int $chunk) {
+    $party = Party::factory()->create(['cover_image_url' => 'http://old-tunnel.test/storage/parties/covers/abc.jpg']);
+
+    $this->artisan('images:backfill-relative-paths', ['--chunk' => $chunk])->assertExitCode(1);
+
+    expect($party->fresh()->cover_image_url)->toBe('http://old-tunnel.test/storage/parties/covers/abc.jpg');
+})->with([0, -1, -1000]);
 
 it('is safe to run again once everything is already backfilled', function () {
     $party = Party::factory()->create(['cover_image_url' => 'parties/covers/already-relative.jpg']);
