@@ -33,8 +33,8 @@ it('keeps the previous avatar file when the profile save fails', function () {
     User::factory()->create(['username' => 'taken_username_2']);
     $user = User::factory()->create();
 
-    $firstStored = app(AvatarUploadService::class)->store(UploadedFile::fake()->image('first.jpg'));
-    $user->forceFill(['avatar_url' => $firstStored['url'], 'avatar_path' => $firstStored['path']])->save();
+    $firstStoredPath = app(AvatarUploadService::class)->store(UploadedFile::fake()->image('first.jpg'));
+    $user->forceFill(['avatar_url' => $firstStoredPath, 'avatar_path' => $firstStoredPath])->save();
 
     expect(fn () => app(UserProfileService::class)->updateProfile(
         $user,
@@ -42,6 +42,6 @@ it('keeps the previous avatar file when the profile save fails', function () {
         UploadedFile::fake()->image('second.jpg')
     ))->toThrow(QueryException::class);
 
-    Storage::disk('public')->assertExists($firstStored['path']);
-    expect($user->fresh()->avatar_url)->toBe($firstStored['url']);
+    Storage::disk('public')->assertExists($firstStoredPath);
+    expect($user->fresh()->avatar_url)->toBe($firstStoredPath);
 });

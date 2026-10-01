@@ -23,6 +23,12 @@ class UserInfolist
                     ->schema([
                         ImageEntry::make('avatar_url')
                             ->label('Avatar')
+                            // Pinned explicitly: without it Filament resolves
+                            // against FILESYSTEM_DISK (local), not where
+                            // uploads actually land — masked until now only
+                            // because every stored value used to be an
+                            // already-absolute URL.
+                            ->disk('public')
                             ->circular()
                             ->columnSpanFull(),
                         TextEntry::make('id'),

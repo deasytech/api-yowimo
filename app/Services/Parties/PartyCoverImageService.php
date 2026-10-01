@@ -11,7 +11,10 @@ use Illuminate\Support\Str;
 
 /**
  * Stores a party's cover image upload, re-encoded/resized the same way an
- * admin-uploaded image is (see ImageOptimizer), and returns its public URL.
+ * admin-uploaded image is (see ImageOptimizer), and returns its disk-relative
+ * path. The path is stored as-is in cover_image_url — resolving it to an
+ * absolute URL happens at read time instead (see StoredImageUrl), so a path
+ * stored under one APP_URL/tunnel still resolves correctly after it changes.
  */
 class PartyCoverImageService
 {
@@ -47,18 +50,17 @@ class PartyCoverImageService
             throw new PartyCoverImageUploadException('Failed to store the uploaded cover image.');
         }
 
-        return Storage::disk('public')->url($path);
+        return $path;
     }
 
     /**
      * Removes a previously stored cover image — used to clean up an upload
      * that already succeeded when party creation fails afterward, so it
-     * doesn't stay orphaned on disk.
+     * doesn't stay orphaned on disk. Takes the disk-relative path store()
+     * returned, not a resolved URL.
      */
-    public function delete(string $url): void
+    public function delete(string $path): void
     {
-        Storage::disk('public')->delete(
-            Str::after($url, Storage::disk('public')->url(''))
-        );
+        Storage::disk('public')->delete($path);
     }
 }

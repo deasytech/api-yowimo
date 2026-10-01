@@ -23,19 +23,20 @@ class ImageUploadField
     ];
 
     /**
-     * Builds a FileUpload for a column that stores a plain image URL string
-     * (not a Filament media/attachment relationship). Existing records were
-     * seeded with arbitrary external URLs, not disk-relative paths, so this
-     * disables Filament's default "does this path exist on disk" check on
-     * hydration — otherwise, opening and saving a record whose image is an
-     * external URL would silently blank the field out, since that URL never
-     * "exists" on the local disk.
+     * Builds a FileUpload for a column that stores a plain image URL/path
+     * string (not a Filament media/attachment relationship). Existing
+     * records were seeded with arbitrary external URLs, not disk-relative
+     * paths, so this disables Filament's default "does this path exist on
+     * disk" check on hydration — otherwise, opening and saving a record
+     * whose image is an external URL would silently blank the field out,
+     * since that URL never "exists" on the local disk.
      *
      * On save, a newly uploaded file is re-encoded/resized by ImageOptimizer
-     * before it's written to disk, and its resulting relative path is
-     * expanded to a full public URL before persisting, so the column always
-     * holds a directly-usable, size-optimized URL — matching what API
-     * consumers expect.
+     * and its disk-relative path is persisted as-is — not expanded to a full
+     * URL here, so the column stays correct if APP_URL changes later (see
+     * StoredImageUrl, which resolves it to an absolute URL at read time). An
+     * untouched field's existing value (relative path or external URL) just
+     * passes through unchanged.
      */
     public static function make(string $name, string $directory): FileUpload
     {
@@ -54,13 +55,7 @@ class ImageUploadField
                     'url' => static::isAbsoluteUrl($file) ? $file : Storage::disk('public')->url($file),
                 ];
             })
-            ->dehydrateStateUsing(function (?string $state) {
-                if (blank($state)) {
-                    return null;
-                }
-
-                return static::isAbsoluteUrl($state) ? $state : Storage::disk('public')->url($state);
-            });
+            ->dehydrateStateUsing(fn (?string $state) => blank($state) ? null : $state);
     }
 
     protected static function isAbsoluteUrl(string $value): bool

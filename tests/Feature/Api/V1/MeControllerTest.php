@@ -166,7 +166,12 @@ it('uploads an avatar and replaces the previous one', function () {
     Storage::disk('public')->assertExists(str($secondAvatarUrl)->after('/storage/')->toString());
     Storage::disk('public')->assertMissing(str($firstAvatarUrl)->after('/storage/')->toString());
 
-    expect(User::where('clerk_user_id', 'user_avatar')->first()->avatar_url)->toBe($secondAvatarUrl);
+    // The API response resolves a full URL; the stored column holds just
+    // the disk-relative path (see StoredImageUrl) so it survives an
+    // APP_URL/tunnel change instead of baking in whatever's active now.
+    $storedAvatarUrl = User::where('clerk_user_id', 'user_avatar')->first()->avatar_url;
+    expect($storedAvatarUrl)->not->toContain('://');
+    expect($storedAvatarUrl)->toBe(str($secondAvatarUrl)->after('/storage/')->toString());
 });
 
 it('rejects a non-image file as the avatar', function () {
