@@ -44,6 +44,12 @@ class BackfillRelativeImagePaths extends Command
     {
         $chunkSize = (int) $this->option('chunk');
 
+        if ($chunkSize < 1) {
+            $this->error('--chunk must be at least 1.');
+
+            return self::FAILURE;
+        }
+
         foreach (self::UPLOAD_PREFIX_BY_TABLE as $table => ['column' => $column, 'prefix' => $prefix]) {
             $updated = 0;
             $skipped = 0;

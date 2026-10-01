@@ -61,6 +61,14 @@ it('converts every matching row even past a single chunk boundary', function () 
     expect(DB::table('users')->where('avatar_url', 'like', '%old-tunnel%')->count())->toBe(0);
 });
 
+it('rejects a chunk size below 1 without touching any rows', function (int $chunk) {
+    $party = Party::factory()->create(['cover_image_url' => 'http://old-tunnel.test/storage/parties/covers/abc.jpg']);
+
+    $this->artisan('images:backfill-relative-paths', ['--chunk' => $chunk])->assertExitCode(1);
+
+    expect($party->fresh()->cover_image_url)->toBe('http://old-tunnel.test/storage/parties/covers/abc.jpg');
+})->with([0, -1, -1000]);
+
 it('is safe to run again once everything is already backfilled', function () {
     $party = Party::factory()->create(['cover_image_url' => 'parties/covers/already-relative.jpg']);
 
