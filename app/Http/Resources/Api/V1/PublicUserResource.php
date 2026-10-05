@@ -18,8 +18,14 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class PublicUserResource extends JsonResource
 {
-    public function __construct(User $resource, private readonly ?Friendship $friendship = null)
-    {
+    /**
+     * @param  array{friends_count: int, parties_joined_count: int, parties_created_count: int}|null  $stats
+     */
+    public function __construct(
+        User $resource,
+        private readonly ?Friendship $friendship = null,
+        private readonly ?array $stats = null,
+    ) {
         parent::__construct($resource);
     }
 
@@ -33,8 +39,12 @@ class PublicUserResource extends JsonResource
             'username' => $this->username,
             'display_name' => $this->display_name,
             'avatar_url' => StoredImageUrl::resolve($this->avatar_url),
+            'bio' => $this->bio,
+            'interests' => $this->interests ?? [],
+            'country_code' => $this->country_code,
             'xp' => $this->xp,
             'badges' => UserBadgeResource::collection($this->whenLoaded('badges')),
+            'stats' => $this->stats,
             'friendship' => [
                 'id' => $this->friendship?->id,
                 'status' => $this->friendshipStatus($request->user()),

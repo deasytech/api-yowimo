@@ -675,6 +675,7 @@
             <p>Only public-safe fields &mdash; never email, wallet, date of birth, or other private data. Badges are newest first.</p>
             <table class="params"><tr><th>friendship.status</th><th>Meaning</th></tr><tr><td class="field">none</td><td class="rule">No pending or accepted friendship (<code>friendship.id</code> is <code>null</code>)</td></tr><tr><td class="field">friends</td><td class="rule">Accepted &mdash; <code>friendship.id</code> works with <code>DELETE /friends/{id}</code></td></tr><tr><td class="field">request_sent</td><td class="rule">You sent a pending request &mdash; cancel with <code>DELETE /friend-requests/{id}</code></td></tr><tr><td class="field">request_received</td><td class="rule">They sent you a pending request &mdash; accept/reject it</td></tr><tr><td class="field">self</td><td class="rule">You are viewing your own profile</td></tr></table>
             <div class="note"><b>404 hides blocks</b>A deactivated or deleted user, or anyone where either side has blocked the other, returns 404 exactly like a nonexistent id.</div>
+            <div class="note"><b>stats is this user's, not yours</b><code>parties_joined_count</code> only counts parties that reached <code>status: "ended"</code> (same "actually happened" rule as <code>GET /users/me/stats</code>'s <code>parties_count</code>), excluding any they hosted. <code>parties_created_count</code> is different on purpose: every party they've ever hosted, any status &mdash; draft and scheduled included &mdash; since seeing someone's own in-progress parties here is the point. <code>friends_count</code> only counts accepted friendships.</div>
             <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">404</span></div>
           </div>
           <div class="endpoint-code">
@@ -683,19 +684,23 @@
               <pre data-raw='{
   "success": true, "message": "User profile retrieved successfully.",
   "data": {
-    "id": 340, "username": "sam", "display_name": "Sam O.", "avatar_url": null, "xp": 1250,
+    "id": 340, "username": "sam", "display_name": "Sam O.", "avatar_url": null,
+    "bio": "Here for the chaos.", "interests": ["music", "trivia"], "country_code": "NG", "xp": 1250,
     "badges": [
       { "id": 88, "badge": { "id": 1, "key": "first_party", "name": "First Party", "description": "Completed your first game.", "icon": "🎉", "created_at": "2026-09-02T00:00:00Z" }, "earned_at": "2026-09-10T19:12:00Z" }
     ],
+    "stats": { "friends_count": 34, "parties_joined_count": 12, "parties_created_count": 5 },
     "friendship": { "id": 91, "status": "request_received" }
   }
 }'>{
   <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"User profile retrieved successfully."</span>,
   <span class="tok-key">"data"</span>: {
-    <span class="tok-key">"id"</span>: <span class="tok-num">340</span>, <span class="tok-key">"username"</span>: <span class="tok-str">"sam"</span>, <span class="tok-key">"display_name"</span>: <span class="tok-str">"Sam O."</span>, <span class="tok-key">"avatar_url"</span>: <span class="tok-null">null</span>, <span class="tok-key">"xp"</span>: <span class="tok-num">1250</span>,
+    <span class="tok-key">"id"</span>: <span class="tok-num">340</span>, <span class="tok-key">"username"</span>: <span class="tok-str">"sam"</span>, <span class="tok-key">"display_name"</span>: <span class="tok-str">"Sam O."</span>, <span class="tok-key">"avatar_url"</span>: <span class="tok-null">null</span>,
+    <span class="tok-key">"bio"</span>: <span class="tok-str">"Here for the chaos."</span>, <span class="tok-key">"interests"</span>: [<span class="tok-str">"music"</span>, <span class="tok-str">"trivia"</span>], <span class="tok-key">"country_code"</span>: <span class="tok-str">"NG"</span>, <span class="tok-key">"xp"</span>: <span class="tok-num">1250</span>,
     <span class="tok-key">"badges"</span>: [
       { <span class="tok-key">"id"</span>: <span class="tok-num">88</span>, <span class="tok-key">"badge"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">1</span>, <span class="tok-key">"key"</span>: <span class="tok-str">"first_party"</span>, <span class="tok-key">"name"</span>: <span class="tok-str">"First Party"</span>, <span class="tok-key">"description"</span>: <span class="tok-str">"Completed your first game."</span>, <span class="tok-key">"icon"</span>: <span class="tok-str">"🎉"</span>, <span class="tok-key">"created_at"</span>: <span class="tok-str">"2026-09-02T00:00:00Z"</span> }, <span class="tok-key">"earned_at"</span>: <span class="tok-str">"2026-09-10T19:12:00Z"</span> }
     ],
+    <span class="tok-key">"stats"</span>: { <span class="tok-key">"friends_count"</span>: <span class="tok-num">34</span>, <span class="tok-key">"parties_joined_count"</span>: <span class="tok-num">12</span>, <span class="tok-key">"parties_created_count"</span>: <span class="tok-num">5</span> },
     <span class="tok-key">"friendship"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">91</span>, <span class="tok-key">"status"</span>: <span class="tok-str">"request_received"</span> }
   }
 }</pre>

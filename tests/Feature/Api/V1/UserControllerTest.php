@@ -1,8 +1,11 @@
 <?php
 
+use App\Enums\PartyStatus;
 use App\Models\Badge;
 use App\Models\BlockedUser;
 use App\Models\Friendship;
+use App\Models\Party;
+use App\Models\PartyMember;
 use App\Models\User;
 use App\Models\UserBadge;
 use Tests\Support\FakesClerk;
@@ -31,6 +34,9 @@ it('returns only public-safe fields for another user', function () {
         'display_name' => 'Public Name',
         'email' => 'private@example.com',
         'xp' => 120,
+        'bio' => 'Here for the chaos.',
+        'interests' => ['music', 'trivia'],
+        'country_code' => 'GH',
     ]);
 
     $response = $this->getJson(publicProfileEndpoint($user))
@@ -38,12 +44,52 @@ it('returns only public-safe fields for another user', function () {
         ->assertJsonPath('data.id', $user->id)
         ->assertJsonPath('data.username', 'publicname')
         ->assertJsonPath('data.display_name', 'Public Name')
+        ->assertJsonPath('data.bio', 'Here for the chaos.')
+        ->assertJsonPath('data.interests', ['music', 'trivia'])
+        ->assertJsonPath('data.country_code', 'GH')
         ->assertJsonPath('data.xp', 120)
         ->assertJsonPath('data.friendship.status', 'none')
         ->assertJsonPath('data.friendship.id', null);
 
     expect(array_keys($response->json('data')))
-        ->toEqualCanonicalizing(['id', 'username', 'display_name', 'avatar_url', 'xp', 'badges', 'friendship']);
+        ->toEqualCanonicalizing(['id', 'username', 'display_name', 'avatar_url', 'bio', 'interests', 'country_code', 'xp', 'badges', 'stats', 'friendship']);
+});
+
+it("returns the viewed user's stats, not the viewers", function () {
+    $viewer = authAs('profile_viewer_stats_viewer');
+    $user = User::factory()->create();
+    $otherHost = User::factory()->create();
+
+    // The viewer is friends with and has joined/hosted parties of their own —
+    // none of this should leak into the viewed user's counts.
+    Friendship::factory()->accepted()->create(['sender_id' => $viewer->id, 'receiver_id' => User::factory()->create()->id]);
+    $viewerHostedParty = Party::factory()->create(['host_id' => $viewer->id, 'status' => PartyStatus::Ended]);
+    PartyMember::factory()->create(['party_id' => $viewerHostedParty->id, 'user_id' => $viewer->id]);
+
+    // The viewed user: 2 accepted friends, 1 pending (doesn't count), 2
+    // ended parties joined (not hosted), 1 still-draft party they hosted
+    // (counts toward created, since the frontend wants to see their own
+    // in-progress parties here — unlike the ended-only "joined" count).
+    Friendship::factory()->accepted()->create(['sender_id' => $user->id, 'receiver_id' => User::factory()->create()->id]);
+    Friendship::factory()->accepted()->create(['sender_id' => User::factory()->create()->id, 'receiver_id' => $user->id]);
+    Friendship::factory()->create(['sender_id' => $user->id, 'receiver_id' => User::factory()->create()->id]);
+
+    $joined1 = Party::factory()->create(['host_id' => $otherHost->id, 'status' => PartyStatus::Ended]);
+    PartyMember::factory()->create(['party_id' => $joined1->id, 'user_id' => $user->id]);
+    $joined2 = Party::factory()->create(['host_id' => $otherHost->id, 'status' => PartyStatus::Ended]);
+    PartyMember::factory()->create(['party_id' => $joined2->id, 'user_id' => $user->id]);
+    // A joined party that hasn't ended yet — shouldn't count.
+    $stillLive = Party::factory()->create(['host_id' => $otherHost->id, 'status' => PartyStatus::Live]);
+    PartyMember::factory()->create(['party_id' => $stillLive->id, 'user_id' => $user->id]);
+
+    Party::factory()->create(['host_id' => $user->id, 'status' => PartyStatus::Draft]);
+    Party::factory()->create(['host_id' => $user->id, 'status' => PartyStatus::Ended]);
+
+    $this->getJson(publicProfileEndpoint($user))
+        ->assertOk()
+        ->assertJsonPath('data.stats.friends_count', 2)
+        ->assertJsonPath('data.stats.parties_joined_count', 2)
+        ->assertJsonPath('data.stats.parties_created_count', 2);
 });
 
 it('includes the users earned badges', function () {
