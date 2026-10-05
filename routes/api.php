@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AdRewardSessionController;
+use App\Http\Controllers\Api\V1\AdRewardWebhookController;
 use App\Http\Controllers\Api\V1\BadgeController;
 use App\Http\Controllers\Api\V1\BlockController;
 use App\Http\Controllers\Api\V1\CardReportController;
@@ -60,6 +62,9 @@ Route::prefix('v1')->group(function () {
         Route::patch('/wallet/payment-methods/{paymentMethod}/default', [PaymentMethodController::class, 'setDefault'])->middleware('throttle:purchases');
         Route::delete('/wallet/payment-methods/{paymentMethod}', [PaymentMethodController::class, 'destroy'])->middleware('throttle:purchases');
 
+        Route::post('/ad-rewards/sessions', [AdRewardSessionController::class, 'store'])->middleware('throttle:ad-rewards');
+        Route::get('/ad-rewards/progress', [AdRewardSessionController::class, 'progress'])->middleware('throttle:ad-rewards');
+
         Route::get('/badges', [BadgeController::class, 'index']);
         Route::get('/users/me/badges', [BadgeController::class, 'mine']);
         Route::get('/leaderboards', [LeaderboardController::class, 'index']);
@@ -118,6 +123,10 @@ Route::prefix('v1')->group(function () {
 
     Route::post('/webhooks/clerk', ClerkWebhookController::class)->middleware('throttle:webhooks');
     Route::post('/webhooks/paystack', PaystackWebhookController::class)->middleware('throttle:webhooks');
+    // AdMob calls this with GET, unlike every other webhook here — its own
+    // rate limit too, sized for provider callback volume, not 'webhooks'
+    // shared low-volume bucket (see configureRateLimiters()).
+    Route::get('/webhooks/admob-ssv', AdRewardWebhookController::class)->middleware('throttle:admob-ssv');
 
     Route::get('/health', [HealthController::class, 'show'])->middleware('throttle:api');
 });

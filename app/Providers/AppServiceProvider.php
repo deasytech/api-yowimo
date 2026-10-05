@@ -89,5 +89,16 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('account-deletion', fn (Request $request) => Limit::perMinute(3)->by($request->user()?->id ?: $request->ip()));
 
         RateLimiter::for('card-reports', fn (Request $request) => Limit::perMinute(10)->by($request->user()?->id ?: $request->ip()));
+
+        // Generous: minting a session credits nothing by itself, and
+        // legitimate retries (ad-load failures, backgrounding) are normal.
+        RateLimiter::for('ad-rewards', fn (Request $request) => Limit::perMinute(20)->by($request->user()?->id ?: $request->ip()));
+
+        // Deliberately its own bucket, not the shared 'webhooks' one: that
+        // 120/min is sized for Paystack/Clerk's low volume, but many users'
+        // SSV callbacks can funnel through a small pool of Google egress
+        // IPs — reusing 'webhooks' risked throttling genuine reward
+        // callbacks under real load.
+        RateLimiter::for('admob-ssv', fn (Request $request) => Limit::perMinute(600)->by($request->ip()));
     }
 }

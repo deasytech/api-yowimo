@@ -60,4 +60,19 @@ return [
         'url' => env('LIVEKIT_URL'),
     ],
 
+    'admob' => [
+        // Confirm against https://developers.google.com/admob/android/ssv
+        // at implementation/deploy time — Google documents this as the
+        // current SSV public-keys URL but has moved it before.
+        'ssv_keys_url' => env('ADMOB_SSV_KEYS_URL', 'https://gstatic.com/admob/reward/verifier-keys.json'),
+        'ssv_keys_cache_ttl' => env('ADMOB_SSV_KEYS_CACHE_TTL', 43200),
+
+        // Business rules for the rewarded-ad token quest — backend-owned so
+        // the daily limit/payout can be tuned without a mobile release, and
+        // never hard-coded into the client.
+        'rewarded_ads_enabled' => env('ADMOB_REWARDED_ADS_ENABLED', true),
+        'daily_token_limit' => env('ADMOB_REWARDED_ADS_DAILY_LIMIT', 15),
+        'tokens_per_completed_ad' => env('ADMOB_REWARDED_ADS_TOKENS_PER_AD', 1),
+    ],
+
 ];

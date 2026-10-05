@@ -308,6 +308,11 @@
         <a class="nav-link" data-search="patch wallet payment methods default" href="#patch-wallet-payment-methods-default"><span class="m patch">PATCH</span><span class="p">/wallet/payment-methods/{id}/default</span></a>
         <a class="nav-link" data-search="delete wallet payment methods card remove" href="#delete-wallet-payment-methods"><span class="m delete">DELETE</span><span class="p">/wallet/payment-methods/{id}</span></a>
       </div>
+      <div class="nav-group" data-group="adrewards">
+        <div class="nav-group-title">Ad Rewards</div>
+        <a class="nav-link" data-search="post ad rewards sessions admob rewarded video token quest" href="#post-ad-reward-sessions"><span class="m post">POST</span><span class="p">/ad-rewards/sessions</span></a>
+        <a class="nav-link" data-search="get ad rewards progress daily cap token quest" href="#get-ad-reward-progress"><span class="m get">GET</span><span class="p">/ad-rewards/progress</span></a>
+      </div>
       <div class="nav-group" data-group="badges">
         <div class="nav-group-title">Badges</div>
         <a class="nav-link" data-search="get badges catalog list achievements" href="#get-badges"><span class="m get">GET</span><span class="p">/badges</span></a>
@@ -1356,6 +1361,65 @@
             <div class="code-block">
               <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
               <pre data-raw='{ "success": true, "message": "Payment method removed successfully.", "data": [] }'><span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"Payment method removed successfully."</span>, <span class="tok-key">"data"</span>: []</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="group-head" id="adrewards"><h2>Ad Rewards</h2><p>The home screen's rewarded-video token quest: watch a Google AdMob ad, earn tokens, capped per day. The reward is only ever credited after Google's own servers confirm the ad genuinely finished (Server-Side Verification) &mdash; these two endpoints don't credit anything by themselves.</p></section>
+
+      <section class="endpoint" id="post-ad-reward-sessions">
+        <div class="endpoint-head"><span class="method post">POST</span><code class="path">/ad-rewards/sessions</code></div>
+        <p class="desc">Mints a single-use, short-lived token to attach to the rewarded ad request as AdMob's SSV <code>customData</code>.</p>
+        <div class="meta-line"><span><b>Rate limit</b> ad-rewards (20/min)</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <p>No body. The returned <code>token</code> is opaque and single-use &mdash; it's not a reward itself, just what lets the eventual SSV callback (server-to-server, your app never sees it) identify which pending session to credit. Minting doesn't credit anything and doesn't count toward the daily cap by itself; only a verified ad watch does.</p>
+            <div class="note"><b>customData, bound at ad-request time</b>Attach the token when requesting the ad (<code>serverSideVerificationOptions.customData</code>), not reused across multiple ad loads &mdash; mint a fresh session per watch attempt. An unused session (ad never finished, or no fill) just expires on its own after a few minutes; nothing to clean up client-side.</div>
+            <div class="note"><b>Check progress.can_earn before calling this</b>If the feature is disabled or the cap's already hit, this 422/503s rather than minting a dead-end session &mdash; check <code>GET /ad-rewards/progress</code> first so the UI can skip straight to a disabled/exhausted state instead of round-tripping here to find out.</div>
+            <div class="status-row"><span class="status-pill ok">201 Created</span><span class="status-pill err">401</span><span class="status-pill err">422 daily cap already reached</span><span class="status-pill err">429</span><span class="status-pill err">503 rewarded ads disabled</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='curl -X POST https://api.yowimo.com/api/v1/ad-rewards/sessions \
+  -H "Authorization: Bearer $TOKEN"'><span class="tok-flag">curl -X POST</span> https://api.yowimo.com/api/v1/ad-rewards/sessions \
+  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span></pre>
+            </div>
+            <div class="code-block">
+              <div class="code-head"><span>201 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": true, "message": "Ad reward session created successfully.",
+  "data": { "token": "aZ3f...64 chars...9kLp", "expires_at": "2026-10-03T19:15:00Z" }
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"Ad reward session created successfully."</span>,
+  <span class="tok-key">"data"</span>: { <span class="tok-key">"token"</span>: <span class="tok-str">"aZ3f...64 chars...9kLp"</span>, <span class="tok-key">"expires_at"</span>: <span class="tok-str">"2026-10-03T19:15:00Z"</span> }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="get-ad-reward-progress">
+        <div class="endpoint-head"><span class="method get">GET</span><code class="path">/ad-rewards/progress</code></div>
+        <p class="desc">Today's watched count against the daily cap, for the button's "X of 15 left today" display.</p>
+        <div class="meta-line"><span><b>Rate limit</b> ad-rewards (20/min)</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <div class="note"><b>Server UTC day, not local</b><code>watched_today</code>/<code>next_reset_at</code>/<code>server_date</code> reset at UTC midnight, not the viewer's local timezone &mdash; an acceptable MVP simplification, not yet timezone-aware.</div>
+            <div class="note"><b>can_earn is the one field to actually gate the button on</b>Backend-computed as <code>enabled &amp;&amp; remaining &gt; 0</code> so the client never derives it itself &mdash; <code>tokens_per_ad</code> and <code>daily_cap</code> are both backend-configured too (not hard-coded in the app) and can change without a release.</div>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">429</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": true, "message": "Ad reward progress retrieved successfully.",
+  "data": { "watched_today": 7, "daily_cap": 15, "remaining": 8, "next_reset_at": "2026-10-04T00:00:00Z", "enabled": true, "tokens_per_ad": 1, "can_earn": true, "server_date": "2026-10-03" }
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"Ad reward progress retrieved successfully."</span>,
+  <span class="tok-key">"data"</span>: { <span class="tok-key">"watched_today"</span>: <span class="tok-num">7</span>, <span class="tok-key">"daily_cap"</span>: <span class="tok-num">15</span>, <span class="tok-key">"remaining"</span>: <span class="tok-num">8</span>, <span class="tok-key">"next_reset_at"</span>: <span class="tok-str">"2026-10-04T00:00:00Z"</span>, <span class="tok-key">"enabled"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"tokens_per_ad"</span>: <span class="tok-num">1</span>, <span class="tok-key">"can_earn"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"server_date"</span>: <span class="tok-str">"2026-10-03"</span> }
+}</pre>
             </div>
           </div>
         </div>

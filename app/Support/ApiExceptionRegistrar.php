@@ -3,6 +3,8 @@
 namespace App\Support;
 
 use App\Exceptions\Api\AccountDeletionFailedException;
+use App\Exceptions\Api\AdRewardDailyCapReachedException;
+use App\Exceptions\Api\AdRewardsDisabledException;
 use App\Exceptions\Api\AlreadyFriendsException;
 use App\Exceptions\Api\DuplicateFriendRequestException;
 use App\Exceptions\Api\DuplicatePaymentReferenceException;
@@ -12,6 +14,7 @@ use App\Exceptions\Api\GameSessionNotActiveException;
 use App\Exceptions\Api\GameSessionPackUnavailableException;
 use App\Exceptions\Api\IdempotencyKeyConflictException;
 use App\Exceptions\Api\InsufficientWalletBalanceException;
+use App\Exceptions\Api\InvalidAdMobSsvSignatureException;
 use App\Exceptions\Api\InvalidClerkTokenException;
 use App\Exceptions\Api\InvalidClerkWebhookException;
 use App\Exceptions\Api\InvalidFriendshipTransitionException;
@@ -56,6 +59,7 @@ class ApiExceptionRegistrar
         self::registerFriendshipExceptions($exceptions);
         self::registerGameSessionExceptions($exceptions);
         self::registerVideoExceptions($exceptions);
+        self::registerAdRewardExceptions($exceptions);
         self::registerGenericHttpExceptions($exceptions);
     }
 
@@ -306,6 +310,36 @@ class ApiExceptionRegistrar
             $exceptions,
             LiveKitNotConfiguredException::class,
             fn (LiveKitNotConfiguredException $e) => ApiResponse::error(
+                $e->getMessage(),
+                status: 503
+            )
+        );
+    }
+
+    private static function registerAdRewardExceptions(Exceptions $exceptions): void
+    {
+        self::registerHandler(
+            $exceptions,
+            AdRewardDailyCapReachedException::class,
+            fn (AdRewardDailyCapReachedException $e) => ApiResponse::error(
+                $e->getMessage(),
+                status: 422
+            )
+        );
+
+        self::registerHandler(
+            $exceptions,
+            InvalidAdMobSsvSignatureException::class,
+            fn (InvalidAdMobSsvSignatureException $e) => ApiResponse::error(
+                $e->getMessage(),
+                status: 400
+            )
+        );
+
+        self::registerHandler(
+            $exceptions,
+            AdRewardsDisabledException::class,
+            fn (AdRewardsDisabledException $e) => ApiResponse::error(
                 $e->getMessage(),
                 status: 503
             )
