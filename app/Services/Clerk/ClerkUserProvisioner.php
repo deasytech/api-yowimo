@@ -11,6 +11,8 @@ use Illuminate\Support\Str;
 
 class ClerkUserProvisioner
 {
+    public function __construct(private readonly FallbackUsernameGenerator $usernames) {}
+
     /**
      * Resolve the internal user for the given verified Clerk claims,
      * provisioning a new record just-in-time on first sight of a clerk_user_id.
@@ -68,6 +70,7 @@ class ClerkUserProvisioner
         return User::create([
             'clerk_user_id' => $clerkUserId,
             'status' => UserStatus::Active,
+            'username' => $this->usernames->generateFor($attributes['display_name'] ?? null, $attributes['email'] ?? null),
             ...$attributes,
         ]);
     }

@@ -2,9 +2,28 @@
 
 use App\Models\User;
 use App\Services\Clerk\ClerkUserProvisioner;
+use App\Services\Clerk\FallbackUsernameGenerator;
 use Illuminate\Database\QueryException;
 
 const NEW_USER = 'insert into "users" ...';
+
+it('assigns a unique, non-null fallback username to a newly provisioned user', function () {
+    $provisioner = app(ClerkUserProvisioner::class);
+
+    $user = $provisioner->resolve(['sub' => 'user_oauth_only', 'email' => 'oauth.only@yowimo.app']);
+
+    expect($user->username)->not->toBeNull();
+    expect($user->username)->toMatch('/^[a-zA-Z0-9_.]+$/');
+});
+
+it('gives two OAuth-only users distinct fallback usernames even with the same display name', function () {
+    $provisioner = app(ClerkUserProvisioner::class);
+
+    $first = $provisioner->resolve(['sub' => 'user_oauth_a', 'name' => 'Jordan Lee']);
+    $second = $provisioner->resolve(['sub' => 'user_oauth_b', 'name' => 'Jordan Lee']);
+
+    expect($first->username)->not->toBe($second->username);
+});
 
 it('recovers from a concurrent unique clerk user id race and continues sync flow', function () {
     $existingUser = User::factory()->create([
@@ -14,7 +33,7 @@ it('recovers from a concurrent unique clerk user id race and continues sync flow
         'last_seen_at' => now()->subMinutes(10),
     ]);
 
-    $provisioner = new class extends ClerkUserProvisioner
+    $provisioner = new class(new FallbackUsernameGenerator) extends ClerkUserProvisioner
     {
         private bool $throwOnce = true;
 
@@ -55,7 +74,7 @@ it('recovers from a concurrent unique clerk user id race and continues sync flow
 });
 
 it('rethrows query exceptions that are unrelated to unique clerk_user_id violations', function () {
-    $provisioner = new class extends ClerkUserProvisioner
+    $provisioner = new class(new FallbackUsernameGenerator) extends ClerkUserProvisioner
     {
         /**
          * @param  array<string, mixed>  $attributes
@@ -75,7 +94,7 @@ it('rethrows query exceptions that are unrelated to unique clerk_user_id violati
 })->throws(QueryException::class);
 
 it('rethrows a unique clerk_user_id violation when no user can be recovered', function () {
-    $provisioner = new class extends ClerkUserProvisioner
+    $provisioner = new class(new FallbackUsernameGenerator) extends ClerkUserProvisioner
     {
         /**
          * @param  array<string, mixed>  $attributes

@@ -65,6 +65,17 @@ it('creates a local user for user.created', function () {
     expect(WebhookEvent::where('event_id', $webhook['id'])->exists())->toBeTrue();
 });
 
+it('backfills a fallback username for a user.created with none, as from an OAuth-only sign-in', function () {
+    $webhook = $this->signedClerkWebhook(clerkUserPayload('user.created', ['username' => null]));
+
+    $this->postClerkWebhook($webhook['body'], $webhook['headers'])->assertStatus(200);
+
+    $username = User::where('clerk_user_id', 'user_webhook_1')->first()->username;
+
+    expect($username)->not->toBeNull();
+    expect($username)->toMatch('/^[a-zA-Z0-9_.]+$/');
+});
+
 it('does not double-process a duplicate webhook delivery', function () {
     $webhook = $this->signedClerkWebhook(clerkUserPayload('user.created'));
 
