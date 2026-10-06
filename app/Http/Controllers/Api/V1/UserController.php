@@ -8,6 +8,7 @@ use App\Http\Resources\Api\V1\PublicUserResource;
 use App\Models\User;
 use App\Services\Friends\BlockService;
 use App\Services\Friends\FriendshipService;
+use App\Services\UserStatsService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,6 +18,7 @@ class UserController extends Controller
     public function __construct(
         private readonly BlockService $blocks,
         private readonly FriendshipService $friendships,
+        private readonly UserStatsService $stats,
     ) {}
 
     /**
@@ -36,7 +38,7 @@ class UserController extends Controller
         $user->load(['badges' => fn ($query) => $query->with('badge')->orderByDesc('earned_at')->orderByDesc('id')]);
 
         return ApiResponse::success(
-            new PublicUserResource($user, $this->friendships->between($viewer, $user)),
+            new PublicUserResource($user, $this->friendships->between($viewer, $user), $this->stats->publicStatsFor($user)),
             'User profile retrieved successfully.'
         );
     }

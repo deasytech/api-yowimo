@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\Api\AdRewardDailyCapReachedException;
 use App\Exceptions\Api\AlreadyFriendsException;
 use App\Exceptions\Api\DuplicateFriendRequestException;
 use App\Exceptions\Api\DuplicatePaymentReferenceException;
@@ -9,6 +10,7 @@ use App\Exceptions\Api\GameSessionNotActiveException;
 use App\Exceptions\Api\GameSessionPackUnavailableException;
 use App\Exceptions\Api\IdempotencyKeyConflictException;
 use App\Exceptions\Api\InsufficientWalletBalanceException;
+use App\Exceptions\Api\InvalidAdMobSsvSignatureException;
 use App\Exceptions\Api\InvalidClerkTokenException;
 use App\Exceptions\Api\InvalidClerkWebhookException;
 use App\Exceptions\Api\InvalidFriendshipTransitionException;
@@ -82,6 +84,8 @@ return Application::configure(basePath: dirname(__DIR__))
             GameSessionPackUnavailableException::class,
             TurnNotActiveException::class,
             UserBlockedException::class,
+            AdRewardDailyCapReachedException::class,
+            InvalidAdMobSsvSignatureException::class,
         ]);
 
         ApiExceptionRegistrar::register($exceptions);
