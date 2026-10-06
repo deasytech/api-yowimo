@@ -9,7 +9,9 @@ use App\Models\User;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use App\Services\Ads\AdRewardService;
-use Illuminate\Support\Str;
+use Tests\Support\CreatesAdRewardSessions;
+
+uses(CreatesAdRewardSessions::class);
 
 function mintedToken(User $user): array
 {
@@ -137,11 +139,7 @@ it('does not credit twice when the same valid callback is replayed', function ()
 
 it('marks an expired session expired instead of crediting it', function () {
     $user = User::factory()->create();
-    $plaintext = Str::random(64);
-    $session = AdRewardSession::factory()->expired()->create([
-        'user_id' => $user->id,
-        'token_hash' => AdRewardSession::hashToken($plaintext),
-    ]);
+    ['session' => $session, 'plaintext' => $plaintext] = $this->expiredAdRewardSession($user);
 
     app(AdRewardService::class)->verifyAndCredit(['custom_data' => $plaintext]);
 
@@ -163,16 +161,7 @@ it('rejects crediting a pending session if rewarded ads were disabled after it w
 
 it('rejects crediting past the daily cap even for a structurally valid pending session', function () {
     $user = User::factory()->create();
-    AdRewardSession::factory()->credited()->count(15)->create(['user_id' => $user->id]);
-
-    // Minted directly (bypassing mintSession()'s advisory cap check) to
-    // simulate a session that was legitimately minted before the 15th
-    // credit landed, then arrives after the cap was already reached.
-    $plaintext = Str::random(64);
-    $session = AdRewardSession::factory()->create([
-        'user_id' => $user->id,
-        'token_hash' => AdRewardSession::hashToken($plaintext),
-    ]);
+    ['session' => $session, 'plaintext' => $plaintext] = $this->pendingAdRewardSessionOverDailyCap($user);
 
     app(AdRewardService::class)->verifyAndCredit(['custom_data' => $plaintext]);
 

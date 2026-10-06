@@ -6,10 +6,10 @@ use App\Models\AdRewardSession;
 use App\Models\User;
 use App\Models\WalletTransaction;
 use App\Services\Ads\AdRewardService;
-use Illuminate\Support\Str;
+use Tests\Support\CreatesAdRewardSessions;
 use Tests\Support\FakesAdMob;
 
-uses(FakesAdMob::class);
+uses(FakesAdMob::class, CreatesAdRewardSessions::class);
 
 beforeEach(function () {
     $this->fakeAdMobSsvKeys();
@@ -94,11 +94,7 @@ it('returns 200 but credits only once when a valid callback is replayed', functi
 
 it('returns 200 without crediting an expired session', function () {
     $user = User::factory()->create();
-    $plaintext = Str::random(64);
-    $session = AdRewardSession::factory()->expired()->create([
-        'user_id' => $user->id,
-        'token_hash' => AdRewardSession::hashToken($plaintext),
-    ]);
+    ['session' => $session, 'plaintext' => $plaintext] = $this->expiredAdRewardSession($user);
 
     $query = $this->signedAdMobQuery(['custom_data' => $plaintext, 'transaction_id' => 'txn-expired']);
 
@@ -131,13 +127,7 @@ it('returns 200 without crediting when rewarded ads are disabled mid-flight', fu
 
 it('stops crediting once the daily cap is reached, resolving the session to expired', function () {
     $user = User::factory()->create();
-    AdRewardSession::factory()->credited()->count(15)->create(['user_id' => $user->id]);
-
-    $plaintext = Str::random(64);
-    $session = AdRewardSession::factory()->create([
-        'user_id' => $user->id,
-        'token_hash' => AdRewardSession::hashToken($plaintext),
-    ]);
+    ['session' => $session, 'plaintext' => $plaintext] = $this->pendingAdRewardSessionOverDailyCap($user);
 
     $query = $this->signedAdMobQuery(['custom_data' => $plaintext, 'transaction_id' => 'txn-over-cap']);
 
