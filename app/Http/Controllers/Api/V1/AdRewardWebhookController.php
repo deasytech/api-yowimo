@@ -29,7 +29,9 @@ class AdRewardWebhookController extends Controller
 
     public function __invoke(Request $request): JsonResponse
     {
-        if (! $this->verifier->verify($request)) {
+        $verifiedParams = $this->verifier->verify($request);
+
+        if ($verifiedParams === null) {
             // A forged/tampered callback is the most security-sensitive
             // failure in this whole flow — worth a log line to spot an abuse
             // pattern. Never the query string itself: customData is this
@@ -44,7 +46,7 @@ class AdRewardWebhookController extends Controller
             throw new InvalidAdMobSsvSignatureException;
         }
 
-        $this->adRewards->verifyAndCredit($request->query());
+        $this->adRewards->verifyAndCredit($verifiedParams);
 
         return ApiResponse::success(message: 'Webhook processed.');
     }

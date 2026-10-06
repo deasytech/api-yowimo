@@ -22,17 +22,44 @@ class AdMobSsvVerifier
 {
     public function __construct(private readonly GoogleAdMobKeyProvider $keys) {}
 
-    public function verify(Request $request): bool
+    /**
+     * Verifies the callback's signature and, only when it's valid, returns
+     * the exact parameters that were actually signed. Deliberately never
+     * $request->query(): if a duplicate parameter were appended after
+     * key_id, $request->query() could resolve it to that appended value
+     * instead of the one Google actually signed, while the signature itself
+     * would still check out (parseSignedQuery() only verifies the untouched
+     * prefix). Returning parsed-from-$content params instead closes that
+     * off structurally — callers have no way to get params that weren't
+     * part of the verified content.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function verify(Request $request): ?array
     {
-        $keyId = $request->query('key_id');
-        $signature = $request->query('signature');
-        $content = $this->contentToVerify($request);
+        $parsed = $this->parseSignedQuery($request->server->get('QUERY_STRING', ''));
 
-        if ($keyId === null || $signature === null || $content === null) {
-            return false;
+        if ($parsed === null) {
+            return null;
         }
 
-        $signatureBinary = base64_decode($signature, true);
+        [$content, $signature, $keyId] = $parsed;
+
+        if (! $this->signatureIsValid($signature, $keyId, $content)) {
+            return null;
+        }
+
+        parse_str($content, $params);
+
+        return $params;
+    }
+
+    private function signatureIsValid(string $signature, string $keyId, string $content): bool
+    {
+        // Google signs this as base64url (-/_ in place of +//), not standard
+        // base64 — decoding it as standard base64 in strict mode silently
+        // rejects every real signature, since -/_ aren't in that alphabet.
+        $signatureBinary = base64_decode(strtr($signature, '-_', '+/'), true);
 
         if ($signatureBinary === false) {
             return false;
@@ -63,21 +90,28 @@ class AdMobSsvVerifier
     }
 
     /**
-     * Must be the raw, untouched query string exactly as Google sent it —
-     * $request->getQueryString() is not safe to use here: Symfony's version
-     * reorders parameters alphabetically and re-encodes them, which breaks
-     * verification the moment Google's actual order/encoding differs from
-     * that normalized form.
+     * Must be built from the raw, untouched query string exactly as Google
+     * sent it — $request->getQueryString() is not safe to use here:
+     * Symfony's version reorders parameters alphabetically and re-encodes
+     * them, which breaks verification the moment Google's actual
+     * order/encoding differs from that normalized form.
+     *
+     * Requires the query string to end in exactly "&signature=...&key_id=..."
+     * with nothing after — a callback with its legitimate signed prefix
+     * intact but an extra parameter appended after key_id would otherwise
+     * still verify (the signed content itself is unchanged), which is
+     * exactly what would let $request->query() disagree with $content about
+     * a duplicated parameter's value. Rejecting the whole request here is
+     * what makes returning params parsed from $content safe.
+     *
+     * @return array{0: string, 1: string, 2: string}|null [content, signature, key_id]
      */
-    private function contentToVerify(Request $request): ?string
+    private function parseSignedQuery(string $queryString): ?array
     {
-        $queryString = $request->server->get('QUERY_STRING', '');
-        $signaturePos = strpos($queryString, 'signature=');
-
-        if ($signaturePos === false || $signaturePos === 0) {
+        if (! preg_match('/^(.+)&signature=([^&]+)&key_id=([^&]+)$/', $queryString, $matches)) {
             return null;
         }
 
-        return substr($queryString, 0, $signaturePos - 1);
+        return [$matches[1], $matches[2], $matches[3]];
     }
 }

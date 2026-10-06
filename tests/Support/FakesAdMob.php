@@ -53,6 +53,12 @@ trait FakesAdMob
      * signature/key_id, in the given order, verbatim), then signature and
      * key_id appended afterward.
      *
+     * The signature is base64url-encoded (-/_ , no padding), matching what
+     * Google actually sends — not plain base64. Encoding it as plain base64
+     * here would never catch AdMobSsvVerifier decoding it as plain base64
+     * in production, since standard base64_encode() never emits a -/_
+     * character for strtr() to even have something to fix.
+     *
      * @param  array<string, string>  $params
      */
     protected function signedAdMobQuery(array $params, ?int $keyId = null): string
@@ -61,8 +67,8 @@ trait FakesAdMob
 
         openssl_sign($content, $signatureBinary, $this->adMobPrivateKey, OPENSSL_ALGO_SHA256);
 
-        $signature = base64_encode($signatureBinary);
+        $signature = rtrim(strtr(base64_encode($signatureBinary), '+/', '-_'), '=');
 
-        return $content.'&signature='.rawurlencode($signature).'&key_id='.($keyId ?? $this->adMobTestKeyId);
+        return $content.'&signature='.$signature.'&key_id='.($keyId ?? $this->adMobTestKeyId);
     }
 }

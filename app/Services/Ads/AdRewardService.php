@@ -115,28 +115,7 @@ class AdRewardService
                 return;
             }
 
-            if ($session->expires_at->isPast()) {
-                $session->update(['status' => AdRewardSessionStatus::Expired]);
-
-                Log::warning('Rewarded ad SSV callback rejected: session expired.', [
-                    'ad_reward_session_id' => $session->id,
-                    'user_id' => $session->user_id,
-                ]);
-
-                return;
-            }
-
-            if (! $this->enabled()) {
-                $session->update([
-                    'status' => AdRewardSessionStatus::Expired,
-                    'metadata' => ['reason' => 'rewarded_ads_disabled'],
-                ]);
-
-                Log::warning('Rewarded ad SSV callback rejected: rewarded ads are currently disabled.', [
-                    'ad_reward_session_id' => $session->id,
-                    'user_id' => $session->user_id,
-                ]);
-
+            if ($this->rejectExpiredOrDisabled($session)) {
                 return;
             }
 
@@ -150,37 +129,79 @@ class AdRewardService
             $wallet = $this->wallets->walletFor($session->user);
             Wallet::query()->whereKey($wallet->id)->lockForUpdate()->firstOrFail();
 
-            if ($this->creditedToday($session->user_id)->count() >= $this->dailyLimit()) {
-                $session->update([
-                    'status' => AdRewardSessionStatus::Expired,
-                    'metadata' => ['reason' => 'daily_cap_reached'],
-                ]);
-
-                Log::warning('Rewarded ad SSV callback rejected: daily cap already reached.', [
-                    'ad_reward_session_id' => $session->id,
-                    'user_id' => $session->user_id,
-                ]);
-
+            if ($this->rejectOverCap($session)) {
                 return;
             }
 
-            $transaction = $this->wallets->credit(
-                $session->user,
-                $session->reward_amount,
-                WalletTransactionType::Reward,
-                reference: $session,
-                description: 'Rewarded ad watched',
-                idempotencyKey: "ad-reward-session-{$session->id}",
-            );
-
-            $session->update([
-                'status' => AdRewardSessionStatus::Credited,
-                'wallet_transaction_id' => $transaction->id,
-                'credited_at' => now(),
-                'ad_network_transaction_id' => $ssvParams['transaction_id'] ?? null,
-                'metadata' => Arr::only($ssvParams, ['ad_network', 'ad_unit', 'reward_item', 'timestamp']) ?: null,
-            ]);
+            $this->creditSession($session, $ssvParams);
         });
+    }
+
+    private function rejectExpiredOrDisabled(AdRewardSession $session): bool
+    {
+        if ($session->expires_at->isPast()) {
+            $this->rejectSession($session, null, 'Rewarded ad SSV callback rejected: session expired.');
+
+            return true;
+        }
+
+        if (! $this->enabled()) {
+            $this->rejectSession($session, ['reason' => 'rewarded_ads_disabled'], 'Rewarded ad SSV callback rejected: rewarded ads are currently disabled.');
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private function rejectOverCap(AdRewardSession $session): bool
+    {
+        if ($this->creditedToday($session->user_id)->count() < $this->dailyLimit()) {
+            return false;
+        }
+
+        $this->rejectSession($session, ['reason' => 'daily_cap_reached'], 'Rewarded ad SSV callback rejected: daily cap already reached.');
+
+        return true;
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $metadata
+     */
+    private function rejectSession(AdRewardSession $session, ?array $metadata, string $logMessage): void
+    {
+        $attributes = ['status' => AdRewardSessionStatus::Expired];
+
+        if ($metadata !== null) {
+            $attributes['metadata'] = $metadata;
+        }
+
+        $session->update($attributes);
+
+        Log::warning($logMessage, [
+            'ad_reward_session_id' => $session->id,
+            'user_id' => $session->user_id,
+        ]);
+    }
+
+    private function creditSession(AdRewardSession $session, array $ssvParams): void
+    {
+        $transaction = $this->wallets->credit(
+            $session->user,
+            $session->reward_amount,
+            WalletTransactionType::Reward,
+            reference: $session,
+            description: 'Rewarded ad watched',
+            idempotencyKey: "ad-reward-session-{$session->id}",
+        );
+
+        $session->update([
+            'status' => AdRewardSessionStatus::Credited,
+            'wallet_transaction_id' => $transaction->id,
+            'credited_at' => now(),
+            'ad_network_transaction_id' => $ssvParams['transaction_id'] ?? null,
+            'metadata' => Arr::only($ssvParams, ['ad_network', 'ad_unit', 'reward_item', 'timestamp']) ?: null,
+        ]);
     }
 
     private function enabled(): bool

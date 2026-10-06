@@ -55,6 +55,31 @@ it('rejects a tampered callback with 400 and credits nothing', function () {
     expect($user->wallet()->exists())->toBeFalse();
 });
 
+it('rejects with 400 a callback with a duplicate custom_data appended after key_id, crediting neither session', function () {
+    // Attack: capture one legitimately-signed callback for $victim's session,
+    // then append a second custom_data pointing at $attacker's own session.
+    // The signed prefix (and therefore the signature) is untouched, so a
+    // naive implementation would still consider the signature valid while
+    // resolving $request->query('custom_data') to the appended value —
+    // crediting the attacker's session off a signature that never actually
+    // covered their token.
+    $victim = User::factory()->create();
+    $attacker = User::factory()->create();
+    $victimSession = app(AdRewardService::class)->mintSession($victim);
+    $attackerSession = app(AdRewardService::class)->mintSession($attacker);
+
+    $query = $this->signedAdMobQuery(['custom_data' => $victimSession['plaintext_token'], 'transaction_id' => 'txn-attack']);
+    $forged = $query.'&custom_data='.$attackerSession['plaintext_token'];
+
+    $this->getJson(admobSsvEndpoint($forged))
+        ->assertStatus(400)
+        ->assertJson(['success' => false, 'message' => 'Invalid AdMob SSV callback signature.']);
+
+    expect($victimSession['model']->fresh()->status)->toBe(AdRewardSessionStatus::Pending);
+    expect($attackerSession['model']->fresh()->status)->toBe(AdRewardSessionStatus::Pending);
+    expect(WalletTransaction::where('type', WalletTransactionType::Reward)->exists())->toBeFalse();
+});
+
 it('returns 200 but credits only once when a valid callback is replayed', function () {
     $user = User::factory()->create();
     $minted = app(AdRewardService::class)->mintSession($user);
