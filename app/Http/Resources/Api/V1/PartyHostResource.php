@@ -20,6 +20,7 @@ class PartyHostResource extends JsonResource
             'username' => $this->username,
             'display_name' => $this->display_name,
             'avatar_url' => StoredImageUrl::resolve($this->avatar_url),
+            'xp' => $this->xp,
         ];
     }
 }
