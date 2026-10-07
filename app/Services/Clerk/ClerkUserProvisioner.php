@@ -39,13 +39,20 @@ class ClerkUserProvisioner
             try {
                 $user = $this->createUser($clerkUserId, $attributes);
             } catch (QueryException $exception) {
-                if (! $this->isClerkUserIdUniqueConstraintViolation($exception)) {
-                    throw $exception;
-                }
+                if ($this->isUsernameUniqueConstraintViolation($exception)) {
+                    // The generated fallback username collided with one
+                    // generated concurrently for a different user — generateFor()
+                    // only checks availability before the insert, not atomically
+                    // with it. createUser() mints a fresh one each call, so a
+                    // single retry is enough; let a second failure propagate.
+                    $user = $this->createUser($clerkUserId, $attributes);
+                } elseif ($this->isClerkUserIdUniqueConstraintViolation($exception)) {
+                    $user = $this->findUserByClerkUserId($clerkUserId);
 
-                $user = $this->findUserByClerkUserId($clerkUserId);
-
-                if (! $user) {
+                    if (! $user) {
+                        throw $exception;
+                    }
+                } else {
                     throw $exception;
                 }
             }
@@ -97,6 +104,17 @@ class ClerkUserProvisioner
         $isUniqueViolation = Str::contains($message, ['unique', 'duplicate']) || in_array($sqlState, ['23000', '23505'], true);
 
         return $isClerkUserIdConstraint && $isUniqueViolation;
+    }
+
+    protected function isUsernameUniqueConstraintViolation(QueryException $exception): bool
+    {
+        $message = strtolower($exception->getMessage());
+        $sqlState = (string) $exception->getCode();
+
+        $isUsernameConstraint = Str::contains($message, ['username', 'users_username_unique']);
+        $isUniqueViolation = Str::contains($message, ['unique', 'duplicate']) || in_array($sqlState, ['23000', '23505'], true);
+
+        return $isUsernameConstraint && $isUniqueViolation;
     }
 
     protected function touchLastSeen(User $user): User

@@ -158,3 +158,54 @@ it('rethrows a unique clerk_user_id violation when no user can be recovered', fu
 
     $provisioner->resolve(['sub' => 'user_missing_after_race']);
 })->throws(QueryException::class);
+
+it('retries once with a freshly generated username when the first fallback collides', function () {
+    $provisioner = new class(new FallbackUsernameGenerator) extends ClerkUserProvisioner
+    {
+        private bool $throwOnce = true;
+
+        /**
+         * @param  array<string, mixed>  $attributes
+         */
+        protected function createUser(string $clerkUserId, array $attributes): User
+        {
+            if ($this->throwOnce) {
+                $this->throwOnce = false;
+
+                throw new QueryException(
+                    'sqlite',
+                    NEW_USER,
+                    [],
+                    new RuntimeException('SQLSTATE[23000]: Integrity constraint violation: 19 UNIQUE constraint failed: users.username', 23000)
+                );
+            }
+
+            return parent::createUser($clerkUserId, $attributes);
+        }
+    };
+
+    $user = $provisioner->resolve(['sub' => 'user_username_race']);
+
+    expect($user)->not->toBeNull();
+    expect($user->username)->not->toBeNull();
+});
+
+it('rethrows a second unique username violation rather than retrying forever', function () {
+    $provisioner = new class(new FallbackUsernameGenerator) extends ClerkUserProvisioner
+    {
+        /**
+         * @param  array<string, mixed>  $attributes
+         */
+        protected function createUser(string $clerkUserId, array $attributes): User
+        {
+            throw new QueryException(
+                'sqlite',
+                NEW_USER,
+                [],
+                new RuntimeException('SQLSTATE[23000]: Integrity constraint violation: 19 UNIQUE constraint failed: users.username', 23000)
+            );
+        }
+    };
+
+    $provisioner->resolve(['sub' => 'user_username_race_persistent']);
+})->throws(QueryException::class);
