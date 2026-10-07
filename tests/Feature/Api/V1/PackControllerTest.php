@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Tests\Support\FakesClerk;
 
 const API_V1_PACKS_ENDPOINT = '/api/v1/packs';
+const API_V1_PACKS_FEATURED_ENDPOINT = '/api/v1/packs/featured';
 
 uses(FakesClerk::class);
 
@@ -67,7 +68,7 @@ it('returns only featured packs on the featured endpoint', function () {
     Pack::factory()->create(['name' => 'Regular Pack', 'is_featured' => false]);
 
     $this->withHeader('Authorization', "Bearer {$token}")
-        ->getJson(API_V1_PACKS_ENDPOINT.'/featured')
+        ->getJson(API_V1_PACKS_FEATURED_ENDPOINT)
         ->assertStatus(200)
         ->assertJsonCount(1, 'data')
         ->assertJsonPath('data.0.name', 'Featured Pack');
@@ -107,7 +108,7 @@ it('reports a live preview_cards_count reflecting the current is_preview cards, 
         ->assertJsonPath('data.0.preview_cards_count', 3);
 
     $this->withHeader('Authorization', "Bearer {$token}")
-        ->getJson(API_V1_PACKS_ENDPOINT.'/featured')
+        ->getJson(API_V1_PACKS_FEATURED_ENDPOINT)
         ->assertStatus(200)
         ->assertJsonPath('data.0.preview_cards_count', 3);
 
@@ -161,7 +162,7 @@ it('flags owned_by_me per pack on the featured endpoint', function () {
     PackPurchase::factory()->create(['pack_id' => $owned->id, 'user_id' => $viewer->id]);
 
     $this->withHeader('Authorization', "Bearer {$token}")
-        ->getJson(API_V1_PACKS_ENDPOINT.'/featured')
+        ->getJson(API_V1_PACKS_FEATURED_ENDPOINT)
         ->assertStatus(200)
         ->assertJsonPath('data.0.owned_by_me', true);
 });
