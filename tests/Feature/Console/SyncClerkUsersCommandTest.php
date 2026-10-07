@@ -87,6 +87,41 @@ it('handles a raw array response body, not just the wrapped shape', function () 
     expect(User::where('clerk_user_id', 'user_raw')->exists())->toBeTrue();
 });
 
+it('backfills a unique fallback username for an OAuth-only user Clerk never gave one', function () {
+    config(['services.clerk.secret_key' => 'sk_test_123']);
+
+    $oauthUser = clerkApiUser('user_oauth', 'placeholder');
+    unset($oauthUser['username']);
+
+    Http::fake([
+        'api.clerk.com/v1/users*' => Http::response(['data' => [$oauthUser]]),
+    ]);
+
+    $this->artisan('clerk:sync-users')->assertExitCode(0);
+
+    $username = User::where('clerk_user_id', 'user_oauth')->first()->username;
+
+    expect($username)->not->toBeNull();
+    expect($username)->toMatch('/^[a-zA-Z0-9_.]+$/');
+});
+
+it('does not overwrite an already-backfilled username on a later resync still missing one from Clerk', function () {
+    config(['services.clerk.secret_key' => 'sk_test_123']);
+
+    $existing = User::factory()->create(['clerk_user_id' => 'user_oauth_resync', 'username' => 'already_set']);
+
+    $oauthUser = clerkApiUser('user_oauth_resync', 'placeholder');
+    unset($oauthUser['username']);
+
+    Http::fake([
+        'api.clerk.com/v1/users*' => Http::response(['data' => [$oauthUser]]),
+    ]);
+
+    $this->artisan('clerk:sync-users')->assertExitCode(0);
+
+    expect($existing->refresh()->username)->toBe('already_set');
+});
+
 it('fails when the Clerk API returns an error', function () {
     config(['services.clerk.secret_key' => 'sk_test_bad']);
 

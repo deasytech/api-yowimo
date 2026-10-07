@@ -11,6 +11,8 @@ use Illuminate\Support\Str;
 
 class ClerkUserProvisioner
 {
+    public function __construct(private readonly FallbackUsernameGenerator $usernames) {}
+
     /**
      * Resolve the internal user for the given verified Clerk claims,
      * provisioning a new record just-in-time on first sight of a clerk_user_id.
@@ -37,13 +39,20 @@ class ClerkUserProvisioner
             try {
                 $user = $this->createUser($clerkUserId, $attributes);
             } catch (QueryException $exception) {
-                if (! $this->isClerkUserIdUniqueConstraintViolation($exception)) {
-                    throw $exception;
-                }
+                if ($this->isUsernameUniqueConstraintViolation($exception)) {
+                    // The generated fallback username collided with one
+                    // generated concurrently for a different user — generateFor()
+                    // only checks availability before the insert, not atomically
+                    // with it. createUser() mints a fresh one each call, so a
+                    // single retry is enough; let a second failure propagate.
+                    $user = $this->createUser($clerkUserId, $attributes);
+                } elseif ($this->isClerkUserIdUniqueConstraintViolation($exception)) {
+                    $user = $this->findUserByClerkUserId($clerkUserId);
 
-                $user = $this->findUserByClerkUserId($clerkUserId);
-
-                if (! $user) {
+                    if (! $user) {
+                        throw $exception;
+                    }
+                } else {
                     throw $exception;
                 }
             }
@@ -53,8 +62,16 @@ class ClerkUserProvisioner
             throw new InvalidClerkTokenException('This account is no longer active.');
         }
 
-        if ($attributes !== [] && $this->hasChanges($user, $attributes)) {
-            $user->fill($attributes)->save();
+        // This runs on every authenticated request, not just at creation —
+        // first/last/display name are editable in-app (see
+        // UpdateProfileRequest), so re-applying them from the JWT here would
+        // silently revert a user's own edit on their very next request. Only
+        // email/avatar_url stay live-synced; everything else is set once,
+        // at createUser(), and is app-owned from then on.
+        $liveSyncedAttributes = Arr::only($attributes, ['email', 'avatar_url']);
+
+        if ($liveSyncedAttributes !== [] && $this->hasChanges($user, $liveSyncedAttributes)) {
+            $user->fill($liveSyncedAttributes)->save();
         }
 
         return $this->touchLastSeen($user);
@@ -68,6 +85,7 @@ class ClerkUserProvisioner
         return User::create([
             'clerk_user_id' => $clerkUserId,
             'status' => UserStatus::Active,
+            'username' => $this->usernames->generateFor($attributes['display_name'] ?? null, $attributes['email'] ?? null),
             ...$attributes,
         ]);
     }
@@ -86,6 +104,17 @@ class ClerkUserProvisioner
         $isUniqueViolation = Str::contains($message, ['unique', 'duplicate']) || in_array($sqlState, ['23000', '23505'], true);
 
         return $isClerkUserIdConstraint && $isUniqueViolation;
+    }
+
+    protected function isUsernameUniqueConstraintViolation(QueryException $exception): bool
+    {
+        $message = strtolower($exception->getMessage());
+        $sqlState = (string) $exception->getCode();
+
+        $isUsernameConstraint = Str::contains($message, ['username', 'users_username_unique']);
+        $isUniqueViolation = Str::contains($message, ['unique', 'duplicate']) || in_array($sqlState, ['23000', '23505'], true);
+
+        return $isUsernameConstraint && $isUniqueViolation;
     }
 
     protected function touchLastSeen(User $user): User
