@@ -16,6 +16,7 @@ class PackService
     public function list(array $filters, ?User $viewer = null): CursorPaginator
     {
         $packs = $this->baseQuery($filters)
+            ->withCount(['cards as preview_cards_count' => fn ($query) => $query->where('is_preview', true)])
             ->orderBy('sort_order')
             ->orderBy('id')
             ->cursorPaginate(
@@ -34,6 +35,7 @@ class PackService
     public function featured(array $filters, ?User $viewer = null): CursorPaginator
     {
         $packs = Pack::query()
+            ->withCount(['cards as preview_cards_count' => fn ($query) => $query->where('is_preview', true)])
             ->where('is_active', true)
             ->where('is_featured', true)
             ->orderBy('sort_order')
@@ -57,6 +59,7 @@ class PackService
     {
         $pack = Pack::query()
             ->with('gameType')
+            ->withCount(['cards as preview_cards_count' => fn ($query) => $query->where('is_preview', true)])
             ->when($viewer, fn ($query) => $query->withExists([
                 'purchases as owned_by_me' => fn ($query) => $query->where('user_id', $viewer->id),
             ]))

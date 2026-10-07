@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Tests\Support\FakesClerk;
 
 const API_V1_PACKS_ENDPOINT = '/api/v1/packs';
+const API_V1_PACKS_FEATURED_ENDPOINT = '/api/v1/packs/featured';
 
 uses(FakesClerk::class);
 
@@ -67,7 +68,7 @@ it('returns only featured packs on the featured endpoint', function () {
     Pack::factory()->create(['name' => 'Regular Pack', 'is_featured' => false]);
 
     $this->withHeader('Authorization', "Bearer {$token}")
-        ->getJson(API_V1_PACKS_ENDPOINT.'/featured')
+        ->getJson(API_V1_PACKS_FEATURED_ENDPOINT)
         ->assertStatus(200)
         ->assertJsonCount(1, 'data')
         ->assertJsonPath('data.0.name', 'Featured Pack');
@@ -87,6 +88,38 @@ it('shows a pack with its preview cards', function () {
 
     expect($response->json('data.preview_cards'))->toHaveCount(1);
     $response->assertJsonPath('data.preview_cards.0.text', 'Preview truth?');
+});
+
+it('reports a live preview_cards_count reflecting the current is_preview cards, not a stored total', function () {
+    $token = $this->clerkToken();
+
+    $pack = Pack::factory()->create(['name' => 'Preview Count Pack', 'is_featured' => true]);
+    PackCard::factory()->preview()->count(3)->create(['pack_id' => $pack->id]);
+    PackCard::factory()->count(5)->create(['pack_id' => $pack->id, 'is_preview' => false]);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->getJson(API_V1_PACKS_ENDPOINT."/{$pack->id}")
+        ->assertStatus(200)
+        ->assertJsonPath('data.preview_cards_count', 3);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->getJson(API_V1_PACKS_ENDPOINT)
+        ->assertStatus(200)
+        ->assertJsonPath('data.0.preview_cards_count', 3);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->getJson(API_V1_PACKS_FEATURED_ENDPOINT)
+        ->assertStatus(200)
+        ->assertJsonPath('data.0.preview_cards_count', 3);
+
+    // Marking a 4th card as preview (as the admin changing 4 -> 10 would)
+    // must be reflected immediately, proving this isn't a stale stored count.
+    PackCard::where('pack_id', $pack->id)->where('is_preview', false)->first()->update(['is_preview' => true]);
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->getJson(API_V1_PACKS_ENDPOINT."/{$pack->id}")
+        ->assertStatus(200)
+        ->assertJsonPath('data.preview_cards_count', 4);
 });
 
 it('returns 404 for an inactive pack', function () {
@@ -129,7 +162,7 @@ it('flags owned_by_me per pack on the featured endpoint', function () {
     PackPurchase::factory()->create(['pack_id' => $owned->id, 'user_id' => $viewer->id]);
 
     $this->withHeader('Authorization', "Bearer {$token}")
-        ->getJson(API_V1_PACKS_ENDPOINT.'/featured')
+        ->getJson(API_V1_PACKS_FEATURED_ENDPOINT)
         ->assertStatus(200)
         ->assertJsonPath('data.0.owned_by_me', true);
 });

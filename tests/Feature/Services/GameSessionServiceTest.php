@@ -11,32 +11,22 @@ use App\Exceptions\Api\InvalidPartyTransitionException;
 use App\Models\GameSession;
 use App\Models\Pack;
 use App\Models\PackCard;
+use App\Models\PackPurchase;
 use App\Models\Party;
 use App\Models\PartyMember;
 use App\Models\Round;
 use App\Models\Turn;
 use App\Models\User;
 use App\Services\Game\GameSessionService;
+use Tests\Support\MakesLiveGameSessionParties;
+
+uses(MakesLiveGameSessionParties::class);
 
 function makeLivePartyWithMembers(int $memberCount = 3, int $cardsPerKind = 20): Party
 {
-    $pack = Pack::factory()->create();
-    PackCard::factory()->count($cardsPerKind)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Truth]);
-    PackCard::factory()->count($cardsPerKind)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Dare]);
+    [, $party] = test()->makeLiveGameSessionParty($memberCount, $cardsPerKind);
 
-    $host = User::factory()->create();
-    $party = Party::factory()->create([
-        'host_id' => $host->id,
-        'pack_id' => $pack->id,
-        'status' => PartyStatus::Live,
-    ]);
-
-    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $host->id]);
-    for ($i = 1; $i < $memberCount; $i++) {
-        PartyMember::factory()->create(['party_id' => $party->id]);
-    }
-
-    return $party->fresh();
+    return $party;
 }
 
 it('starts a session with a shuffled turn order covering every member and deals the first turn', function () {
@@ -185,7 +175,7 @@ it('reshuffles and allows repeat cards once a kind is exhausted', function () {
 });
 
 it('keeps dealing valid cards for truth-only and dare-only packs', function (PackCardKind $kind) {
-    $pack = Pack::factory()->create();
+    $pack = Pack::factory()->create(['price' => 0]);
     PackCard::factory()->count(3)->create(['pack_id' => $pack->id, 'kind' => $kind]);
 
     $host = User::factory()->create();
@@ -210,7 +200,7 @@ it('keeps dealing valid cards for truth-only and dare-only packs', function (Pac
 ]);
 
 it('falls back to unused cards of the other kind before repeating a mixed pack card', function () {
-    $pack = Pack::factory()->create();
+    $pack = Pack::factory()->create(['price' => 0]);
     $truth = PackCard::factory()->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Truth]);
     $dares = PackCard::factory()->count(2)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Dare]);
 
@@ -232,14 +222,72 @@ it('falls back to unused cards of the other kind before repeating a mixed pack c
 
 it('rejects an empty pack without creating a game session', function () {
     $pack = Pack::factory()->create();
-    $host = User::factory()->create();
-    $party = Party::factory()->create(['host_id' => $host->id, 'pack_id' => $pack->id, 'status' => PartyStatus::Live]);
-    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $host->id]);
+    [$host, $party] = test()->makeLiveGameSessionParty(pack: $pack);
 
     expect(fn () => app(GameSessionService::class)->start($host, $party))
         ->toThrow(GameSessionPackUnavailableException::class, 'This pack has no playable cards.');
 
     expect(GameSession::where('party_id', $party->id)->count())->toBe(0);
+});
+
+it('restricts a host to preview cards on a paid pack they have not purchased', function () {
+    $pack = Pack::factory()->create(['price' => 100]);
+    PackCard::factory()->preview()->count(2)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Truth]);
+    PackCard::factory()->preview()->count(2)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Dare]);
+    // Non-preview cards the host must never see dealt while unowned.
+    PackCard::factory()->count(10)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Truth, 'is_preview' => false]);
+    PackCard::factory()->count(10)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Dare, 'is_preview' => false]);
+
+    [$host, $party] = test()->makeLiveGameSessionParty(pack: $pack);
+
+    $service = app(GameSessionService::class);
+    $session = $service->start($host, $party, 5);
+
+    for ($i = 0; $i < 4; $i++) {
+        $turn = $session->fresh()->currentTurn();
+        expect($turn->packCard->is_preview)->toBeTrue();
+
+        $session = $service->completeTurn($session, $turn);
+    }
+});
+
+it('throws GameSessionPackUnavailableException for a paid, unowned pack whose only cards are non-preview', function () {
+    $pack = Pack::factory()->create(['price' => 100]);
+    PackCard::factory()->count(5)->create(['pack_id' => $pack->id, 'is_preview' => false]);
+
+    [$host, $party] = test()->makeLiveGameSessionParty(pack: $pack);
+
+    expect(fn () => app(GameSessionService::class)->start($host, $party))
+        ->toThrow(GameSessionPackUnavailableException::class, 'This pack has no playable cards.');
+
+    expect(GameSession::where('party_id', $party->id)->count())->toBe(0);
+});
+
+it('plays the full card set, including non-preview cards, on a paid pack the host has purchased', function () {
+    $pack = Pack::factory()->create(['price' => 100]);
+    PackCard::factory()->preview()->count(2)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Truth]);
+    PackCard::factory()->count(2)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Dare, 'is_preview' => false]);
+
+    [$host, $party] = test()->makeLiveGameSessionParty(pack: $pack);
+    PackPurchase::factory()->create(['pack_id' => $pack->id, 'user_id' => $host->id]);
+
+    $service = app(GameSessionService::class);
+    $session = $service->start($host, $party, 5);
+    $turn = $session->currentTurn();
+    $session = $service->completeTurn($session, $turn);
+
+    expect($session->currentTurn()->packCard->is_preview)->toBeFalse();
+});
+
+it('plays the full card set on a free pack with no preview cards at all and no purchase', function () {
+    $pack = Pack::factory()->create(['price' => 0]);
+    PackCard::factory()->count(5)->create(['pack_id' => $pack->id, 'is_preview' => false]);
+
+    [$host, $party] = test()->makeLiveGameSessionParty(pack: $pack);
+
+    $session = app(GameSessionService::class)->start($host, $party);
+
+    expect($session->currentTurn())->not->toBeNull();
 });
 
 it('does not leave a session stuck when a timer races a completed turn', function () {

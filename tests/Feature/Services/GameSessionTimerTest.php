@@ -1,38 +1,21 @@
 <?php
 
 use App\Enums\GameSessionStatus;
-use App\Enums\PackCardKind;
-use App\Enums\PartyStatus;
 use App\Jobs\SkipAfkTurn;
 use App\Models\GameSession;
-use App\Models\Pack;
-use App\Models\PackCard;
 use App\Models\Party;
-use App\Models\PartyMember;
 use App\Models\Turn;
-use App\Models\User;
 use App\Services\Game\GameSessionService;
 use Illuminate\Support\Facades\Queue;
+use Tests\Support\MakesLiveGameSessionParties;
+
+uses(MakesLiveGameSessionParties::class);
 
 function makeTimerTestParty(int $memberCount = 2, int $cardsPerKind = 20): Party
 {
-    $pack = Pack::factory()->create();
-    PackCard::factory()->count($cardsPerKind)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Truth]);
-    PackCard::factory()->count($cardsPerKind)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Dare]);
+    [, $party] = test()->makeLiveGameSessionParty($memberCount, $cardsPerKind);
 
-    $host = User::factory()->create();
-    $party = Party::factory()->create([
-        'host_id' => $host->id,
-        'pack_id' => $pack->id,
-        'status' => PartyStatus::Live,
-    ]);
-
-    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $host->id]);
-    for ($i = 1; $i < $memberCount; $i++) {
-        PartyMember::factory()->create(['party_id' => $party->id]);
-    }
-
-    return $party->fresh();
+    return $party;
 }
 
 it('dispatches a delayed AFK-skip job when a turn is dealt', function () {

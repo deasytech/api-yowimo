@@ -23,7 +23,9 @@ use App\Exceptions\Api\TurnNotActiveException;
 use App\Jobs\FinishGameVoting;
 use App\Jobs\SkipAfkTurn;
 use App\Models\GameSession;
+use App\Models\Pack;
 use App\Models\PackCard;
+use App\Models\PackPurchase;
 use App\Models\Party;
 use App\Models\PartyMember;
 use App\Models\Round;
@@ -93,7 +95,7 @@ class GameSessionService
                 throw new GameSessionPackUnavailableException('This party has no pack assigned.');
             }
 
-            if (! $this->hasPlayableCards($party->pack_id)) {
+            if (! $this->hasPlayableCards($party->pack_id, $host->id)) {
                 throw new GameSessionPackUnavailableException('This pack has no playable cards.');
             }
 
@@ -642,10 +644,25 @@ class GameSessionService
             ->first();
     }
 
-    private function hasPlayableCards(int $packId): bool
+    /**
+     * A paid pack the host hasn't bought is restricted to its is_preview
+     * cards once gameplay actually deals them — mirrors the restriction
+     * PackService::find() already applies to the pack detail view, which
+     * otherwise has no effect on what a hosted party can actually play.
+     */
+    private function isCardSelectionRestricted(int $packId, int $hostId): bool
     {
+        return Pack::query()->whereKey($packId)->value('price') > 0
+            && PackPurchase::query()->where(['pack_id' => $packId, 'user_id' => $hostId])->doesntExist();
+    }
+
+    private function hasPlayableCards(int $packId, int $hostId): bool
+    {
+        $restricted = $this->isCardSelectionRestricted($packId, $hostId);
+
         return PackCard::query()
             ->where('pack_id', $packId)
+            ->when($restricted, fn ($query) => $query->where('is_preview', true))
             ->lockForUpdate()
             ->first(['id']) !== null;
     }
@@ -653,10 +670,12 @@ class GameSessionService
     private function selectCard(GameSession $session, PackCardKind $kind): ?PackCard
     {
         $usedCardIds = Turn::query()->where('game_session_id', $session->id)->pluck('pack_card_id');
+        $restricted = $this->isCardSelectionRestricted($session->pack_id, $session->host_id);
 
         $card = PackCard::query()
             ->where('pack_id', $session->pack_id)
             ->where('kind', $kind)
+            ->when($restricted, fn ($query) => $query->where('is_preview', true))
             ->whereNotIn('id', $usedCardIds)
             ->inRandomOrder()
             ->first();
@@ -664,6 +683,7 @@ class GameSessionService
         // Prefer the alternating kind, but use any unused card before repeating one.
         $card ??= PackCard::query()
             ->where('pack_id', $session->pack_id)
+            ->when($restricted, fn ($query) => $query->where('is_preview', true))
             ->whereNotIn('id', $usedCardIds)
             ->inRandomOrder()
             ->first();
@@ -673,11 +693,13 @@ class GameSessionService
         $card ??= PackCard::query()
             ->where('pack_id', $session->pack_id)
             ->where('kind', $kind)
+            ->when($restricted, fn ($query) => $query->where('is_preview', true))
             ->inRandomOrder()
             ->first();
 
         return $card ?? PackCard::query()
             ->where('pack_id', $session->pack_id)
+            ->when($restricted, fn ($query) => $query->where('is_preview', true))
             ->inRandomOrder()
             ->first();
     }

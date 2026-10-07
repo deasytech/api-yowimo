@@ -31,6 +31,7 @@ class PackResource extends JsonResource
             'gradient' => $this->gradient ?? [],
             'is_featured' => $this->is_featured,
             'owned_by_me' => $this->when(array_key_exists('owned_by_me', $this->resource->getAttributes()), fn () => (bool) $this->owned_by_me),
+            'preview_cards_count' => $this->when(array_key_exists('preview_cards_count', $this->resource->getAttributes()), fn () => (int) $this->preview_cards_count),
             'game_type' => GameTypeResource::make($this->whenLoaded('gameType')),
             // Full (non-preview) cards when the viewer owns the pack; preview-only otherwise. Same key either way.
             'preview_cards' => PackCardResource::collection($this->whenLoaded('cards')),
