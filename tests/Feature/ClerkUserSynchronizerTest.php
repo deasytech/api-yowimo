@@ -6,8 +6,6 @@ use App\Services\Clerk\FallbackUsernameGenerator;
 use App\Services\Referrals\ReferralCodeGenerator;
 use Illuminate\Database\QueryException;
 
-const SYNC_UPSERT = 'insert into "users" ...';
-
 it('treats an empty string username from Clerk the same as absent, preserving the stored one', function () {
     User::factory()->create(['clerk_user_id' => 'user_blank_username', 'username' => 'already_set']);
 
@@ -44,12 +42,7 @@ it('retries once with a freshly generated username when the first fallback colli
             if ($this->throwOnce) {
                 $this->throwOnce = false;
 
-                throw new QueryException(
-                    'sqlite',
-                    SYNC_UPSERT,
-                    [],
-                    new RuntimeException('SQLSTATE[23000]: Integrity constraint violation: 19 UNIQUE constraint failed: users.username', 23000)
-                );
+                throw uniqueConstraintViolation('username');
             }
 
             return parent::upsert($clerkUserId, $attributes);
@@ -70,12 +63,7 @@ it('rethrows a second unique username violation rather than retrying forever', f
          */
         protected function upsert(string $clerkUserId, array $attributes): User
         {
-            throw new QueryException(
-                'sqlite',
-                SYNC_UPSERT,
-                [],
-                new RuntimeException('SQLSTATE[23000]: Integrity constraint violation: 19 UNIQUE constraint failed: users.username', 23000)
-            );
+            throw uniqueConstraintViolation('username');
         }
     };
 
@@ -90,12 +78,7 @@ it('does not retry a username collision that came from a real Clerk-supplied use
          */
         protected function upsert(string $clerkUserId, array $attributes): User
         {
-            throw new QueryException(
-                'sqlite',
-                SYNC_UPSERT,
-                [],
-                new RuntimeException('SQLSTATE[23000]: Integrity constraint violation: 19 UNIQUE constraint failed: users.username', 23000)
-            );
+            throw uniqueConstraintViolation('username');
         }
     };
 
@@ -134,12 +117,7 @@ it('retries once with a freshly generated referral code when the first fallback 
             if ($this->throwOnce) {
                 $this->throwOnce = false;
 
-                throw new QueryException(
-                    'sqlite',
-                    SYNC_UPSERT,
-                    [],
-                    new RuntimeException('SQLSTATE[23000]: Integrity constraint violation: 19 UNIQUE constraint failed: users.referral_code', 23000)
-                );
+                throw uniqueConstraintViolation('referral_code');
             }
 
             return parent::upsert($clerkUserId, $attributes);
@@ -160,12 +138,7 @@ it('rethrows a second unique referral code violation rather than retrying foreve
          */
         protected function upsert(string $clerkUserId, array $attributes): User
         {
-            throw new QueryException(
-                'sqlite',
-                SYNC_UPSERT,
-                [],
-                new RuntimeException('SQLSTATE[23000]: Integrity constraint violation: 19 UNIQUE constraint failed: users.referral_code', 23000)
-            );
+            throw uniqueConstraintViolation('referral_code');
         }
     };
 

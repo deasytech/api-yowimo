@@ -6,8 +6,6 @@ use App\Services\Clerk\FallbackUsernameGenerator;
 use App\Services\Referrals\ReferralCodeGenerator;
 use Illuminate\Database\QueryException;
 
-const NEW_USER = 'insert into "users" ...';
-
 it('assigns a unique, non-null fallback username to a newly provisioned user', function () {
     $provisioner = app(ClerkUserProvisioner::class);
 
@@ -57,12 +55,7 @@ it('recovers from a concurrent unique clerk user id race and continues sync flow
             if ($this->throwOnce) {
                 $this->throwOnce = false;
 
-                throw new QueryException(
-                    'sqlite',
-                    NEW_USER,
-                    [],
-                    new RuntimeException('SQLSTATE[23000]: Integrity constraint violation: 19 UNIQUE constraint failed: users.clerk_user_id', 23000)
-                );
+                throw uniqueConstraintViolation('clerk_user_id');
             }
 
             return parent::createUser($clerkUserId, $attributes);
@@ -136,7 +129,7 @@ it('rethrows query exceptions that are unrelated to unique clerk_user_id violati
         {
             throw new QueryException(
                 'sqlite',
-                NEW_USER,
+                'insert into "users" ...',
                 [],
                 new RuntimeException('SQLSTATE[40001]: Serialization failure: deadlock detected', 40001)
             );
@@ -154,12 +147,7 @@ it('rethrows a unique clerk_user_id violation when no user can be recovered', fu
          */
         protected function createUser(string $clerkUserId, array $attributes): User
         {
-            throw new QueryException(
-                'sqlite',
-                NEW_USER,
-                [],
-                new RuntimeException('SQLSTATE[23000]: Integrity constraint violation: 19 UNIQUE constraint failed: users.clerk_user_id', 23000)
-            );
+            throw uniqueConstraintViolation('clerk_user_id');
         }
 
         protected function findUserByClerkUserId(string $clerkUserId): ?User
@@ -184,12 +172,7 @@ it('retries once with a freshly generated username when the first fallback colli
             if ($this->throwOnce) {
                 $this->throwOnce = false;
 
-                throw new QueryException(
-                    'sqlite',
-                    NEW_USER,
-                    [],
-                    new RuntimeException('SQLSTATE[23000]: Integrity constraint violation: 19 UNIQUE constraint failed: users.username', 23000)
-                );
+                throw uniqueConstraintViolation('username');
             }
 
             return parent::createUser($clerkUserId, $attributes);
@@ -210,12 +193,7 @@ it('rethrows a second unique username violation rather than retrying forever', f
          */
         protected function createUser(string $clerkUserId, array $attributes): User
         {
-            throw new QueryException(
-                'sqlite',
-                NEW_USER,
-                [],
-                new RuntimeException('SQLSTATE[23000]: Integrity constraint violation: 19 UNIQUE constraint failed: users.username', 23000)
-            );
+            throw uniqueConstraintViolation('username');
         }
     };
 
@@ -235,12 +213,7 @@ it('retries once with a freshly generated referral code when the first fallback 
             if ($this->throwOnce) {
                 $this->throwOnce = false;
 
-                throw new QueryException(
-                    'sqlite',
-                    NEW_USER,
-                    [],
-                    new RuntimeException('SQLSTATE[23000]: Integrity constraint violation: 19 UNIQUE constraint failed: users.referral_code', 23000)
-                );
+                throw uniqueConstraintViolation('referral_code');
             }
 
             return parent::createUser($clerkUserId, $attributes);
@@ -261,12 +234,7 @@ it('rethrows a second unique referral code violation rather than retrying foreve
          */
         protected function createUser(string $clerkUserId, array $attributes): User
         {
-            throw new QueryException(
-                'sqlite',
-                NEW_USER,
-                [],
-                new RuntimeException('SQLSTATE[23000]: Integrity constraint violation: 19 UNIQUE constraint failed: users.referral_code', 23000)
-            );
+            throw uniqueConstraintViolation('referral_code');
         }
     };
 

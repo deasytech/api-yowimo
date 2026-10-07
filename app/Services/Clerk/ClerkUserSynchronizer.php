@@ -6,10 +6,11 @@ use App\Models\User;
 use App\Services\Referrals\ReferralCodeGenerator;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
 
 class ClerkUserSynchronizer
 {
+    use DetectsUniqueConstraintViolations;
+
     public function __construct(
         private readonly FallbackUsernameGenerator $usernames,
         private readonly ReferralCodeGenerator $referralCodes,
@@ -112,20 +113,6 @@ class ClerkUserSynchronizer
     protected function isReferralCodeUniqueConstraintViolation(QueryException $exception): bool
     {
         return $this->isUniqueConstraintViolation($exception, ['referral_code', 'users_referral_code_unique']);
-    }
-
-    /**
-     * @param  array<int, string>  $needles
-     */
-    private function isUniqueConstraintViolation(QueryException $exception, array $needles): bool
-    {
-        $message = strtolower($exception->getMessage());
-        $sqlState = (string) $exception->getCode();
-
-        $matchesColumn = Str::contains($message, $needles);
-        $isUniqueViolation = Str::contains($message, ['unique', 'duplicate']) || in_array($sqlState, ['23000', '23505'], true);
-
-        return $matchesColumn && $isUniqueViolation;
     }
 
     /**
