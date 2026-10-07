@@ -55,8 +55,16 @@ class ClerkUserProvisioner
             throw new InvalidClerkTokenException('This account is no longer active.');
         }
 
-        if ($attributes !== [] && $this->hasChanges($user, $attributes)) {
-            $user->fill($attributes)->save();
+        // This runs on every authenticated request, not just at creation —
+        // first/last/display name are editable in-app (see
+        // UpdateProfileRequest), so re-applying them from the JWT here would
+        // silently revert a user's own edit on their very next request. Only
+        // email/avatar_url stay live-synced; everything else is set once,
+        // at createUser(), and is app-owned from then on.
+        $liveSyncedAttributes = Arr::only($attributes, ['email', 'avatar_url']);
+
+        if ($liveSyncedAttributes !== [] && $this->hasChanges($user, $liveSyncedAttributes)) {
+            $user->fill($liveSyncedAttributes)->save();
         }
 
         return $this->touchLastSeen($user);

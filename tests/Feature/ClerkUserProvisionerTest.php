@@ -68,9 +68,50 @@ it('recovers from a concurrent unique clerk user id race and continues sync flow
     $existingUser->refresh();
 
     expect($existingUser->email)->toBe('after@yowimo.app');
-    expect($existingUser->display_name)->toBe('After Name');
+    expect($existingUser->display_name)->toBe('Before Name');
     expect($existingUser->last_seen_at)->not->toBeNull();
     expect($existingUser->last_seen_at->greaterThan(now()->subMinutes(1)))->toBeTrue();
+});
+
+it('never reverts an existing user’s own first/last/display name edit back to the JWT’s claims', function () {
+    $user = User::factory()->create([
+        'clerk_user_id' => 'user_edited_profile',
+        'first_name' => 'Edited First',
+        'last_name' => 'Edited Last',
+        'display_name' => 'Edited Display Name',
+    ]);
+
+    app(ClerkUserProvisioner::class)->resolve([
+        'sub' => 'user_edited_profile',
+        'given_name' => 'Clerk First',
+        'family_name' => 'Clerk Last',
+        'name' => 'Clerk Display Name',
+    ]);
+
+    $user->refresh();
+
+    expect($user->first_name)->toBe('Edited First');
+    expect($user->last_name)->toBe('Edited Last');
+    expect($user->display_name)->toBe('Edited Display Name');
+});
+
+it('still keeps email and avatar_url live-synced from Clerk for an existing user', function () {
+    $user = User::factory()->create([
+        'clerk_user_id' => 'user_live_sync',
+        'email' => 'old@yowimo.app',
+        'avatar_url' => 'https://old.example/avatar.png',
+    ]);
+
+    app(ClerkUserProvisioner::class)->resolve([
+        'sub' => 'user_live_sync',
+        'email' => 'new@yowimo.app',
+        'picture' => 'https://new.example/avatar.png',
+    ]);
+
+    $user->refresh();
+
+    expect($user->email)->toBe('new@yowimo.app');
+    expect($user->avatar_url)->toBe('https://new.example/avatar.png');
 });
 
 it('rethrows query exceptions that are unrelated to unique clerk_user_id violations', function () {
