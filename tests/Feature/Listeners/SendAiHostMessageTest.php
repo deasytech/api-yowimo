@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Queue;
  */
 function createLiveSoloGameSessionForAiHost(): array
 {
-    $pack = Pack::factory()->create();
+    $pack = Pack::factory()->create(['price' => 0]);
     PackCard::factory()->count(5)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Truth]);
     PackCard::factory()->count(5)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Dare]);
 

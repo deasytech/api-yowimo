@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Queue;
 
 function makeLivePartyForGameCompletionReward(int $memberCount): array
 {
-    $pack = Pack::factory()->create();
+    $pack = Pack::factory()->create(['price' => 0]);
     PackCard::factory()->count(20)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Truth]);
     PackCard::factory()->count(20)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Dare]);
 

@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Queue;
 
 function makeTimerTestParty(int $memberCount = 2, int $cardsPerKind = 20): Party
 {
-    $pack = Pack::factory()->create();
+    $pack = Pack::factory()->create(['price' => 0]);
     PackCard::factory()->count($cardsPerKind)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Truth]);
     PackCard::factory()->count($cardsPerKind)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Dare]);
 

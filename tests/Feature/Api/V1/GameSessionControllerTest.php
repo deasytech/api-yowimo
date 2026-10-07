@@ -32,7 +32,7 @@ function nextTurnEndpoint(int $gameSessionId): string
 
 function makeLivePartyForController(User $host, int $memberCount = 2): Party
 {
-    $pack = Pack::factory()->create();
+    $pack = Pack::factory()->create(['price' => 0]);
     PackCard::factory()->count(10)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Truth]);
     PackCard::factory()->count(10)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Dare]);
 
@@ -154,7 +154,7 @@ it('starts a game for a party created with only a game type', function () {
     $hostToken = $this->clerkToken(['sub' => 'user_game_host_default_pack']);
 
     $gameType = GameType::factory()->create();
-    $pack = Pack::factory()->create(['game_type_id' => $gameType->id]);
+    $pack = Pack::factory()->create(['game_type_id' => $gameType->id, 'price' => 0]);
     PackCard::factory()->count(10)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Truth]);
     PackCard::factory()->count(10)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Dare]);
     $gameType->update(['default_pack_id' => $pack->id]);

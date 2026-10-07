@@ -153,7 +153,7 @@ it('fires PurchaseCompleted for a pack purchase', function () {
 it('fires TurnStarted whenever a turn is dealt', function () {
     Event::fake([TurnStarted::class]);
 
-    $pack = Pack::factory()->create();
+    $pack = Pack::factory()->create(['price' => 0]);
     PackCard::factory()->count(5)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Truth]);
     PackCard::factory()->count(5)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Dare]);
 
@@ -173,7 +173,7 @@ it('fires TurnStarted whenever a turn is dealt', function () {
 it('fires RoundCompleted when every member has taken their turn for a round', function () {
     Event::fake([RoundCompleted::class]);
 
-    $pack = Pack::factory()->create();
+    $pack = Pack::factory()->create(['price' => 0]);
     PackCard::factory()->count(5)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Truth]);
     PackCard::factory()->count(5)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Dare]);
 
@@ -195,7 +195,7 @@ it('fires RoundCompleted when every member has taken their turn for a round', fu
 it('fires GameCompleted once the final voting window after the last turn closes', function () {
     Event::fake([GameCompleted::class]);
 
-    $pack = Pack::factory()->create();
+    $pack = Pack::factory()->create(['price' => 0]);
     PackCard::factory()->count(5)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Truth]);
     PackCard::factory()->count(5)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Dare]);
 

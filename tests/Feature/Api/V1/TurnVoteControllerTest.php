@@ -43,7 +43,7 @@ function provisionVoteTestUser(TestCase $test, string $token, string $sub): arra
 
 function makePartyForVoteTest(User $host, User $otherMember): Party
 {
-    $pack = Pack::factory()->create();
+    $pack = Pack::factory()->create(['price' => 0]);
     PackCard::factory()->count(10)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Truth]);
     PackCard::factory()->count(10)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Dare]);
 
