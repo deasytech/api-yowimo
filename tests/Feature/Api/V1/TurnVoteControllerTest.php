@@ -1,16 +1,14 @@
 <?php
 
-use App\Enums\PackCardKind;
 use App\Enums\PartyStatus;
-use App\Models\Pack;
-use App\Models\PackCard;
 use App\Models\Party;
 use App\Models\PartyMember;
 use App\Models\User;
 use Tests\Support\FakesClerk;
+use Tests\Support\MakesLiveGameSessionParties;
 use Tests\TestCase;
 
-uses(FakesClerk::class);
+uses(FakesClerk::class, MakesLiveGameSessionParties::class);
 
 beforeEach(function () {
     $this->fakeClerk();
@@ -43,9 +41,7 @@ function provisionVoteTestUser(TestCase $test, string $token, string $sub): arra
 
 function makePartyForVoteTest(User $host, User $otherMember): Party
 {
-    $pack = Pack::factory()->create(['price' => 0]);
-    PackCard::factory()->count(10)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Truth]);
-    PackCard::factory()->count(10)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Dare]);
+    $pack = test()->makePlayablePack(10);
 
     $party = Party::factory()->create([
         'host_id' => $host->id,

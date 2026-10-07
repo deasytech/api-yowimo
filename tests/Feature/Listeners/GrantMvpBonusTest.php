@@ -1,16 +1,10 @@
 <?php
 
 use App\Enums\BadgeKey;
-use App\Enums\PackCardKind;
-use App\Enums\PartyStatus;
 use App\Enums\VoteCategory;
 use App\Enums\XpTransactionType;
 use App\Listeners\GrantMvpBonus;
 use App\Models\Badge;
-use App\Models\Pack;
-use App\Models\PackCard;
-use App\Models\Party;
-use App\Models\PartyMember;
 use App\Models\Turn;
 use App\Models\User;
 use App\Models\UserBadge;
@@ -19,22 +13,13 @@ use App\Services\Game\GameSessionService;
 use App\Services\Game\VoteService;
 use Illuminate\Events\CallQueuedListener;
 use Illuminate\Support\Facades\Queue;
+use Tests\Support\MakesLiveGameSessionParties;
+
+uses(MakesLiveGameSessionParties::class);
 
 function makeLivePartyForMvpBonus(int $memberCount): array
 {
-    $pack = Pack::factory()->create(['price' => 0]);
-    PackCard::factory()->count(20)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Truth]);
-    PackCard::factory()->count(20)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Dare]);
-
-    $host = User::factory()->create();
-    $party = Party::factory()->create(['host_id' => $host->id, 'pack_id' => $pack->id, 'status' => PartyStatus::Live]);
-
-    $members = collect([PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $host->id])]);
-    for ($i = 1; $i < $memberCount; $i++) {
-        $members->push(PartyMember::factory()->create(['party_id' => $party->id]));
-    }
-
-    return [$host, $party->fresh(), $members->pluck('user_id')];
+    return test()->makeLiveGameSessionParty($memberCount);
 }
 
 it('pushes the MVP-bonus listener onto the queue when GameCompleted fires, but only after the final turn\'s Challenge Completed XP already landed', function () {

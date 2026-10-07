@@ -18,26 +18,15 @@ use App\Models\Round;
 use App\Models\Turn;
 use App\Models\User;
 use App\Services\Game\GameSessionService;
+use Tests\Support\MakesLiveGameSessionParties;
+
+uses(MakesLiveGameSessionParties::class);
 
 function makeLivePartyWithMembers(int $memberCount = 3, int $cardsPerKind = 20): Party
 {
-    $pack = Pack::factory()->create(['price' => 0]);
-    PackCard::factory()->count($cardsPerKind)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Truth]);
-    PackCard::factory()->count($cardsPerKind)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Dare]);
+    [, $party] = test()->makeLiveGameSessionParty($memberCount, $cardsPerKind);
 
-    $host = User::factory()->create();
-    $party = Party::factory()->create([
-        'host_id' => $host->id,
-        'pack_id' => $pack->id,
-        'status' => PartyStatus::Live,
-    ]);
-
-    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $host->id]);
-    for ($i = 1; $i < $memberCount; $i++) {
-        PartyMember::factory()->create(['party_id' => $party->id]);
-    }
-
-    return $party->fresh();
+    return $party;
 }
 
 it('starts a session with a shuffled turn order covering every member and deals the first turn', function () {
@@ -231,25 +220,9 @@ it('falls back to unused cards of the other kind before repeating a mixed pack c
     expect(Turn::query()->where('game_session_id', $session->id)->pluck('pack_card_id')->unique())->toHaveCount(3);
 });
 
-/**
- * A live party hosted on an already-built $pack, single member (the host).
- * Lets a test control the pack's price/cards precisely before the party
- * (and its single PartyMember row) is created around it.
- *
- * @return array{0: User, 1: Party}
- */
-function makeLivePartyForPack(Pack $pack): array
-{
-    $host = User::factory()->create();
-    $party = Party::factory()->create(['host_id' => $host->id, 'pack_id' => $pack->id, 'status' => PartyStatus::Live]);
-    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $host->id]);
-
-    return [$host, $party];
-}
-
 it('rejects an empty pack without creating a game session', function () {
     $pack = Pack::factory()->create();
-    [$host, $party] = makeLivePartyForPack($pack);
+    [$host, $party] = test()->makeLiveGameSessionParty(pack: $pack);
 
     expect(fn () => app(GameSessionService::class)->start($host, $party))
         ->toThrow(GameSessionPackUnavailableException::class, 'This pack has no playable cards.');
@@ -265,7 +238,7 @@ it('restricts a host to preview cards on a paid pack they have not purchased', f
     PackCard::factory()->count(10)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Truth, 'is_preview' => false]);
     PackCard::factory()->count(10)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Dare, 'is_preview' => false]);
 
-    [$host, $party] = makeLivePartyForPack($pack);
+    [$host, $party] = test()->makeLiveGameSessionParty(pack: $pack);
 
     $service = app(GameSessionService::class);
     $session = $service->start($host, $party, 5);
@@ -282,7 +255,7 @@ it('throws GameSessionPackUnavailableException for a paid, unowned pack whose on
     $pack = Pack::factory()->create(['price' => 100]);
     PackCard::factory()->count(5)->create(['pack_id' => $pack->id, 'is_preview' => false]);
 
-    [$host, $party] = makeLivePartyForPack($pack);
+    [$host, $party] = test()->makeLiveGameSessionParty(pack: $pack);
 
     expect(fn () => app(GameSessionService::class)->start($host, $party))
         ->toThrow(GameSessionPackUnavailableException::class, 'This pack has no playable cards.');
@@ -295,7 +268,7 @@ it('plays the full card set, including non-preview cards, on a paid pack the hos
     PackCard::factory()->preview()->count(2)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Truth]);
     PackCard::factory()->count(2)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Dare, 'is_preview' => false]);
 
-    [$host, $party] = makeLivePartyForPack($pack);
+    [$host, $party] = test()->makeLiveGameSessionParty(pack: $pack);
     PackPurchase::factory()->create(['pack_id' => $pack->id, 'user_id' => $host->id]);
 
     $service = app(GameSessionService::class);
@@ -310,7 +283,7 @@ it('plays the full card set on a free pack with no preview cards at all and no p
     $pack = Pack::factory()->create(['price' => 0]);
     PackCard::factory()->count(5)->create(['pack_id' => $pack->id, 'is_preview' => false]);
 
-    [$host, $party] = makeLivePartyForPack($pack);
+    [$host, $party] = test()->makeLiveGameSessionParty(pack: $pack);
 
     $session = app(GameSessionService::class)->start($host, $party);
 

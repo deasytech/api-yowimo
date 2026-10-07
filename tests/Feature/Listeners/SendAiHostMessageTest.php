@@ -1,14 +1,9 @@
 <?php
 
-use App\Enums\PackCardKind;
-use App\Enums\PartyStatus;
 use App\Events\AiHostMessageSent;
 use App\Events\RoundCompleted;
 use App\Listeners\SendAiHostMessage;
-use App\Models\Pack;
-use App\Models\PackCard;
 use App\Models\Party;
-use App\Models\PartyMember;
 use App\Models\User;
 use App\Services\AI\AIProvider;
 use App\Services\AI\AiProviderFailedException;
@@ -17,19 +12,16 @@ use Illuminate\Events\CallQueuedListener;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
+use Tests\Support\MakesLiveGameSessionParties;
+
+uses(MakesLiveGameSessionParties::class);
 
 /**
  * @return array{0: User, 1: Party}
  */
 function createLiveSoloGameSessionForAiHost(): array
 {
-    $pack = Pack::factory()->create(['price' => 0]);
-    PackCard::factory()->count(5)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Truth]);
-    PackCard::factory()->count(5)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Dare]);
-
-    $host = User::factory()->create();
-    $party = Party::factory()->create(['host_id' => $host->id, 'pack_id' => $pack->id, 'status' => PartyStatus::Live]);
-    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $host->id]);
+    [$host, $party] = test()->makeLiveGameSessionParty(cardsPerKind: 5);
 
     return [$host, $party];
 }

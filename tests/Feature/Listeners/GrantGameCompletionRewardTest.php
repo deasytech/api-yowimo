@@ -1,34 +1,20 @@
 <?php
 
-use App\Enums\PackCardKind;
-use App\Enums\PartyStatus;
 use App\Enums\WalletTransactionType;
 use App\Listeners\GrantGameCompletionReward;
-use App\Models\Pack;
-use App\Models\PackCard;
-use App\Models\Party;
 use App\Models\PartyMember;
 use App\Models\User;
 use App\Models\WalletTransaction;
 use App\Services\Game\GameSessionService;
 use Illuminate\Events\CallQueuedListener;
 use Illuminate\Support\Facades\Queue;
+use Tests\Support\MakesLiveGameSessionParties;
+
+uses(MakesLiveGameSessionParties::class);
 
 function makeLivePartyForGameCompletionReward(int $memberCount): array
 {
-    $pack = Pack::factory()->create(['price' => 0]);
-    PackCard::factory()->count(20)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Truth]);
-    PackCard::factory()->count(20)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Dare]);
-
-    $host = User::factory()->create();
-    $party = Party::factory()->create(['host_id' => $host->id, 'pack_id' => $pack->id, 'status' => PartyStatus::Live]);
-
-    $members = collect([PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $host->id])]);
-    for ($i = 1; $i < $memberCount; $i++) {
-        $members->push(PartyMember::factory()->create(['party_id' => $party->id]));
-    }
-
-    return [$host, $party->fresh(), $members->pluck('user_id')];
+    return test()->makeLiveGameSessionParty($memberCount);
 }
 
 it('pushes the game-completion reward listener onto the queue when GameCompleted fires', function () {

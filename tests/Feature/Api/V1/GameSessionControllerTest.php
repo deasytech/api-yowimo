@@ -13,8 +13,9 @@ use App\Models\PartyMember;
 use App\Models\User;
 use Illuminate\Support\Facades\Exceptions;
 use Tests\Support\FakesClerk;
+use Tests\Support\MakesLiveGameSessionParties;
 
-uses(FakesClerk::class);
+uses(FakesClerk::class, MakesLiveGameSessionParties::class);
 
 beforeEach(function () {
     $this->fakeClerk();
@@ -32,20 +33,7 @@ function nextTurnEndpoint(int $gameSessionId): string
 
 function makeLivePartyForController(User $host, int $memberCount = 2): Party
 {
-    $pack = Pack::factory()->create(['price' => 0]);
-    PackCard::factory()->count(10)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Truth]);
-    PackCard::factory()->count(10)->create(['pack_id' => $pack->id, 'kind' => PackCardKind::Dare]);
-
-    $party = Party::factory()->create([
-        'host_id' => $host->id,
-        'pack_id' => $pack->id,
-        'status' => PartyStatus::Live,
-    ]);
-
-    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $host->id]);
-    for ($i = 1; $i < $memberCount; $i++) {
-        PartyMember::factory()->create(['party_id' => $party->id]);
-    }
+    [, $party] = test()->makeLiveGameSessionParty($memberCount, 10, $host);
 
     return $party;
 }
