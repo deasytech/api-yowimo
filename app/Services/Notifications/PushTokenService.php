@@ -21,6 +21,13 @@ class PushTokenService
     public function register(User $user, string $token, string $platform): PushToken
     {
         return DB::transaction(function () use ($user, $token, $platform) {
+            // Locked first (even if no row exists yet — the lock still
+            // covers that gap) so two near-simultaneous registration calls
+            // for the same user are serialized here, rather than each
+            // racing the delete-then-upsert below and deadlocking each
+            // other on push_tokens' own-row update.
+            PushToken::where('user_id', $user->id)->lockForUpdate()->first();
+
             PushToken::where('token', $token)
                 ->where('user_id', '!=', $user->id)
                 ->delete();
