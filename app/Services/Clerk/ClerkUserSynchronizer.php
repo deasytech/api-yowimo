@@ -3,13 +3,17 @@
 namespace App\Services\Clerk;
 
 use App\Models\User;
+use App\Services\Referrals\ReferralCodeGenerator;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 
 class ClerkUserSynchronizer
 {
-    public function __construct(private readonly FallbackUsernameGenerator $usernames) {}
+    public function __construct(
+        private readonly FallbackUsernameGenerator $usernames,
+        private readonly ReferralCodeGenerator $referralCodes,
+    ) {}
 
     /**
      * Upsert a local user from a Clerk "User" object, as found in both
@@ -51,18 +55,32 @@ class ClerkUserSynchronizer
             $usedFallbackUsername = true;
         }
 
+        // Clerk has no concept of a referral code at all, so a brand new
+        // user (or an existing one somehow still missing one) always needs
+        // one generated here — always our own fallback, never Clerk-supplied.
+        $usedFallbackReferralCode = $this->missingReferralCode($clerkUserId);
+
+        if ($usedFallbackReferralCode) {
+            $attributes['referral_code'] = $this->referralCodes->generate();
+        }
+
         try {
             return $this->upsert($clerkUserId, $attributes);
         } catch (QueryException $exception) {
-            if (! $usedFallbackUsername || ! $this->isUsernameUniqueConstraintViolation($exception)) {
+            // Same race as ClerkUserProvisioner::createUser(): a generated
+            // fallback collided with one generated concurrently for a
+            // different user. Both generators mint a fresh candidate each
+            // call, so a single retry is enough; let a second failure
+            // (or any unrelated exception, or a collision on a real
+            // Clerk-supplied username) propagate instead of silently
+            // replacing a value we didn't generate ourselves.
+            if ($usedFallbackUsername && $this->isUsernameUniqueConstraintViolation($exception)) {
+                $attributes['username'] = $this->usernames->generateFor(null, $email);
+            } elseif ($usedFallbackReferralCode && $this->isReferralCodeUniqueConstraintViolation($exception)) {
+                $attributes['referral_code'] = $this->referralCodes->generate();
+            } else {
                 throw $exception;
             }
-
-            // Same race as ClerkUserProvisioner::createUser(): the generated
-            // candidate collided with one generated concurrently for a
-            // different user. generateFor() mints a fresh one each call, so
-            // a single retry is enough; let a second failure propagate.
-            $attributes['username'] = $this->usernames->generateFor(null, $email);
 
             return $this->upsert($clerkUserId, $attributes);
         }
@@ -81,15 +99,33 @@ class ClerkUserSynchronizer
         return User::withTrashed()->where('clerk_user_id', $clerkUserId)->value('username') === null;
     }
 
+    protected function missingReferralCode(string $clerkUserId): bool
+    {
+        return User::withTrashed()->where('clerk_user_id', $clerkUserId)->value('referral_code') === null;
+    }
+
     protected function isUsernameUniqueConstraintViolation(QueryException $exception): bool
+    {
+        return $this->isUniqueConstraintViolation($exception, ['username', 'users_username_unique']);
+    }
+
+    protected function isReferralCodeUniqueConstraintViolation(QueryException $exception): bool
+    {
+        return $this->isUniqueConstraintViolation($exception, ['referral_code', 'users_referral_code_unique']);
+    }
+
+    /**
+     * @param  array<int, string>  $needles
+     */
+    private function isUniqueConstraintViolation(QueryException $exception, array $needles): bool
     {
         $message = strtolower($exception->getMessage());
         $sqlState = (string) $exception->getCode();
 
-        $isUsernameConstraint = Str::contains($message, ['username', 'users_username_unique']);
+        $matchesColumn = Str::contains($message, $needles);
         $isUniqueViolation = Str::contains($message, ['unique', 'duplicate']) || in_array($sqlState, ['23000', '23505'], true);
 
-        return $isUsernameConstraint && $isUniqueViolation;
+        return $matchesColumn && $isUniqueViolation;
     }
 
     /**

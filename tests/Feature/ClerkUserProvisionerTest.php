@@ -3,6 +3,7 @@
 use App\Models\User;
 use App\Services\Clerk\ClerkUserProvisioner;
 use App\Services\Clerk\FallbackUsernameGenerator;
+use App\Services\Referrals\ReferralCodeGenerator;
 use Illuminate\Database\QueryException;
 
 const NEW_USER = 'insert into "users" ...';
@@ -25,6 +26,17 @@ it('gives two OAuth-only users distinct fallback usernames even with the same di
     expect($first->username)->not->toBe($second->username);
 });
 
+it('assigns a unique referral code to a newly provisioned user', function () {
+    $provisioner = app(ClerkUserProvisioner::class);
+
+    $first = $provisioner->resolve(['sub' => 'user_referral_code_a']);
+    $second = $provisioner->resolve(['sub' => 'user_referral_code_b']);
+
+    expect($first->referral_code)->not->toBeNull();
+    expect($second->referral_code)->not->toBeNull();
+    expect($first->referral_code)->not->toBe($second->referral_code);
+});
+
 it('recovers from a concurrent unique clerk user id race and continues sync flow', function () {
     $existingUser = User::factory()->create([
         'clerk_user_id' => 'user_race',
@@ -33,7 +45,7 @@ it('recovers from a concurrent unique clerk user id race and continues sync flow
         'last_seen_at' => now()->subMinutes(10),
     ]);
 
-    $provisioner = new class(new FallbackUsernameGenerator) extends ClerkUserProvisioner
+    $provisioner = new class(new FallbackUsernameGenerator, new ReferralCodeGenerator) extends ClerkUserProvisioner
     {
         private bool $throwOnce = true;
 
@@ -115,7 +127,7 @@ it('still keeps email and avatar_url live-synced from Clerk for an existing user
 });
 
 it('rethrows query exceptions that are unrelated to unique clerk_user_id violations', function () {
-    $provisioner = new class(new FallbackUsernameGenerator) extends ClerkUserProvisioner
+    $provisioner = new class(new FallbackUsernameGenerator, new ReferralCodeGenerator) extends ClerkUserProvisioner
     {
         /**
          * @param  array<string, mixed>  $attributes
@@ -135,7 +147,7 @@ it('rethrows query exceptions that are unrelated to unique clerk_user_id violati
 })->throws(QueryException::class);
 
 it('rethrows a unique clerk_user_id violation when no user can be recovered', function () {
-    $provisioner = new class(new FallbackUsernameGenerator) extends ClerkUserProvisioner
+    $provisioner = new class(new FallbackUsernameGenerator, new ReferralCodeGenerator) extends ClerkUserProvisioner
     {
         /**
          * @param  array<string, mixed>  $attributes
@@ -160,7 +172,7 @@ it('rethrows a unique clerk_user_id violation when no user can be recovered', fu
 })->throws(QueryException::class);
 
 it('retries once with a freshly generated username when the first fallback collides', function () {
-    $provisioner = new class(new FallbackUsernameGenerator) extends ClerkUserProvisioner
+    $provisioner = new class(new FallbackUsernameGenerator, new ReferralCodeGenerator) extends ClerkUserProvisioner
     {
         private bool $throwOnce = true;
 
@@ -191,7 +203,7 @@ it('retries once with a freshly generated username when the first fallback colli
 });
 
 it('rethrows a second unique username violation rather than retrying forever', function () {
-    $provisioner = new class(new FallbackUsernameGenerator) extends ClerkUserProvisioner
+    $provisioner = new class(new FallbackUsernameGenerator, new ReferralCodeGenerator) extends ClerkUserProvisioner
     {
         /**
          * @param  array<string, mixed>  $attributes
@@ -208,4 +220,55 @@ it('rethrows a second unique username violation rather than retrying forever', f
     };
 
     $provisioner->resolve(['sub' => 'user_username_race_persistent']);
+})->throws(QueryException::class);
+
+it('retries once with a freshly generated referral code when the first fallback collides', function () {
+    $provisioner = new class(new FallbackUsernameGenerator, new ReferralCodeGenerator) extends ClerkUserProvisioner
+    {
+        private bool $throwOnce = true;
+
+        /**
+         * @param  array<string, mixed>  $attributes
+         */
+        protected function createUser(string $clerkUserId, array $attributes): User
+        {
+            if ($this->throwOnce) {
+                $this->throwOnce = false;
+
+                throw new QueryException(
+                    'sqlite',
+                    NEW_USER,
+                    [],
+                    new RuntimeException('SQLSTATE[23000]: Integrity constraint violation: 19 UNIQUE constraint failed: users.referral_code', 23000)
+                );
+            }
+
+            return parent::createUser($clerkUserId, $attributes);
+        }
+    };
+
+    $user = $provisioner->resolve(['sub' => 'user_referral_code_race']);
+
+    expect($user)->not->toBeNull();
+    expect($user->referral_code)->not->toBeNull();
+});
+
+it('rethrows a second unique referral code violation rather than retrying forever', function () {
+    $provisioner = new class(new FallbackUsernameGenerator, new ReferralCodeGenerator) extends ClerkUserProvisioner
+    {
+        /**
+         * @param  array<string, mixed>  $attributes
+         */
+        protected function createUser(string $clerkUserId, array $attributes): User
+        {
+            throw new QueryException(
+                'sqlite',
+                NEW_USER,
+                [],
+                new RuntimeException('SQLSTATE[23000]: Integrity constraint violation: 19 UNIQUE constraint failed: users.referral_code', 23000)
+            );
+        }
+    };
+
+    $provisioner->resolve(['sub' => 'user_referral_code_race_persistent']);
 })->throws(QueryException::class);

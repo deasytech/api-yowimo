@@ -313,6 +313,11 @@
         <a class="nav-link" data-search="post ad rewards sessions admob rewarded video token quest" href="#post-ad-reward-sessions"><span class="m post">POST</span><span class="p">/ad-rewards/sessions</span></a>
         <a class="nav-link" data-search="get ad rewards progress daily cap token quest" href="#get-ad-reward-progress"><span class="m get">GET</span><span class="p">/ad-rewards/progress</span></a>
       </div>
+      <div class="nav-group" data-group="referrals">
+        <div class="nav-group-title">Referrals</div>
+        <a class="nav-link" data-search="post referrals claim code invite" href="#post-referrals-claim"><span class="m post">POST</span><span class="p">/referrals/claim</span></a>
+        <a class="nav-link" data-search="get referrals summary code referred count tokens earned" href="#get-referrals-summary"><span class="m get">GET</span><span class="p">/referrals/summary</span></a>
+      </div>
       <div class="nav-group" data-group="badges">
         <div class="nav-group-title">Badges</div>
         <a class="nav-link" data-search="get badges catalog list achievements" href="#get-badges"><span class="m get">GET</span><span class="p">/badges</span></a>
@@ -1285,7 +1290,7 @@
             <h4>Fields</h4>
             <table class="params">
               <tr><th>Field</th><th>Values</th></tr>
-              <tr><td class="field">type</td><td class="rule"><code>top_up</code> &middot; <code>purchase</code> &middot; <code>refund</code> &middot; <code>bonus</code> &middot; <code>adjustment</code> &middot; <code>reward</code> &middot; <code>party_entry</code></td></tr>
+              <tr><td class="field">type</td><td class="rule"><code>top_up</code> &middot; <code>purchase</code> &middot; <code>refund</code> &middot; <code>bonus</code> &middot; <code>adjustment</code> &middot; <code>reward</code> &middot; <code>party_entry</code> &middot; <code>referral</code></td></tr>
               <tr><td class="field">amount</td><td class="rule">signed integer &mdash; negative for debits, positive for credits</td></tr>
             </table>
             <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">422</span></div>
@@ -1461,6 +1466,84 @@
 }'>{
   <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"Ad reward progress retrieved successfully."</span>,
   <span class="tok-key">"data"</span>: { <span class="tok-key">"watched_today"</span>: <span class="tok-num">7</span>, <span class="tok-key">"daily_cap"</span>: <span class="tok-num">15</span>, <span class="tok-key">"remaining"</span>: <span class="tok-num">8</span>, <span class="tok-key">"next_reset_at"</span>: <span class="tok-str">"2026-10-04T00:00:00Z"</span>, <span class="tok-key">"enabled"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"tokens_per_ad"</span>: <span class="tok-num">1</span>, <span class="tok-key">"can_earn"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"server_date"</span>: <span class="tok-str">"2026-10-03"</span> }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="group-head" id="referrals"><h2>Referrals</h2><p>Every user has a unique, auto-generated <code>referral_code</code> to share. Deliberately simple &mdash; no tiers, no rank, no deep-linking dependency: a new user types the code in manually during onboarding.</p></section>
+
+      <section class="endpoint" id="post-referrals-claim">
+        <div class="endpoint-head"><span class="method post">POST</span><code class="path">/referrals/claim</code></div>
+        <p class="desc">Sets the authenticated user's referrer, once.</p>
+        <div class="meta-line"><span><b>Rate limit</b> referrals (10/min)</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <h4>Body</h4>
+            <table class="params"><tr><th>Field</th><th>Rules</th></tr><tr><td class="field">code<span class="req">required</span></td><td class="rule">string, max 32 &mdash; matched case-insensitively</td></tr></table>
+            <h4>Fails when</h4>
+            <ul style="color:var(--text-muted); font-size:.9rem; padding-left:1.1rem; margin:.3rem 0;">
+              <li>The code doesn't resolve to any user &rarr; 422.</li>
+              <li>The caller already claimed a code &rarr; 409 &mdash; including a retry with a <i>different</i> code; once set, it's set.</li>
+              <li>The code is the caller's own &rarr; 422 (self-referral).</li>
+            </ul>
+            <div class="note"><b>No idempotency key needed</b>A retry of the same successful claim just hits the 409 "already claimed" case harmlessly &mdash; there's nothing to double-apply, unlike a wallet-crediting endpoint.</div>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">409 already claimed</span><span class="status-pill err">422</span><span class="status-pill err">429</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='curl -X POST https://api.yowimo.com/api/v1/referrals/claim \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d &#39;{"code":"K3F9XQWP"}&#39;'><span class="tok-flag">curl -X POST</span> https://api.yowimo.com/api/v1/referrals/claim \
+  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span> \
+  -H <span class="tok-str">"Content-Type: application/json"</span> \
+  -d <span class="tok-str">'{"code":"K3F9XQWP"}'</span></pre>
+            </div>
+            <div class="code-block">
+              <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": true,
+  "message": "Referral code claimed successfully.",
+  "data": null
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>,
+  <span class="tok-key">"message"</span>: <span class="tok-str">"Referral code claimed successfully."</span>,
+  <span class="tok-key">"data"</span>: <span class="tok-null">null</span>
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="get-referrals-summary">
+        <div class="endpoint-head"><span class="method get">GET</span><code class="path">/referrals/summary</code></div>
+        <p class="desc">The viewer's own referral code, lifetime stats, and the current reward amount.</p>
+        <div class="meta-line"><span><b>Rate limit</b> referrals (10/min)</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <h4>Fields</h4>
+            <table class="params">
+              <tr><th>Field</th><th>Values</th></tr>
+              <tr><td class="field">referral_code</td><td class="rule">the viewer's own code, to share</td></tr>
+              <tr><td class="field">referred_count</td><td class="rule">lifetime count of users who claimed this code (whether or not they've completed a game yet)</td></tr>
+              <tr><td class="field">tokens_earned</td><td class="rule">lifetime tokens credited to the viewer from referrals specifically</td></tr>
+              <tr><td class="field">reward_amount</td><td class="rule">the current flat per-referral payout &mdash; backend config, same pattern as <code>tokens_per_ad</code> on <code>GET /ad-rewards/progress</code>; never hard-code this client-side</td></tr>
+            </table>
+            <div class="note"><b>No synchronous "reward processed" signal</b>Like the ad-reward token quest, there's no direct response telling the app a payout just landed &mdash; it happens asynchronously when the referred user completes their first game. Poll this endpoint (or just re-fetch on screen focus) to reflect a new payout.</div>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">429</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": true, "message": "Referral summary retrieved successfully.",
+  "data": { "referral_code": "K3F9XQWP", "referred_count": 4, "tokens_earned": 60, "reward_amount": 20 }
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"Referral summary retrieved successfully."</span>,
+  <span class="tok-key">"data"</span>: { <span class="tok-key">"referral_code"</span>: <span class="tok-str">"K3F9XQWP"</span>, <span class="tok-key">"referred_count"</span>: <span class="tok-num">4</span>, <span class="tok-key">"tokens_earned"</span>: <span class="tok-num">60</span>, <span class="tok-key">"reward_amount"</span>: <span class="tok-num">20</span> }
 }</pre>
             </div>
           </div>

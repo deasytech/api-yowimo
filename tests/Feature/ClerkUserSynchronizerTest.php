@@ -3,6 +3,7 @@
 use App\Models\User;
 use App\Services\Clerk\ClerkUserSynchronizer;
 use App\Services\Clerk\FallbackUsernameGenerator;
+use App\Services\Referrals\ReferralCodeGenerator;
 use Illuminate\Database\QueryException;
 
 const SYNC_UPSERT = 'insert into "users" ...';
@@ -31,7 +32,7 @@ it('generates a fallback username when Clerk sends an empty string for a user wi
 });
 
 it('retries once with a freshly generated username when the first fallback collides', function () {
-    $synchronizer = new class(new FallbackUsernameGenerator) extends ClerkUserSynchronizer
+    $synchronizer = new class(new FallbackUsernameGenerator, new ReferralCodeGenerator) extends ClerkUserSynchronizer
     {
         private bool $throwOnce = true;
 
@@ -62,7 +63,7 @@ it('retries once with a freshly generated username when the first fallback colli
 });
 
 it('rethrows a second unique username violation rather than retrying forever', function () {
-    $synchronizer = new class(new FallbackUsernameGenerator) extends ClerkUserSynchronizer
+    $synchronizer = new class(new FallbackUsernameGenerator, new ReferralCodeGenerator) extends ClerkUserSynchronizer
     {
         /**
          * @param  array<string, mixed>  $attributes
@@ -82,7 +83,7 @@ it('rethrows a second unique username violation rather than retrying forever', f
 })->throws(QueryException::class);
 
 it('does not retry a username collision that came from a real Clerk-supplied username, not a generated fallback', function () {
-    $synchronizer = new class(new FallbackUsernameGenerator) extends ClerkUserSynchronizer
+    $synchronizer = new class(new FallbackUsernameGenerator, new ReferralCodeGenerator) extends ClerkUserSynchronizer
     {
         /**
          * @param  array<string, mixed>  $attributes
@@ -102,4 +103,71 @@ it('does not retry a username collision that came from a real Clerk-supplied use
     // must surface as an error rather than be silently replaced with a
     // random one — only ever retry a collision we caused ourselves.
     $synchronizer->sync(['id' => 'user_sync_unrelated_failure', 'username' => 'real-clerk-username']);
+})->throws(QueryException::class);
+
+it('generates a referral code for a brand new user — Clerk never supplies one', function () {
+    app(ClerkUserSynchronizer::class)->sync(['id' => 'user_sync_referral_code_new']);
+
+    $referralCode = User::where('clerk_user_id', 'user_sync_referral_code_new')->first()->referral_code;
+
+    expect($referralCode)->not->toBeNull();
+});
+
+it('never regenerates an already-set referral code on a later resync', function () {
+    $existing = User::factory()->create(['clerk_user_id' => 'user_sync_referral_code_resync', 'referral_code' => 'ALREADYSET']);
+
+    app(ClerkUserSynchronizer::class)->sync(['id' => 'user_sync_referral_code_resync']);
+
+    expect($existing->refresh()->referral_code)->toBe('ALREADYSET');
+});
+
+it('retries once with a freshly generated referral code when the first fallback collides', function () {
+    $synchronizer = new class(new FallbackUsernameGenerator, new ReferralCodeGenerator) extends ClerkUserSynchronizer
+    {
+        private bool $throwOnce = true;
+
+        /**
+         * @param  array<string, mixed>  $attributes
+         */
+        protected function upsert(string $clerkUserId, array $attributes): User
+        {
+            if ($this->throwOnce) {
+                $this->throwOnce = false;
+
+                throw new QueryException(
+                    'sqlite',
+                    SYNC_UPSERT,
+                    [],
+                    new RuntimeException('SQLSTATE[23000]: Integrity constraint violation: 19 UNIQUE constraint failed: users.referral_code', 23000)
+                );
+            }
+
+            return parent::upsert($clerkUserId, $attributes);
+        }
+    };
+
+    $user = $synchronizer->sync(['id' => 'user_sync_referral_code_race']);
+
+    expect($user)->not->toBeNull();
+    expect($user->referral_code)->not->toBeNull();
+});
+
+it('rethrows a second unique referral code violation rather than retrying forever', function () {
+    $synchronizer = new class(new FallbackUsernameGenerator, new ReferralCodeGenerator) extends ClerkUserSynchronizer
+    {
+        /**
+         * @param  array<string, mixed>  $attributes
+         */
+        protected function upsert(string $clerkUserId, array $attributes): User
+        {
+            throw new QueryException(
+                'sqlite',
+                SYNC_UPSERT,
+                [],
+                new RuntimeException('SQLSTATE[23000]: Integrity constraint violation: 19 UNIQUE constraint failed: users.referral_code', 23000)
+            );
+        }
+    };
+
+    $synchronizer->sync(['id' => 'user_sync_referral_code_race_persistent']);
 })->throws(QueryException::class);

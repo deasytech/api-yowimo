@@ -94,6 +94,8 @@ class AppServiceProvider extends ServiceProvider
         // legitimate retries (ad-load failures, backgrounding) are normal.
         RateLimiter::for('ad-rewards', fn (Request $request) => Limit::perMinute(20)->by($request->user()?->id ?: $request->ip()));
 
+        RateLimiter::for('referrals', fn (Request $request) => Limit::perMinute(10)->by($request->user()?->id ?: $request->ip()));
+
         // Deliberately its own bucket, not the shared 'webhooks' one: that
         // 120/min is sized for Paystack/Clerk's low volume, but many users'
         // SSV callbacks can funnel through a small pool of Google egress

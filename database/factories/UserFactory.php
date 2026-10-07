@@ -22,6 +22,7 @@ class UserFactory extends Factory
         return [
             'clerk_user_id' => 'user_'.Str::random(24),
             'username' => fake()->unique()->userName(),
+            'referral_code' => strtoupper(Str::random(8)),
             'first_name' => fake()->firstName(),
             'last_name' => fake()->lastName(),
             'display_name' => fake()->name(),
