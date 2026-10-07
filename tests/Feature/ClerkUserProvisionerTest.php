@@ -159,9 +159,11 @@ it('rethrows a unique clerk_user_id violation when no user can be recovered', fu
     $provisioner->resolve(['sub' => 'user_missing_after_race']);
 })->throws(QueryException::class);
 
-it('retries once with a freshly generated username when the first fallback collides', function () {
+it('retries once with a freshly generated value when the first fallback collides', function (string $column) {
     $provisioner = new class(new FallbackUsernameGenerator, new ReferralCodeGenerator) extends ClerkUserProvisioner
     {
+        public string $collidingColumn = '';
+
         private bool $throwOnce = true;
 
         /**
@@ -172,71 +174,34 @@ it('retries once with a freshly generated username when the first fallback colli
             if ($this->throwOnce) {
                 $this->throwOnce = false;
 
-                throw uniqueConstraintViolation('username');
+                throw uniqueConstraintViolation($this->collidingColumn);
             }
 
             return parent::createUser($clerkUserId, $attributes);
         }
     };
+    $provisioner->collidingColumn = $column;
 
-    $user = $provisioner->resolve(['sub' => 'user_username_race']);
-
-    expect($user)->not->toBeNull();
-    expect($user->username)->not->toBeNull();
-});
-
-it('rethrows a second unique username violation rather than retrying forever', function () {
-    $provisioner = new class(new FallbackUsernameGenerator, new ReferralCodeGenerator) extends ClerkUserProvisioner
-    {
-        /**
-         * @param  array<string, mixed>  $attributes
-         */
-        protected function createUser(string $clerkUserId, array $attributes): User
-        {
-            throw uniqueConstraintViolation('username');
-        }
-    };
-
-    $provisioner->resolve(['sub' => 'user_username_race_persistent']);
-})->throws(QueryException::class);
-
-it('retries once with a freshly generated referral code when the first fallback collides', function () {
-    $provisioner = new class(new FallbackUsernameGenerator, new ReferralCodeGenerator) extends ClerkUserProvisioner
-    {
-        private bool $throwOnce = true;
-
-        /**
-         * @param  array<string, mixed>  $attributes
-         */
-        protected function createUser(string $clerkUserId, array $attributes): User
-        {
-            if ($this->throwOnce) {
-                $this->throwOnce = false;
-
-                throw uniqueConstraintViolation('referral_code');
-            }
-
-            return parent::createUser($clerkUserId, $attributes);
-        }
-    };
-
-    $user = $provisioner->resolve(['sub' => 'user_referral_code_race']);
+    $user = $provisioner->resolve(['sub' => "user_{$column}_race"]);
 
     expect($user)->not->toBeNull();
-    expect($user->referral_code)->not->toBeNull();
-});
+    expect($user->{$column})->not->toBeNull();
+})->with(['username', 'referral_code']);
 
-it('rethrows a second unique referral code violation rather than retrying forever', function () {
+it('rethrows a second unique violation rather than retrying forever', function (string $column) {
     $provisioner = new class(new FallbackUsernameGenerator, new ReferralCodeGenerator) extends ClerkUserProvisioner
     {
+        public string $collidingColumn = '';
+
         /**
          * @param  array<string, mixed>  $attributes
          */
         protected function createUser(string $clerkUserId, array $attributes): User
         {
-            throw uniqueConstraintViolation('referral_code');
+            throw uniqueConstraintViolation($this->collidingColumn);
         }
     };
+    $provisioner->collidingColumn = $column;
 
-    $provisioner->resolve(['sub' => 'user_referral_code_race_persistent']);
-})->throws(QueryException::class);
+    $provisioner->resolve(['sub' => "user_{$column}_race_persistent"]);
+})->with(['username', 'referral_code'])->throws(QueryException::class);
