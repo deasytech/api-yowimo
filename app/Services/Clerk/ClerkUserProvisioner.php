@@ -103,35 +103,31 @@ class ClerkUserProvisioner
 
     protected function isClerkUserIdUniqueConstraintViolation(QueryException $exception): bool
     {
-        $message = strtolower($exception->getMessage());
-        $sqlState = (string) $exception->getCode();
-
-        $isClerkUserIdConstraint = Str::contains($message, ['clerk_user_id', 'users_clerk_user_id_unique']);
-        $isUniqueViolation = Str::contains($message, ['unique', 'duplicate']) || in_array($sqlState, ['23000', '23505'], true);
-
-        return $isClerkUserIdConstraint && $isUniqueViolation;
+        return $this->isUniqueConstraintViolation($exception, ['clerk_user_id', 'users_clerk_user_id_unique']);
     }
 
     protected function isUsernameUniqueConstraintViolation(QueryException $exception): bool
     {
-        $message = strtolower($exception->getMessage());
-        $sqlState = (string) $exception->getCode();
-
-        $isUsernameConstraint = Str::contains($message, ['username', 'users_username_unique']);
-        $isUniqueViolation = Str::contains($message, ['unique', 'duplicate']) || in_array($sqlState, ['23000', '23505'], true);
-
-        return $isUsernameConstraint && $isUniqueViolation;
+        return $this->isUniqueConstraintViolation($exception, ['username', 'users_username_unique']);
     }
 
     protected function isReferralCodeUniqueConstraintViolation(QueryException $exception): bool
     {
+        return $this->isUniqueConstraintViolation($exception, ['referral_code', 'users_referral_code_unique']);
+    }
+
+    /**
+     * @param  array<int, string>  $needles
+     */
+    private function isUniqueConstraintViolation(QueryException $exception, array $needles): bool
+    {
         $message = strtolower($exception->getMessage());
         $sqlState = (string) $exception->getCode();
 
-        $isReferralCodeConstraint = Str::contains($message, ['referral_code', 'users_referral_code_unique']);
+        $matchesColumn = Str::contains($message, $needles);
         $isUniqueViolation = Str::contains($message, ['unique', 'duplicate']) || in_array($sqlState, ['23000', '23505'], true);
 
-        return $isReferralCodeConstraint && $isUniqueViolation;
+        return $matchesColumn && $isUniqueViolation;
     }
 
     protected function touchLastSeen(User $user): User
