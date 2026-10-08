@@ -3,6 +3,7 @@
 use App\Models\GameSession;
 use App\Models\User;
 use App\Services\Game\GameSessionService;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -72,4 +73,20 @@ function authAs(string $clerkSub): User
     test()->withHeader('Authorization', "Bearer {$token}")->getJson('/api/v1/users/me')->assertOk();
 
     return User::where('clerk_user_id', $clerkSub)->firstOrFail();
+}
+
+/**
+ * A QueryException shaped like a real unique-constraint violation on the
+ * given `users` column — used by ClerkUserProvisionerTest/
+ * ClerkUserSynchronizerTest to simulate a generated username/referral_code
+ * colliding with one generated concurrently for a different user.
+ */
+function uniqueConstraintViolation(string $column): QueryException
+{
+    return new QueryException(
+        'sqlite',
+        'insert into "users" ...',
+        [],
+        new RuntimeException("SQLSTATE[23000]: Integrity constraint violation: 19 UNIQUE constraint failed: users.{$column}", 23000)
+    );
 }

@@ -16,6 +16,7 @@ use App\Exceptions\Api\InvalidClerkWebhookException;
 use App\Exceptions\Api\InvalidFriendshipTransitionException;
 use App\Exceptions\Api\InvalidPartyTransitionException;
 use App\Exceptions\Api\InvalidPaystackWebhookException;
+use App\Exceptions\Api\InvalidReferralCodeException;
 use App\Exceptions\Api\PackAlreadyOwnedException;
 use App\Exceptions\Api\PackNotInGameTypeException;
 use App\Exceptions\Api\PartyFullException;
@@ -23,6 +24,8 @@ use App\Exceptions\Api\PartyGameAlreadyStartedException;
 use App\Exceptions\Api\PartyHostCannotLeaveException;
 use App\Exceptions\Api\PartyNotJoinableException;
 use App\Exceptions\Api\PaymentDeclinedException;
+use App\Exceptions\Api\ReferralAlreadyClaimedException;
+use App\Exceptions\Api\SelfReferralException;
 use App\Exceptions\Api\TurnNotActiveException;
 use App\Exceptions\Api\UserBlockedException;
 use App\Exceptions\Api\VotingNotAllowedException;
@@ -86,6 +89,9 @@ return Application::configure(basePath: dirname(__DIR__))
             UserBlockedException::class,
             AdRewardDailyCapReachedException::class,
             InvalidAdMobSsvSignatureException::class,
+            InvalidReferralCodeException::class,
+            ReferralAlreadyClaimedException::class,
+            SelfReferralException::class,
         ]);
 
         ApiExceptionRegistrar::register($exceptions);

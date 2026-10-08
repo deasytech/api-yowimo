@@ -5,13 +5,18 @@ namespace App\Services\Clerk;
 use App\Enums\UserStatus;
 use App\Exceptions\Api\InvalidClerkTokenException;
 use App\Models\User;
+use App\Services\Referrals\ReferralCodeGenerator;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
 
 class ClerkUserProvisioner
 {
-    public function __construct(private readonly FallbackUsernameGenerator $usernames) {}
+    use DetectsUniqueConstraintViolations;
+
+    public function __construct(
+        private readonly FallbackUsernameGenerator $usernames,
+        private readonly ReferralCodeGenerator $referralCodes,
+    ) {}
 
     /**
      * Resolve the internal user for the given verified Clerk claims,
@@ -39,12 +44,13 @@ class ClerkUserProvisioner
             try {
                 $user = $this->createUser($clerkUserId, $attributes);
             } catch (QueryException $exception) {
-                if ($this->isUsernameUniqueConstraintViolation($exception)) {
-                    // The generated fallback username collided with one
-                    // generated concurrently for a different user — generateFor()
-                    // only checks availability before the insert, not atomically
-                    // with it. createUser() mints a fresh one each call, so a
-                    // single retry is enough; let a second failure propagate.
+                if ($this->isUsernameUniqueConstraintViolation($exception) || $this->isReferralCodeUniqueConstraintViolation($exception)) {
+                    // The generated fallback username/referral code collided
+                    // with one generated concurrently for a different user —
+                    // both generators only check availability before the
+                    // insert, not atomically with it. createUser() mints
+                    // fresh ones each call, so a single retry is enough; let
+                    // a second failure propagate.
                     $user = $this->createUser($clerkUserId, $attributes);
                 } elseif ($this->isClerkUserIdUniqueConstraintViolation($exception)) {
                     $user = $this->findUserByClerkUserId($clerkUserId);
@@ -86,6 +92,7 @@ class ClerkUserProvisioner
             'clerk_user_id' => $clerkUserId,
             'status' => UserStatus::Active,
             'username' => $this->usernames->generateFor($attributes['display_name'] ?? null, $attributes['email'] ?? null),
+            'referral_code' => $this->referralCodes->generate(),
             ...$attributes,
         ]);
     }
@@ -97,24 +104,17 @@ class ClerkUserProvisioner
 
     protected function isClerkUserIdUniqueConstraintViolation(QueryException $exception): bool
     {
-        $message = strtolower($exception->getMessage());
-        $sqlState = (string) $exception->getCode();
-
-        $isClerkUserIdConstraint = Str::contains($message, ['clerk_user_id', 'users_clerk_user_id_unique']);
-        $isUniqueViolation = Str::contains($message, ['unique', 'duplicate']) || in_array($sqlState, ['23000', '23505'], true);
-
-        return $isClerkUserIdConstraint && $isUniqueViolation;
+        return $this->isUniqueConstraintViolation($exception, ['clerk_user_id', 'users_clerk_user_id_unique']);
     }
 
     protected function isUsernameUniqueConstraintViolation(QueryException $exception): bool
     {
-        $message = strtolower($exception->getMessage());
-        $sqlState = (string) $exception->getCode();
+        return $this->isUniqueConstraintViolation($exception, ['username', 'users_username_unique']);
+    }
 
-        $isUsernameConstraint = Str::contains($message, ['username', 'users_username_unique']);
-        $isUniqueViolation = Str::contains($message, ['unique', 'duplicate']) || in_array($sqlState, ['23000', '23505'], true);
-
-        return $isUsernameConstraint && $isUniqueViolation;
+    protected function isReferralCodeUniqueConstraintViolation(QueryException $exception): bool
+    {
+        return $this->isUniqueConstraintViolation($exception, ['referral_code', 'users_referral_code_unique']);
     }
 
     protected function touchLastSeen(User $user): User

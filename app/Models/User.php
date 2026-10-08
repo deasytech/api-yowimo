@@ -9,6 +9,7 @@ use Filament\Models\Contracts\HasName;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -18,6 +19,8 @@ use Illuminate\Notifications\Notifiable;
 #[Fillable([
     'clerk_user_id',
     'username',
+    'referral_code',
+    'referred_by_user_id',
     'email',
     'first_name',
     'last_name',
@@ -71,6 +74,26 @@ class User extends Authenticatable implements FilamentUser, HasName
     public function parties(): HasMany
     {
         return $this->hasMany(Party::class, 'host_id');
+    }
+
+    /**
+     * The user whose referral code this user claimed, if any.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function referredBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'referred_by_user_id');
+    }
+
+    /**
+     * Users who claimed this user's referral code.
+     *
+     * @return HasMany<User, $this>
+     */
+    public function referrals(): HasMany
+    {
+        return $this->hasMany(User::class, 'referred_by_user_id');
     }
 
     /**

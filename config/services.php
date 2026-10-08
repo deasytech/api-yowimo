@@ -75,4 +75,10 @@ return [
         'tokens_per_completed_ad' => env('ADMOB_REWARDED_ADS_TOKENS_PER_AD', 1),
     ],
 
+    'referrals' => [
+        // Backend-owned, same pattern as the ad-reward token quest above —
+        // tunable without a mobile release, never hard-coded into the client.
+        'reward_amount' => env('REFERRAL_REWARD_AMOUNT', 20),
+    ],
+
 ];

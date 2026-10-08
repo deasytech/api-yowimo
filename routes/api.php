@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\V1\PaymentMethodController;
 use App\Http\Controllers\Api\V1\PaystackWebhookController;
 use App\Http\Controllers\Api\V1\PushTokenController;
 use App\Http\Controllers\Api\V1\ReactionController;
+use App\Http\Controllers\Api\V1\ReferralController;
 use App\Http\Controllers\Api\V1\TokenBundleController;
 use App\Http\Controllers\Api\V1\TokenBundlePurchaseController;
 use App\Http\Controllers\Api\V1\TurnActionController;
@@ -64,6 +65,9 @@ Route::prefix('v1')->group(function () {
 
         Route::post('/ad-rewards/sessions', [AdRewardSessionController::class, 'store'])->middleware('throttle:ad-rewards');
         Route::get('/ad-rewards/progress', [AdRewardSessionController::class, 'progress'])->middleware('throttle:ad-rewards');
+
+        Route::post('/referrals/claim', [ReferralController::class, 'claim'])->middleware('throttle:referrals');
+        Route::get('/referrals/summary', [ReferralController::class, 'summary'])->middleware('throttle:referrals');
 
         Route::get('/badges', [BadgeController::class, 'index']);
         Route::get('/users/me/badges', [BadgeController::class, 'mine']);
