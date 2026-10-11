@@ -199,6 +199,37 @@ it('refunds the guest and the sponsor when the host cancels', function () {
     expect($invite->fresh()->status)->toBe(SponsorshipInviteStatus::Cancelled);
 });
 
+it('refunds the host for covered free-party guests on cancel, but not their own game-type creation fee', function () {
+    $hostToken = $this->clerkToken(['sub' => 'user_cancel_free_party_host']);
+    $host = authAs('user_cancel_free_party_host');
+    $gameType = GameType::factory()->create(['cost' => 30]);
+    fundWalletWith($host, 100);
+    $party = Party::factory()->create([
+        'host_id' => $host->id,
+        'game_type_id' => $gameType->id,
+        'visibility' => PartyVisibility::Public,
+        'status' => PartyStatus::Scheduled,
+        'entry_fee' => 0,
+        'players_count' => 2,
+        'sponsorship_scope' => 'creation_fee',
+    ]);
+    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $host->id]);
+    app(WalletService::class)->debit($host, 30, WalletTransactionType::PartyEntry, reference: $party);
+
+    $guest = User::factory()->create();
+    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $guest->id]);
+    app(WalletService::class)->debit($host, 10, WalletTransactionType::FreePartyGuestCost, reference: $party, idempotencyKey: "party-entry-host-{$party->id}-{$guest->id}");
+    expect($host->wallet->fresh()->balance)->toBe(60);
+
+    $this->withHeader('Authorization', "Bearer {$hostToken}")
+        ->postJson(entryFeeCancelEndpoint($party))
+        ->assertStatus(200)
+        ->assertJsonPath('data.status', 'cancelled');
+
+    // The 10-token free-party guest cost comes back; the 30-token creation fee does not.
+    expect($host->wallet->fresh()->balance)->toBe(70);
+});
+
 it('does not refund the hosts own game-type creation fee when they cancel an unsponsored party', function () {
     $hostToken = $this->clerkToken(['sub' => 'user_cancel_no_host_refund']);
     $host = authAs('user_cancel_no_host_refund');
@@ -308,7 +339,7 @@ it('charges the host the free-party per-guest cost when a guest joins a free par
     expect($guest->wallet()->exists())->toBeFalse();
 
     $transaction = WalletTransaction::where('wallet_id', $host->wallet->id)
-        ->where('type', WalletTransactionType::PartyEntry)
+        ->where('type', WalletTransactionType::FreePartyGuestCost)
         ->firstOrFail();
     expect($transaction->amount)->toBe(-10);
     expect((int) $transaction->reference_id)->toBe($party->id);
@@ -334,7 +365,7 @@ it('does not re-charge the host on rejoin for a free party', function () {
     $this->withHeader('Authorization', "Bearer {$token}")->postJson(entryFeeJoinEndpoint($party))->assertStatus(200);
 
     expect($host->wallet->fresh()->balance)->toBe(40);
-    expect(WalletTransaction::where('wallet_id', $host->wallet->id)->where('type', WalletTransactionType::PartyEntry)->count())->toBe(1);
+    expect(WalletTransaction::where('wallet_id', $host->wallet->id)->where('type', WalletTransactionType::FreePartyGuestCost)->count())->toBe(1);
 });
 
 it('returns 422 insufficient token balance when the host cannot afford to cover a free party guest, and the guest is not added', function () {

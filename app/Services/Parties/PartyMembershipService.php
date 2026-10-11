@@ -138,11 +138,7 @@ class PartyMembershipService
             return;
         }
 
-        if ($party->sponsorship_scope === null) {
-            return;
-        }
-
-        $guestCost = $this->sponsorships->freePartyGuestCost();
+        $guestCost = $party->sponsorship_scope !== null ? $this->sponsorships->freePartyGuestCost() : 0;
 
         if ($guestCost <= 0) {
             return;
@@ -151,7 +147,7 @@ class PartyMembershipService
         $this->wallets->debit(
             $party->host,
             $guestCost,
-            WalletTransactionType::PartyEntry,
+            WalletTransactionType::FreePartyGuestCost,
             reference: $party,
             description: "Free party guest cost: {$party->title}",
             idempotencyKey: "party-entry-host-{$party->id}-{$user->id}",

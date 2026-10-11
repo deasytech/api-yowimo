@@ -184,20 +184,27 @@ class SponsorshipService
 
     /**
      * Called when a party is cancelled before it ran: refunds every guest
-     * who actually paid an entry fee for it, and refunds (and closes out)
-     * any sponsorship invite already paid for it — nothing happened, so
-     * nothing charged against it should stick. The host's own game-type
+     * who actually paid an entry fee for it, every host charge for covering
+     * a free guest's slot (free_party_guest_cost — see
+     * PartyMembershipService::chargeEntryFee()), and refunds (and closes
+     * out) any sponsorship invite already paid for it — nothing happened,
+     * so nothing charged against it should stick. The host's own game-type
      * creation fee, an unrelated and pre-existing charge, is untouched —
      * it's recorded under the same party_entry type/reference as a guest's
-     * join charge, so it has to be excluded explicitly by wallet owner.
+     * join charge, so it has to be excluded explicitly by wallet owner
+     * (free_party_guest_cost has no such ambiguity: it's only ever charged
+     * to the host, so every row of it is refundable).
      */
     public function refundForCancelledParty(Party $party): void
     {
         $entryTransactions = WalletTransaction::query()
-            ->where('type', WalletTransactionType::PartyEntry)
+            ->whereIn('type', [WalletTransactionType::PartyEntry, WalletTransactionType::FreePartyGuestCost])
             ->where('reference_type', $party->getMorphClass())
             ->where('reference_id', $party->id)
-            ->whereHas('wallet', fn ($query) => $query->where('user_id', '!=', $party->host_id))
+            ->where(function ($query) use ($party) {
+                $query->where('type', WalletTransactionType::FreePartyGuestCost)
+                    ->orWhereHas('wallet', fn ($query) => $query->where('user_id', '!=', $party->host_id));
+            })
             ->with('wallet.user')
             ->get();
 
@@ -245,7 +252,11 @@ class SponsorshipService
     /**
      * Called when a party ends: a full_party sponsor paid up front for every
      * reservable guest slot (max_players - 1), whether or not it filled.
-     * Refunds whatever fraction of that never got used.
+     * Refunds whatever fraction of that never got used, at the per-slot rate
+     * the sponsor was actually charged — derived from the invite's own
+     * (frozen at payment time) amount rather than recomputed from entry_fee/
+     * live config, which could in principle have changed since the invite
+     * was paid.
      */
     public function refundUnusedFullPartySponsorship(Party $party): void
     {
@@ -264,8 +275,17 @@ class SponsorshipService
             return;
         }
 
+        $guestSlots = max($party->max_players - 1, 0);
+
+        if ($guestSlots <= 0) {
+            return;
+        }
+
+        $creationFee = $party->gameType?->cost ?? 0;
+        $perSlotRate = intdiv(max($invite->amount - $creationFee, 0), $guestSlots);
+
         $unfilledSlots = max($party->max_players - $party->players_count, 0);
-        $refundAmount = $unfilledSlots * $this->fullPartyPerGuestCost($party);
+        $refundAmount = $unfilledSlots * $perSlotRate;
 
         if ($refundAmount <= 0) {
             return;

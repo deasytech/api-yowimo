@@ -101,7 +101,8 @@ class BadgeColors
             WalletTransactionType::Referral => 'success',
             WalletTransactionType::Purchase,
             WalletTransactionType::PartyEntry,
-            WalletTransactionType::Sponsor => 'info',
+            WalletTransactionType::Sponsor,
+            WalletTransactionType::FreePartyGuestCost => 'info',
             WalletTransactionType::Refund => 'warning',
             WalletTransactionType::Adjustment => 'gray',
         };
