@@ -5,11 +5,13 @@ namespace App\Services\Parties;
 use App\Enums\JoinMode;
 use App\Enums\PartyMemberStatus;
 use App\Enums\PartyStatus;
+use App\Enums\WalletTransactionType;
 use App\Events\PartyMemberJoined;
 use App\Events\PartyMemberLeft;
 use App\Events\PartyMemberReady;
 use App\Events\PartyMemberUnready;
 use App\Events\PartyStarted;
+use App\Exceptions\Api\InsufficientWalletBalanceException;
 use App\Exceptions\Api\InvalidPartyTransitionException;
 use App\Exceptions\Api\PartyFullException;
 use App\Exceptions\Api\PartyHostCannotLeaveException;
@@ -18,6 +20,8 @@ use App\Models\Party;
 use App\Models\PartyMember;
 use App\Models\User;
 use App\Services\Game\GameSessionService;
+use App\Services\Sponsorship\SponsorshipService;
+use App\Services\Wallet\WalletService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -33,7 +37,11 @@ class PartyMembershipService
      */
     public const JOINABLE_STATUSES = [PartyStatus::Scheduled, PartyStatus::Live];
 
-    public function __construct(private readonly GameSessionService $games) {}
+    public function __construct(
+        private readonly GameSessionService $games,
+        private readonly WalletService $wallets,
+        private readonly SponsorshipService $sponsorships,
+    ) {}
 
     /**
      * A rejoin (having previously left) reuses the same row rather than
@@ -43,6 +51,7 @@ class PartyMembershipService
      *
      * @throws PartyNotJoinableException if the party's current status doesn't allow joining.
      * @throws PartyFullException if the party is already at capacity.
+     * @throws InsufficientWalletBalanceException if the entry fee applies and the guest can't afford it.
      */
     public function join(User $user, Party $party): Party
     {
@@ -61,6 +70,13 @@ class PartyMembershipService
 
             if ($party->players_count >= $party->max_players) {
                 throw new PartyFullException;
+            }
+
+            // A rejoin never re-charges: the membership row already existing
+            // (Active handled above, so this is always a prior Left row) is
+            // itself the proof the entry fee was already paid on first join.
+            if (! $membership) {
+                $this->chargeEntryFee($user, $party);
             }
 
             if ($membership) {
@@ -87,6 +103,31 @@ class PartyMembershipService
         });
 
         return $party->refresh();
+    }
+
+    /**
+     * Skipped entirely for a free party (entry_fee = 0) and for a
+     * full_party-sponsored one once its sponsor has paid — in both cases
+     * there's nothing to charge the guest for.
+     */
+    private function chargeEntryFee(User $user, Party $party): void
+    {
+        if ($party->entry_fee <= 0) {
+            return;
+        }
+
+        if ($this->sponsorships->isFullyCoveredByPaidSponsor($party)) {
+            return;
+        }
+
+        $this->wallets->debit(
+            $user,
+            $party->entry_fee,
+            WalletTransactionType::PartyEntry,
+            reference: $party,
+            description: "Party entry: {$party->title}",
+            idempotencyKey: "party-entry-{$party->id}-{$user->id}",
+        );
     }
 
     /**
@@ -231,11 +272,15 @@ class PartyMembershipService
      */
     public function cancel(Party $party): Party
     {
-        if (! in_array($party->status, [PartyStatus::Draft, PartyStatus::Scheduled], true)) {
+        if (! in_array($party->status, [PartyStatus::Draft, PartyStatus::PendingSponsorship, PartyStatus::Scheduled], true)) {
             throw new InvalidPartyTransitionException('This party cannot be cancelled from its current status.');
         }
 
-        $party->update(['status' => PartyStatus::Cancelled]);
+        DB::transaction(function () use ($party) {
+            $party->update(['status' => PartyStatus::Cancelled]);
+
+            $this->sponsorships->refundForCancelledParty($party);
+        });
 
         return $party->refresh();
     }
@@ -269,6 +314,8 @@ class PartyMembershipService
             $party->update(['status' => PartyStatus::Ended]);
 
             $this->games->endForParty($party);
+
+            $this->sponsorships->refundUnusedFullPartySponsorship($party);
         });
 
         return $party->refresh();

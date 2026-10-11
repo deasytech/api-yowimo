@@ -4,6 +4,7 @@ namespace App\Http\Resources\Api\V1;
 
 use App\Enums\PartyVisibility;
 use App\Models\Party;
+use App\Models\SponsorshipInvite;
 use App\Support\StoredImageUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -35,6 +36,8 @@ class PartyResource extends JsonResource
             'likes_count' => $this->likes_count,
             'liked_by_me' => $this->isLikedBy($viewer),
             'joined_by_me' => $this->isMemberOf($viewer),
+            'entry_fee' => $this->entry_fee,
+            'sponsorship' => $this->sponsorshipPayload(),
             'is_sponsored' => $this->is_sponsored,
             'sponsor_name' => $this->sponsor_name,
             'tags' => $this->tags ?? [],
@@ -47,6 +50,26 @@ class PartyResource extends JsonResource
             'pack' => PackResource::make($this->whenLoaded('pack')),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function sponsorshipPayload(): ?array
+    {
+        $invite = $this->currentSponsorshipInvite();
+
+        if (! $invite instanceof SponsorshipInvite) {
+            return null;
+        }
+
+        return [
+            'id' => $invite->id,
+            'scope' => $invite->scope->value,
+            'status' => $invite->effectiveStatus()->value,
+            'amount' => $invite->amount,
+            'sponsor' => $invite->sponsor ? PartyHostResource::make($invite->sponsor) : null,
         ];
     }
 }

@@ -94,6 +94,7 @@ it('cancels unstarted hosted parties, ends live ones, and leaves joined ones', f
     $user = authAs('user_delete_parties');
 
     $draft = Party::factory()->create(['host_id' => $user->id, 'status' => PartyStatus::Draft]);
+    $pendingSponsorship = Party::factory()->create(['host_id' => $user->id, 'status' => PartyStatus::PendingSponsorship, 'sponsorship_scope' => 'creation_fee']);
     $live = Party::factory()->create(['host_id' => $user->id, 'status' => PartyStatus::Live]);
     $ended = Party::factory()->create(['host_id' => $user->id, 'status' => PartyStatus::Ended]);
 
@@ -103,6 +104,7 @@ it('cancels unstarted hosted parties, ends live ones, and leaves joined ones', f
     $this->deleteJson(API_V1_ME_ENDPOINT)->assertOk();
 
     expect($draft->refresh()->status)->toBe(PartyStatus::Cancelled);
+    expect($pendingSponsorship->refresh()->status)->toBe(PartyStatus::Cancelled);
     expect($live->refresh()->status)->toBe(PartyStatus::Ended);
     expect($ended->refresh()->status)->toBe(PartyStatus::Ended);
     expect($joined->refresh()->status)->toBe(PartyStatus::Live);

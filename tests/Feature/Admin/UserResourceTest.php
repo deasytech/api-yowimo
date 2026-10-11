@@ -5,6 +5,7 @@ use App\Filament\Resources\Users\Pages\ListUsers;
 use App\Filament\Resources\Users\UserResource;
 use App\Models\BlockedUser;
 use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -30,6 +31,33 @@ it('lets an admin edit a user profile and toggle admin access', function () {
 
     expect($user->display_name)->toBe('Updated Name')
         ->and($user->is_admin)->toBeTrue();
+});
+
+it('does not prefill the password field with the stored hash', function () {
+    $user = User::factory()->create(['password' => 'original-password']);
+
+    Livewire::test(EditUser::class, ['record' => $user->getKey()])
+        ->assertFormSet(['password' => null]);
+});
+
+it('lets an admin set a new password, hashed, and leaves it unchanged when left blank', function () {
+    $user = User::factory()->create(['password' => 'original-password']);
+
+    Livewire::test(EditUser::class, ['record' => $user->getKey()])
+        ->fillForm(['password' => 'brand-new-password'])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    $user->refresh();
+    expect(Hash::check('brand-new-password', $user->password))->toBeTrue();
+
+    Livewire::test(EditUser::class, ['record' => $user->getKey()])
+        ->fillForm(['display_name' => 'Still The Same'])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    $user->refresh();
+    expect(Hash::check('brand-new-password', $user->password))->toBeTrue();
 });
 
 it('does not offer deletion of users from the panel', function () {

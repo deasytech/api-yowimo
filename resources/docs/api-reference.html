@@ -350,6 +350,14 @@
         <a class="nav-link" data-search="post parties video token livekit voice call" href="#post-parties-video-token"><span class="m post">POST</span><span class="p">/parties/{party}/video-token</span></a>
         <a class="nav-link" data-search="get parties tv pairing code cast mirror connect" href="#get-parties-tv-pairing-code"><span class="m get">GET</span><span class="p">/parties/{party}/tv-pairing-code</span></a>
       </div>
+      <div class="nav-group" data-group="sponsorship">
+        <div class="nav-group-title">Sponsorship</div>
+        <a class="nav-link" data-search="post parties sponsorship invites create host" href="#post-parties-sponsorship-invites"><span class="m post">POST</span><span class="p">/parties/{party}/sponsorship-invites</span></a>
+        <a class="nav-link" data-search="get sponsorship invites token show link" href="#get-sponsorship-invites-token"><span class="m get">GET</span><span class="p">/sponsorship-invites/{token}</span></a>
+        <a class="nav-link" data-search="post sponsorship invites pay sponsor idempotency" href="#post-sponsorship-invites-pay"><span class="m post">POST</span><span class="p">/sponsorship-invites/{token}/pay</span></a>
+        <a class="nav-link" data-search="get sponsors me summary tokens spent" href="#get-sponsors-me"><span class="m get">GET</span><span class="p">/sponsors/me</span></a>
+        <a class="nav-link" data-search="get sponsors me sponsorships list history" href="#get-sponsors-me-sponsorships"><span class="m get">GET</span><span class="p">/sponsors/me/sponsorships</span></a>
+      </div>
       <div class="nav-group" data-group="gamesessions">
         <div class="nav-group-title">Game Sessions</div>
         <a class="nav-link" data-search="game flow realtime events channels statuses" href="#game-flow"><span class="m"></span><span class="p">Game flow &amp; events</span></a>
@@ -664,7 +672,7 @@
             <p>Deletes the player's Clerk account first, then soft-deletes the local account. If Clerk can't be reached or rejects the call, nothing changes and the request returns <code>502</code> &mdash; safe to retry.</p>
             <h4>Side effects</h4>
             <ul style="color:var(--text-muted); font-size:.9rem; padding-left:1.1rem; margin:.3rem 0;">
-              <li>Hosted parties: <code>draft</code>/<code>scheduled</code> become <code>cancelled</code>; <code>live</code> ones become <code>ended</code>.</li>
+              <li>Hosted parties: <code>draft</code>/<code>pending_sponsorship</code>/<code>scheduled</code> become <code>cancelled</code> (refunding any guest entry fees and paid sponsorship already collected); <code>live</code> ones become <code>ended</code>.</li>
               <li>Leaves every party the player joined (other members get the usual <code>party.member.left</code> event).</li>
               <li>Friendships and pending requests are closed; the push token is removed.</li>
               <li>Wallet, ledger, purchase, and gameplay history are kept.</li>
@@ -1290,7 +1298,7 @@
             <h4>Fields</h4>
             <table class="params">
               <tr><th>Field</th><th>Values</th></tr>
-              <tr><td class="field">type</td><td class="rule"><code>top_up</code> &middot; <code>purchase</code> &middot; <code>refund</code> &middot; <code>bonus</code> &middot; <code>adjustment</code> &middot; <code>reward</code> &middot; <code>party_entry</code> &middot; <code>referral</code></td></tr>
+              <tr><td class="field">type</td><td class="rule"><code>top_up</code> &middot; <code>purchase</code> &middot; <code>refund</code> &middot; <code>bonus</code> &middot; <code>adjustment</code> &middot; <code>reward</code> &middot; <code>party_entry</code> &middot; <code>referral</code> &middot; <code>sponsor</code></td></tr>
               <tr><td class="field">amount</td><td class="rule">signed integer &mdash; negative for debits, positive for credits</td></tr>
             </table>
             <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">422</span></div>
@@ -1677,7 +1685,7 @@
             <h4>Query</h4>
             <table class="params">
               <tr><th>Field</th><th>Rules</th></tr>
-              <tr><td class="field">status</td><td class="rule">optional &mdash; <code>draft</code> &middot; <code>scheduled</code> &middot; <code>live</code> &middot; <code>ended</code> &middot; <code>cancelled</code></td></tr>
+              <tr><td class="field">status</td><td class="rule">optional &mdash; <code>draft</code> &middot; <code>pending_sponsorship</code> &middot; <code>scheduled</code> &middot; <code>live</code> &middot; <code>ended</code> &middot; <code>cancelled</code></td></tr>
               <tr><td class="field">per_page / cursor</td><td class="rule">pagination</td></tr>
             </table>
             <div class="note"><b>Bucketing is client-side</b>There's no separate "upcoming/past/canceled" endpoint or field &mdash; group on <code>status</code> yourself: <code>scheduled</code> (and <code>live</code>, if you want running parties surfaced as upcoming too) for Upcoming, <code>ended</code> for Past, <code>cancelled</code> for Canceled.</div>
@@ -1803,15 +1811,18 @@
               <tr><td class="field">mode<span class="req">required</span></td><td class="rule"><code>online</code> &middot; <code>hybrid</code> &middot; <code>in_person</code></td></tr>
               <tr><td class="field">visibility<span class="req">required</span></td><td class="rule"><code>public</code> &middot; <code>private</code></td></tr>
               <tr><td class="field">max_players</td><td class="rule">integer, 2&ndash;200 (default 8)</td></tr>
+              <tr><td class="field">entry_fee</td><td class="rule">integer, &ge; 0 (default 0) &mdash; tokens charged to each guest on <code>POST /parties/{id}/join</code></td></tr>
+              <tr><td class="field">sponsorship_scope</td><td class="rule">optional &mdash; <code>creation_fee</code> | <code>full_party</code>, see the Sponsorship section below</td></tr>
               <tr><td class="field">starts_at</td><td class="rule">nullable, date, on/after now</td></tr>
               <tr><td class="field">save_as_draft</td><td class="rule">boolean</td></tr>
               <tr><td class="field">location<span class="opt">required if mode is hybrid/in_person</span></td><td class="rule">object: <code>venue_name</code>, <code>address</code>, <code>latitude</code> (-90&ndash;90), <code>longitude</code> (-180&ndash;180)</td></tr>
               <tr><td class="field">tags</td><td class="rule">nullable, array, max 5 items, each max 20 chars</td></tr>
               <tr><td class="field">cover_image</td><td class="rule">nullable, image file &mdash; jpeg/png/webp, max 8MB</td></tr>
             </table>
-            <div class="note"><b>Status is derived, not sent</b><code>room_code</code> is always server-generated. Resulting <code>status</code>: <code>save_as_draft=true</code> &rarr; <code>draft</code>; else if <code>starts_at</code> is set &rarr; <code>scheduled</code>; else &rarr; <code>live</code> immediately.</div>
+            <div class="note"><b>Status is derived, not sent</b><code>room_code</code> is always server-generated. Resulting <code>status</code>: <code>sponsorship_scope</code> set &rarr; <code>pending_sponsorship</code> (takes priority over everything below); else <code>save_as_draft=true</code> &rarr; <code>draft</code>; else if <code>starts_at</code> is set &rarr; <code>scheduled</code>; else &rarr; <code>live</code> immediately.</div>
             <div class="note"><b>cover_image needs multipart, not JSON</b>Uploading a cover image means sending the whole request as <code>multipart/form-data</code> &mdash; a file can't ride inside a JSON body. Every other field above still goes in the same form-encoded request as regular fields (not JSON) when you do this. Omit <code>cover_image</code> entirely to keep sending plain JSON, same as before. The stored image is re-encoded/resized server-side (max 1600px) before <code>cover_image_url</code> is set; it's always <code>null</code> when omitted &mdash; there's no separate endpoint to add or change it after creation yet.</div>
-            <div class="note"><b>game_type_id can cost tokens</b>If the chosen game type has a non-zero <code>cost</code> (see <code>GET /game-types</code>), that amount is debited from the host's wallet as part of creating the party &mdash; a <code>party_entry</code> wallet transaction, same ledger as a pack purchase. Too little balance fails the whole request with <code>422</code> before any party is created; a free game type (<code>cost: 0</code>) or no <code>game_type_id</code> at all charges nothing.</div>
+            <div class="note"><b>game_type_id can cost tokens &mdash; unless sponsored</b>If the chosen game type has a non-zero <code>cost</code> (see <code>GET /game-types</code>), that amount is normally debited from the host's wallet as part of creating the party &mdash; a <code>party_entry</code> wallet transaction, same ledger as a pack purchase. Too little balance fails the whole request with <code>422</code> before any party is created; a free game type (<code>cost: 0</code>) or no <code>game_type_id</code> at all charges nothing. Setting <code>sponsorship_scope</code> skips this charge entirely &mdash; the host pays nothing at creation, and the fee (plus more, for <code>full_party</code>) is collected from the sponsor instead once their invite is paid. See the Sponsorship section.</div>
+            <div class="note"><b>sponsorship_scope holds the party back until a sponsor pays</b>A party created with <code>sponsorship_scope</code> set comes back with <code>status: "pending_sponsorship"</code> &mdash; it's excluded from the discover feed and can't be joined or started yet. Next, call <code>POST /parties/{party}/sponsorship-invites</code> to generate a shareable invite link; once <code>POST /sponsorship-invites/{token}/pay</code> succeeds, the party automatically advances to <code>scheduled</code> or <code>live</code> (same rule as above, based on <code>starts_at</code>) &mdash; no separate "start" call needed for this transition.</div>
             <div class="status-row"><span class="status-pill ok">201 Created</span><span class="status-pill err">401</span><span class="status-pill err">422 validation / insufficient balance</span></div>
           </div>
           <div class="endpoint-code">
@@ -1851,6 +1862,7 @@
     "mode": "online", "visibility": "public", "status": "live",
     "max_players": 8, "players_count": 1, "likes_count": 0,
     "liked_by_me": false, "joined_by_me": true,
+    "entry_fee": 0, "sponsorship": null,
     "cover_image_url": "https://api.yowimo.com/storage/parties/covers/01j...ulid....jpg",
     "host": { "id": 482, "username": "maya" }
   }
@@ -1862,6 +1874,7 @@
     <span class="tok-key">"mode"</span>: <span class="tok-str">"online"</span>, <span class="tok-key">"visibility"</span>: <span class="tok-str">"public"</span>, <span class="tok-key">"status"</span>: <span class="tok-str">"live"</span>,
     <span class="tok-key">"max_players"</span>: <span class="tok-num">8</span>, <span class="tok-key">"players_count"</span>: <span class="tok-num">1</span>, <span class="tok-key">"likes_count"</span>: <span class="tok-num">0</span>,
     <span class="tok-key">"liked_by_me"</span>: <span class="tok-bool">false</span>, <span class="tok-key">"joined_by_me"</span>: <span class="tok-bool">true</span>,
+    <span class="tok-key">"entry_fee"</span>: <span class="tok-num">0</span>, <span class="tok-key">"sponsorship"</span>: <span class="tok-null">null</span>,
     <span class="tok-key">"cover_image_url"</span>: <span class="tok-str">"https://api.yowimo.com/storage/parties/covers/01j...ulid....jpg"</span>,
     <span class="tok-key">"host"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">482</span>, <span class="tok-key">"username"</span>: <span class="tok-str">"maya"</span> }
   }
@@ -1879,12 +1892,13 @@
           <div class="endpoint-docs">
             <h4>Visibility rules</h4>
             <ul style="color:var(--text-muted); font-size:.9rem; padding-left:1.1rem; margin:.3rem 0;">
-              <li>Host always sees their own party, any status &mdash; including <code>draft</code>.</li>
+              <li>Host always sees their own party, any status &mdash; including <code>draft</code> and <code>pending_sponsorship</code>.</li>
               <li>Any <b style="color:var(--text)">current (active)</b> member can also always view it, regardless of status or visibility &mdash; so a member can see a <code>draft</code> too, and otherwise a member of a private party could never reopen its lobby after leaving the app and coming back. A <i>former</i> member (left/removed) loses this.</li>
-              <li>Otherwise, a <code>draft</code> party is visible to nobody else &mdash; not 404, <b style="color:var(--text)">403</b>.</li>
+              <li>Otherwise, a <code>draft</code> or <code>pending_sponsorship</code> party is visible to nobody else &mdash; not 404, <b style="color:var(--text)">403</b>.</li>
               <li>Otherwise visible only if <code>visibility=public</code>.</li>
             </ul>
             <div class="note"><b>room_code can be entirely absent</b>Present via a conditional field &mdash; shown to the host, or when the party is public. A non-host member of a <i>private</i> party can view the party but does not get <code>room_code</code> back in the response. In the blocked case the key is omitted from the JSON, not <code>null</code>. Check with <code>"room_code" in data</code>, not a falsy check.</div>
+            <div class="note"><b>sponsorship is null until an invite exists</b>Once a sponsorship invite has been created for the party (see the Sponsorship section), this becomes <code>{ id, scope, status, amount, sponsor }</code> &mdash; <code>sponsor</code> is <code>null</code> until someone pays, then the same public-profile shape used elsewhere (<code>id</code>, <code>username</code>, <code>display_name</code>, <code>avatar_url</code>). <code>status</code> here is the invite's own lifecycle (<code>pending</code> &middot; <code>paid</code> &middot; <code>cancelled</code> &middot; <code>expired</code>), independent of the party's <code>status</code> field.</div>
             <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403 draft/private, not yours</span><span class="status-pill err">404</span></div>
           </div>
           <div class="endpoint-code">
@@ -1906,6 +1920,8 @@
     "likes_count": 12,
     "liked_by_me": true,
     "joined_by_me": true,
+    "entry_fee": 20,
+    "sponsorship": null,
     "is_sponsored": false,
     "sponsor_name": null,
     "tags": ["friday", "chill"],
@@ -1935,6 +1951,8 @@
     <span class="tok-key">"likes_count"</span>: <span class="tok-num">12</span>,
     <span class="tok-key">"liked_by_me"</span>: <span class="tok-bool">true</span>,
     <span class="tok-key">"joined_by_me"</span>: <span class="tok-bool">true</span>,
+    <span class="tok-key">"entry_fee"</span>: <span class="tok-num">20</span>,
+    <span class="tok-key">"sponsorship"</span>: <span class="tok-null">null</span>,
     <span class="tok-key">"is_sponsored"</span>: <span class="tok-bool">false</span>,
     <span class="tok-key">"sponsor_name"</span>: <span class="tok-null">null</span>,
     <span class="tok-key">"tags"</span>: [<span class="tok-str">"friday"</span>, <span class="tok-str">"chill"</span>],
@@ -2192,7 +2210,8 @@
               <tr><td class="field">players_count &ge; max_players</td><td class="rule">409 full</td></tr>
             </table>
             <div class="note"><b>Public vs. private authorization</b>A public party can be joined by anyone by id alone. A private party requires proof of invitation &mdash; <code>room_code</code> must exactly match (case-insensitive), the same code <code>GET /parties/lookup</code> resolves. Knowing the numeric id alone (e.g. by guessing a sequential one) is not sufficient for a private party.</div>
-            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403 private, no/wrong room_code</span><span class="status-pill err">404</span><span class="status-pill err">409 full</span><span class="status-pill err">422 not joinable</span><span class="status-pill err">429</span></div>
+            <div class="note"><b>entry_fee is charged here, not on creation</b>If the party has a non-zero <code>entry_fee</code>, that amount is debited from your wallet as part of joining &mdash; a <code>party_entry</code> wallet transaction, atomic with the membership row. Too little balance fails with <code>422 Insufficient token balance.</code> before anything is created. Rejoining after having left never charges a second time &mdash; the existing (reused) membership record is itself what's checked, so this is safe to retry. The charge is skipped entirely once the party's <code>full_party</code> sponsorship has been paid (see the Sponsorship section) &mdash; <code>entry_fee</code> stays the same in the response either way, it's just not debited from you.</div>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403 private, no/wrong room_code</span><span class="status-pill err">404</span><span class="status-pill err">409 full</span><span class="status-pill err">422 not joinable / insufficient balance</span><span class="status-pill err">429</span></div>
           </div>
           <div class="endpoint-code">
             <div class="code-block"><div class="code-head"><span>cURL &mdash; public party</span><button class="copy-btn" data-copy>Copy</button></div>
@@ -2245,7 +2264,10 @@
         <p class="desc">End a live party. Host only.</p>
         <div class="meta-line"><span><b>Rate limit</b> party-actions (30/min)</span></div>
         <div class="endpoint-grid">
-          <div class="endpoint-docs"><div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403</span><span class="status-pill err">404</span><span class="status-pill err">422 wasn't live</span><span class="status-pill err">429</span></div></div>
+          <div class="endpoint-docs">
+            <div class="note"><b>Settles up unused full_party sponsorship</b>If the party's sponsorship is scope <code>full_party</code> and paid, the sponsor paid up front for every reservable guest slot (<code>max_players - 1</code>) whether or not it filled. Ending the party refunds <code>entry_fee &times; (max_players - players_count)</code> back to the sponsor &mdash; the slots that never got used. No refund if every slot filled.</div>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403</span><span class="status-pill err">404</span><span class="status-pill err">422 wasn't live</span><span class="status-pill err">429</span></div>
+          </div>
           <div class="endpoint-code"><div class="code-block"><div class="code-head"><span>Shape</span></div><pre>Full <span class="tok-str">PartyResource</span> with <span class="tok-key">status</span>: <span class="tok-str">"ended"</span>.</pre></div></div>
         </div>
       </section>
@@ -2256,7 +2278,8 @@
         <div class="meta-line"><span><b>Rate limit</b> party-actions (30/min)</span></div>
         <div class="endpoint-grid">
           <div class="endpoint-docs">
-            <div class="note"><b>Only from draft or scheduled</b>A <code>live</code> or already-<code>ended</code>/<code>cancelled</code> party can't be cancelled &mdash; use <code>end</code> for a live one. No effect on membership rows; they're untouched.</div>
+            <div class="note"><b>Only from draft, pending_sponsorship, or scheduled</b>A <code>live</code> or already-<code>ended</code>/<code>cancelled</code> party can't be cancelled &mdash; use <code>end</code> for a live one. No effect on membership rows; they're untouched.</div>
+            <div class="note"><b>Refunds everything charged for this party</b>Every guest who paid an <code>entry_fee</code> is refunded in full, and any already-paid sponsorship invite for this party is refunded to the sponsor and marked <code>cancelled</code> &mdash; nothing happened, so nothing charged for it should stick. Refresh the wallet after a cancel if the caller (or a sponsor viewing their own sponsorships) might have paid into this party. The host's own game-type creation fee, a separate pre-existing charge taken at party creation, is <i>not</i> refunded on cancel.</div>
             <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">403 non-host</span><span class="status-pill err">404</span><span class="status-pill err">422 wrong status</span><span class="status-pill err">429</span></div>
           </div>
           <div class="endpoint-code"><div class="code-block"><div class="code-head"><span>Shape</span></div><pre>Full <span class="tok-str">PartyResource</span> with <span class="tok-key">status</span>: <span class="tok-str">"cancelled"</span>, message "Party cancelled successfully."</pre></div></div>
@@ -2319,6 +2342,190 @@
 }'>{
   <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"TV pairing code issued successfully."</span>,
   <span class="tok-key">"data"</span>: { <span class="tok-key">"code"</span>: <span class="tok-str">"482913"</span>, <span class="tok-key">"expires_at"</span>: <span class="tok-str">"2026-09-30T20:04:00Z"</span> }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ SPONSORSHIP ============ -->
+      <section class="group-head" id="sponsorship"><h2>Sponsorship</h2><p>A sponsor covers a party's game-type creation fee, or the entry fee for every guest slot, by paying a shareable invite link. See <code>sponsorship_scope</code>/<code>entry_fee</code> on <code>POST /parties</code> and the <code>sponsorship</code> field on <code>GET /parties/{id}</code> above.</p></section>
+
+      <section class="endpoint" id="post-parties-sponsorship-invites">
+        <div class="endpoint-head"><span class="method post">POST</span><code class="path">/parties/{party}/sponsorship-invites</code></div>
+        <p class="desc">Generate (or re-fetch) a shareable invite link for a sponsor to pay. Host only.</p>
+        <div class="meta-line"><span><b>Rate limit</b> party-actions (30/min)</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <h4>Body</h4>
+            <table class="params"><tr><th>Field</th><th>Rules</th></tr><tr><td class="field">scope<span class="req">required</span></td><td class="rule"><code>creation_fee</code> | <code>full_party</code> &mdash; must match the party's own <code>sponsorship_scope</code></td></tr></table>
+            <h4>amount is always server-computed</h4>
+            <ul style="color:var(--text-muted); font-size:.9rem; padding-left:1.1rem; margin:.3rem 0;">
+              <li><code>creation_fee</code> &rarr; the game type's <code>cost</code> (see <code>GET /game-types</code>; <code>0</code> if the party has no game type).</li>
+              <li><code>full_party</code> &rarr; creation fee <i>plus</i> <code>entry_fee &times; (max_players - 1)</code> &mdash; every reservable guest slot, the host's own slot excluded. This is decided once, from the party's fixed capacity, not however many guests have actually joined by the time it's paid.</li>
+            </ul>
+            <div class="note"><b>Idempotent per scope</b>A pending, non-expired invite already created for this exact scope is returned as-is instead of creating a duplicate &mdash; safe to call again if the host re-opens the share sheet.</div>
+            <div class="note"><b>scope must match the party</b><code>sponsorship_scope</code> is fixed at party creation (<code>POST /parties</code>) and can't be changed here &mdash; requesting the other scope for this party fails with <code>422</code>.</div>
+            <div class="status-row"><span class="status-pill ok">201 Created</span><span class="status-pill err">401</span><span class="status-pill err">403 non-host</span><span class="status-pill err">404</span><span class="status-pill err">422 scope mismatch / not sponsorable</span><span class="status-pill err">429</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='curl -X POST https://api.yowimo.com/api/v1/parties/902/sponsorship-invites \
+  -H "Authorization: Bearer $HOST_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d &#39;{"scope":"full_party"}&#39;'><span class="tok-flag">curl -X POST</span> https://api.yowimo.com/api/v1/parties/902/sponsorship-invites \
+  -H <span class="tok-str">"Authorization: Bearer $HOST_TOKEN"</span> \
+  -H <span class="tok-str">"Content-Type: application/json"</span> \
+  -d <span class="tok-str">'{"scope":"full_party"}'</span></pre>
+            </div>
+            <div class="code-block">
+              <div class="code-head"><span>201 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": true,
+  "message": "Sponsorship invite created successfully.",
+  "data": {
+    "token": "01J...ulid...",
+    "url": "https://yowimo.app/s/01J...ulid...",
+    "scope": "full_party",
+    "amount": 160,
+    "status": "pending",
+    "expires_at": "2026-10-14T12:00:00Z",
+    "party": {
+      "id": 902, "title": "Friday chaos", "max_players": 8, "entry_fee": 20,
+      "cover_image_url": null, "gradient": ["#F0A83C", "#B23A34"],
+      "host": { "id": 482, "username": "maya", "display_name": "Maya", "avatar_url": null, "xp": 1250 }
+    }
+  }
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>,
+  <span class="tok-key">"message"</span>: <span class="tok-str">"Sponsorship invite created successfully."</span>,
+  <span class="tok-key">"data"</span>: {
+    <span class="tok-key">"token"</span>: <span class="tok-str">"01J...ulid..."</span>,
+    <span class="tok-key">"url"</span>: <span class="tok-str">"https://yowimo.app/s/01J...ulid..."</span>,
+    <span class="tok-key">"scope"</span>: <span class="tok-str">"full_party"</span>,
+    <span class="tok-key">"amount"</span>: <span class="tok-num">160</span>,
+    <span class="tok-key">"status"</span>: <span class="tok-str">"pending"</span>,
+    <span class="tok-key">"expires_at"</span>: <span class="tok-str">"2026-10-14T12:00:00Z"</span>,
+    <span class="tok-key">"party"</span>: {
+      <span class="tok-key">"id"</span>: <span class="tok-num">902</span>, <span class="tok-key">"title"</span>: <span class="tok-str">"Friday chaos"</span>, <span class="tok-key">"max_players"</span>: <span class="tok-num">8</span>, <span class="tok-key">"entry_fee"</span>: <span class="tok-num">20</span>,
+      <span class="tok-key">"cover_image_url"</span>: <span class="tok-null">null</span>, <span class="tok-key">"gradient"</span>: [<span class="tok-str">"#F0A83C"</span>, <span class="tok-str">"#B23A34"</span>],
+      <span class="tok-key">"host"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">482</span>, <span class="tok-key">"username"</span>: <span class="tok-str">"maya"</span>, <span class="tok-key">"display_name"</span>: <span class="tok-str">"Maya"</span>, <span class="tok-key">"avatar_url"</span>: <span class="tok-null">null</span>, <span class="tok-key">"xp"</span>: <span class="tok-num">1250</span> }
+    }
+  }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="get-sponsorship-invites-token">
+        <div class="endpoint-head"><span class="method get">GET</span><code class="path">/sponsorship-invites/{token}</code></div>
+        <p class="desc">Resolve an invite link for display before paying &mdash; e.g. the screen a sponsor lands on from <code>https://yowimo.app/s/{token}</code> or <code>yowimo://sponsor/{token}</code>.</p>
+        <div class="meta-line"><span><b>Rate limit</b> api</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <p>Open to any authenticated user, not just the eventual sponsor &mdash; a valid token is its own authorization, the same way a party's room code is. Same response shape as <code>POST /parties/{party}/sponsorship-invites</code> above.</p>
+            <div class="note"><b>status can read as expired without a background job</b>An invite past its <code>expires_at</code> still sitting as <code>pending</code> reads back here as <code>status: "expired"</code> &mdash; there's no separate "has this expired" check to run yourself.</div>
+            <div class="note"><b>The https link needs universal links configured to open the app directly</b>Until that's set up, <code>https://yowimo.app/s/{token}</code> opens a web fallback; <code>yowimo://sponsor/{token}</code> deep-links straight in today. Both resolve to the same invite via this endpoint once you're in the app.</div>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">404 unknown token</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='curl https://api.yowimo.com/api/v1/sponsorship-invites/01J...ulid... \
+  -H "Authorization: Bearer $TOKEN"'><span class="tok-flag">curl</span> https://api.yowimo.com/api/v1/sponsorship-invites/01J...ulid... \
+  -H <span class="tok-str">"Authorization: Bearer $TOKEN"</span></pre>
+            </div>
+            <div class="code-block"><div class="code-head"><span>Shape</span></div><pre>Same shape as <span class="tok-str">POST /parties/{party}/sponsorship-invites</span> above, message "Sponsorship invite retrieved successfully."</pre></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="post-sponsorship-invites-pay">
+        <div class="endpoint-head"><span class="method post">POST</span><code class="path">/sponsorship-invites/{token}/pay</code></div>
+        <p class="desc">Pay the invite: debits the sponsor's wallet and activates the party if it was waiting on this exact sponsorship.</p>
+        <div class="meta-line"><span><b>Rate limit</b> purchases (10/min)</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <h4>Headers</h4>
+            <table class="params"><tr><th>Header</th><th>Rules</th></tr><tr><td class="field">Idempotency-Key<span class="req">required</span></td><td class="rule">same mechanism as a token bundle/pack purchase</td></tr></table>
+            <h4>Fails when</h4>
+            <table class="params">
+              <tr><th>Condition</th><th>Status</th></tr>
+              <tr><td class="field">caller is the party's host</td><td class="rule">422 &mdash; "You can't sponsor your own party."</td></tr>
+              <tr><td class="field">invite isn't pending (already paid, cancelled, or expired)</td><td class="rule">422 &mdash; "This sponsorship invite is no longer available."</td></tr>
+              <tr><td class="field">insufficient balance</td><td class="rule">422 &mdash; "Insufficient token balance." (same message the app already matches elsewhere)</td></tr>
+            </table>
+            <div class="note"><b>Debits a new sponsor wallet transaction</b>Writes a <code>sponsor</code>-type wallet transaction (see the Wallet transaction <code>type</code> enum above), referencing the party. If paying this invite is what the party was waiting on, it automatically advances from <code>pending_sponsorship</code> to <code>scheduled</code> or <code>live</code> &mdash; nobody needs to separately call <code>POST /parties/{party}/start</code> for this transition.</div>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">404 unknown token</span><span class="status-pill err">422 host / not pending / insufficient balance</span><span class="status-pill err">429</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>cURL</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='curl -X POST https://api.yowimo.com/api/v1/sponsorship-invites/01J...ulid.../pay \
+  -H "Authorization: Bearer $SPONSOR_TOKEN" \
+  -H "Idempotency-Key: 2c9f...-71ab"'><span class="tok-flag">curl -X POST</span> https://api.yowimo.com/api/v1/sponsorship-invites/01J...ulid.../pay \
+  -H <span class="tok-str">"Authorization: Bearer $SPONSOR_TOKEN"</span> \
+  -H <span class="tok-str">"Idempotency-Key: 2c9f...-71ab"</span></pre>
+            </div>
+            <div class="code-block"><div class="code-head"><span>Shape</span></div><pre>Same invite shape as above with <span class="tok-key">status</span>: <span class="tok-str">"paid"</span> and <span class="tok-key">sponsor</span> populated on the party's <span class="tok-key">sponsorship</span> field (see <span class="tok-str">GET /parties/{id}</span>), message "Sponsorship invite paid successfully."</pre></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="get-sponsors-me">
+        <div class="endpoint-head"><span class="method get">GET</span><code class="path">/sponsors/me</code></div>
+        <p class="desc">The caller's own sponsorship totals. There's no separate sponsor entity &mdash; a "sponsor" is just whichever user paid an invite, under their own profile.</p>
+        <div class="meta-line"><span><b>Rate limit</b> api</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <p><code>players_covered</code> counts guest slots from <code>full_party</code> sponsorships only (<code>max_players - 1</code> each) &mdash; a <code>creation_fee</code> sponsorship covers no player slots, so it only adds to <code>parties_count</code>/<code>tokens_spent</code>. Only <code>paid</code> invites count; a pending one you haven't paid yet doesn't.</p>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": true,
+  "message": "Sponsor summary retrieved successfully.",
+  "data": { "players_covered": 23, "parties_count": 4, "tokens_spent": 540 }
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>,
+  <span class="tok-key">"message"</span>: <span class="tok-str">"Sponsor summary retrieved successfully."</span>,
+  <span class="tok-key">"data"</span>: { <span class="tok-key">"players_covered"</span>: <span class="tok-num">23</span>, <span class="tok-key">"parties_count"</span>: <span class="tok-num">4</span>, <span class="tok-key">"tokens_spent"</span>: <span class="tok-num">540</span> }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="endpoint" id="get-sponsors-me-sponsorships">
+        <div class="endpoint-head"><span class="method get">GET</span><code class="path">/sponsors/me/sponsorships</code></div>
+        <p class="desc">The caller's paid sponsorships, newest first.</p>
+        <div class="meta-line"><span><b>Rate limit</b> api</span></div>
+        <div class="endpoint-grid">
+          <div class="endpoint-docs">
+            <h4>Query</h4>
+            <table class="params"><tr><th>Field</th><th>Rules</th></tr><tr><td class="field">per_page / cursor</td><td class="rule">pagination</td></tr></table>
+            <p>Only <code>paid</code> invites are listed here &mdash; a pending or expired one you created but never paid won't show up. <code>covered_guest_count</code> is <code>0</code> for a <code>creation_fee</code> sponsorship.</p>
+            <div class="status-row"><span class="status-pill ok">200 OK</span><span class="status-pill err">401</span><span class="status-pill err">422</span></div>
+          </div>
+          <div class="endpoint-code">
+            <div class="code-block">
+              <div class="code-head"><span>200 Response</span><button class="copy-btn" data-copy>Copy</button></div>
+              <pre data-raw='{
+  "success": true, "message": "Sponsorships retrieved successfully.",
+  "data": [
+    { "id": 61, "status": "paid", "covered_guest_count": 7, "tokens_spent": 160, "paid_at": "2026-10-11T12:05:00Z", "party": { "id": 902, "title": "Friday chaos", "status": "live", "...": "..." } }
+  ],
+  "meta": { "per_page": 20, "has_more_pages": false, "next_cursor": null, "prev_cursor": null }
+}'>{
+  <span class="tok-key">"success"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"Sponsorships retrieved successfully."</span>,
+  <span class="tok-key">"data"</span>: [
+    { <span class="tok-key">"id"</span>: <span class="tok-num">61</span>, <span class="tok-key">"status"</span>: <span class="tok-str">"paid"</span>, <span class="tok-key">"covered_guest_count"</span>: <span class="tok-num">7</span>, <span class="tok-key">"tokens_spent"</span>: <span class="tok-num">160</span>, <span class="tok-key">"paid_at"</span>: <span class="tok-str">"2026-10-11T12:05:00Z"</span>, <span class="tok-key">"party"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">902</span>, <span class="tok-key">"title"</span>: <span class="tok-str">"Friday chaos"</span>, <span class="tok-key">"status"</span>: <span class="tok-str">"live"</span>, <span class="tok-key">"..."</span>: <span class="tok-str">"..."</span> } }
+  ],
+  <span class="tok-key">"meta"</span>: { <span class="tok-key">"per_page"</span>: <span class="tok-num">20</span>, <span class="tok-key">"has_more_pages"</span>: <span class="tok-bool">false</span>, <span class="tok-key">"next_cursor"</span>: <span class="tok-null">null</span>, <span class="tok-key">"prev_cursor"</span>: <span class="tok-null">null</span> }
 }</pre>
             </div>
           </div>

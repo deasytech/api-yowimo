@@ -12,6 +12,7 @@ use App\Exceptions\Api\DuplicateVoteException;
 use App\Exceptions\Api\GameSessionAlreadyActiveException;
 use App\Exceptions\Api\GameSessionNotActiveException;
 use App\Exceptions\Api\GameSessionPackUnavailableException;
+use App\Exceptions\Api\HostCannotSponsorOwnPartyException;
 use App\Exceptions\Api\IdempotencyKeyConflictException;
 use App\Exceptions\Api\InsufficientWalletBalanceException;
 use App\Exceptions\Api\InvalidAdMobSsvSignatureException;
@@ -31,6 +32,9 @@ use App\Exceptions\Api\PartyNotJoinableException;
 use App\Exceptions\Api\PaymentDeclinedException;
 use App\Exceptions\Api\ReferralAlreadyClaimedException;
 use App\Exceptions\Api\SelfReferralException;
+use App\Exceptions\Api\SponsorshipAmountZeroException;
+use App\Exceptions\Api\SponsorshipInviteNotPendingException;
+use App\Exceptions\Api\SponsorshipScopeMismatchException;
 use App\Exceptions\Api\TurnNotActiveException;
 use App\Exceptions\Api\UserBlockedException;
 use App\Exceptions\Api\VotingNotAllowedException;
@@ -64,6 +68,7 @@ class ApiExceptionRegistrar
         self::registerVideoExceptions($exceptions);
         self::registerAdRewardExceptions($exceptions);
         self::registerReferralExceptions($exceptions);
+        self::registerSponsorshipExceptions($exceptions);
         self::registerGenericHttpExceptions($exceptions);
     }
 
@@ -374,6 +379,45 @@ class ApiExceptionRegistrar
             $exceptions,
             SelfReferralException::class,
             fn (SelfReferralException $e) => ApiResponse::error(
+                $e->getMessage(),
+                status: 422
+            )
+        );
+    }
+
+    private static function registerSponsorshipExceptions(Exceptions $exceptions): void
+    {
+        self::registerHandler(
+            $exceptions,
+            SponsorshipAmountZeroException::class,
+            fn (SponsorshipAmountZeroException $e) => ApiResponse::error(
+                $e->getMessage(),
+                status: 422
+            )
+        );
+
+        self::registerHandler(
+            $exceptions,
+            HostCannotSponsorOwnPartyException::class,
+            fn (HostCannotSponsorOwnPartyException $e) => ApiResponse::error(
+                $e->getMessage(),
+                status: 422
+            )
+        );
+
+        self::registerHandler(
+            $exceptions,
+            SponsorshipInviteNotPendingException::class,
+            fn (SponsorshipInviteNotPendingException $e) => ApiResponse::error(
+                $e->getMessage(),
+                status: 422
+            )
+        );
+
+        self::registerHandler(
+            $exceptions,
+            SponsorshipScopeMismatchException::class,
+            fn (SponsorshipScopeMismatchException $e) => ApiResponse::error(
                 $e->getMessage(),
                 status: 422
             )

@@ -40,7 +40,7 @@ class PartyService
     public function list(array $filters, ?User $viewer): CursorPaginator
     {
         return Party::query()
-            ->with(['host', 'gameType', 'pack'])
+            ->with(['host', 'gameType', 'pack', 'sponsorshipInvites.sponsor'])
             ->when($viewer, fn ($query) => $query->withExists([
                 'likes as viewer_has_liked' => fn ($query) => $query->where('user_id', $viewer->id),
                 'activeMembers as viewer_is_member' => fn ($query) => $query->where('user_id', $viewer->id),
@@ -72,7 +72,7 @@ class PartyService
     public function listHostedBy(User $host, array $filters): CursorPaginator
     {
         return Party::query()
-            ->with(['host', 'gameType', 'pack'])
+            ->with(['host', 'gameType', 'pack', 'sponsorshipInvites.sponsor'])
             ->where('host_id', $host->id)
             ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
             ->orderByDesc('created_at')
@@ -95,7 +95,7 @@ class PartyService
     public function listJoinedBy(User $user, array $filters): CursorPaginator
     {
         return PartyMember::query()
-            ->with(['party.host', 'party.gameType', 'party.pack'])
+            ->with(['party.host', 'party.gameType', 'party.pack', 'party.sponsorshipInvites.sponsor'])
             ->where('user_id', $user->id)
             ->whereHas('party', fn ($query) => $query->where('host_id', '!=', $user->id))
             ->when($filters['membership_status'] ?? null, fn ($query, $status) => $query->where('status', $status))
@@ -110,7 +110,7 @@ class PartyService
     public function find(int $id, ?User $viewer): Party
     {
         return Party::query()
-            ->with(['host', 'gameType', 'pack'])
+            ->with(['host', 'gameType', 'pack', 'sponsorshipInvites.sponsor'])
             ->when($viewer, fn ($query) => $query->withExists([
                 'likes as viewer_has_liked' => fn ($query) => $query->where('user_id', $viewer->id),
                 'activeMembers as viewer_is_member' => fn ($query) => $query->where('user_id', $viewer->id),
@@ -131,7 +131,7 @@ class PartyService
     public function findByRoomCode(string $roomCode, ?User $viewer): Party
     {
         return Party::query()
-            ->with(['host', 'gameType', 'pack'])
+            ->with(['host', 'gameType', 'pack', 'sponsorshipInvites.sponsor'])
             ->when($viewer, fn ($query) => $query->withExists([
                 'likes as viewer_has_liked' => fn ($query) => $query->where('user_id', $viewer->id),
                 'activeMembers as viewer_is_member' => fn ($query) => $query->where('user_id', $viewer->id),
@@ -174,7 +174,7 @@ class PartyService
                     $party = $this->attemptInsert($host, $data, $this->roomCodes->generate(), $coverImagePath);
                 }
 
-                return $party->load(['host', 'gameType', 'pack']);
+                return $party->load(['host', 'gameType', 'pack', 'sponsorshipInvites.sponsor']);
             });
         } catch (Throwable $exception) {
             // The upload already committed to disk before the transaction
@@ -213,6 +213,8 @@ class PartyService
             'status' => $this->resolveStatus($data),
             'max_players' => $data['max_players'] ?? 8,
             'players_count' => 1,
+            'entry_fee' => $data['entry_fee'] ?? 0,
+            'sponsorship_scope' => $data['sponsorship_scope'] ?? null,
             'starts_at' => $data['starts_at'] ?? null,
             'location' => $data['location'] ?? null,
             'tags' => $data['tags'] ?? [],
@@ -226,7 +228,12 @@ class PartyService
             'joined_at' => now(),
         ]);
 
-        $this->chargePartyEntry($host, $party, $data['game_type_id'] ?? null);
+        // A sponsored party's creation fee is covered by the sponsor invite
+        // instead (see SponsorshipService::createInvite()/pay()), not the
+        // host — charging both would double-bill the same fee.
+        if (empty($data['sponsorship_scope'])) {
+            $this->chargePartyEntry($host, $party, $data['game_type_id'] ?? null);
+        }
 
         PartyCreated::dispatch($party->id, $host->id);
 
@@ -307,7 +314,7 @@ class PartyService
         $party->fill($changes);
         $party->save();
 
-        return $party->load(['host', 'gameType', 'pack']);
+        return $party->load(['host', 'gameType', 'pack', 'sponsorshipInvites.sponsor']);
     }
 
     /**
@@ -387,6 +394,13 @@ class PartyService
      */
     private function resolveStatus(array $data): PartyStatus
     {
+        // Sponsorship takes priority over save_as_draft: requesting a
+        // sponsor means the host intends to actually run the party, just
+        // not until it's paid for — it isn't an ordinary incomplete draft.
+        if (! empty($data['sponsorship_scope'])) {
+            return PartyStatus::PendingSponsorship;
+        }
+
         if ($data['save_as_draft'] ?? false) {
             return PartyStatus::Draft;
         }

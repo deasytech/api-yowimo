@@ -107,7 +107,7 @@ class AccountDeletionService
     {
         Party::query()
             ->where('host_id', $user->id)
-            ->whereIn('status', [PartyStatus::Draft, PartyStatus::Scheduled, PartyStatus::Live])
+            ->whereIn('status', [PartyStatus::Draft, PartyStatus::PendingSponsorship, PartyStatus::Scheduled, PartyStatus::Live])
             ->get()
             ->each(fn (Party $party) => $party->status === PartyStatus::Live
                 ? $this->memberships->end($party)
