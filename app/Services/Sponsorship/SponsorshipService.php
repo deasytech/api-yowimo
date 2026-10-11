@@ -260,7 +260,9 @@ class SponsorshipService
      */
     public function refundUnusedFullPartySponsorship(Party $party): void
     {
-        if ($party->sponsorship_scope !== SponsorshipScope::FullParty) {
+        $guestSlots = max($party->max_players - 1, 0);
+
+        if ($party->sponsorship_scope !== SponsorshipScope::FullParty || $guestSlots <= 0) {
             return;
         }
 
@@ -272,12 +274,6 @@ class SponsorshipService
             ->first();
 
         if (! $invite || ! $invite->sponsor) {
-            return;
-        }
-
-        $guestSlots = max($party->max_players - 1, 0);
-
-        if ($guestSlots <= 0) {
             return;
         }
 
