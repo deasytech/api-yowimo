@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Users\Schemas;
 
 use App\Enums\UserStatus;
+use App\Support\Countries;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -43,8 +44,11 @@ class UserForm
                         Textarea::make('bio')
                             ->rows(3)
                             ->columnSpanFull(),
-                        TextInput::make('country_code')
-                            ->maxLength(2),
+                        Select::make('country_code')
+                            ->label('Country')
+                            ->options(Countries::options())
+                            ->searchable()
+                            ->native(false),
                     ]),
 
                 Section::make('Account')
@@ -61,6 +65,12 @@ class UserForm
                         Toggle::make('is_admin')
                             ->label('Admin access')
                             ->helperText('Grants access to this admin panel.'),
+                        TextInput::make('password')
+                            ->password()
+                            ->revealable()
+                            ->maxLength(255)
+                            ->dehydrated(fn (?string $state): bool => filled($state))
+                            ->helperText('Leave blank to keep the current password.'),
                     ]),
             ]);
     }
