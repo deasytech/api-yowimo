@@ -76,6 +76,7 @@ class BadgeColors
     {
         return match ($state) {
             PartyStatus::Draft => 'gray',
+            PartyStatus::PendingSponsorship => 'warning',
             PartyStatus::Scheduled => 'info',
             PartyStatus::Live => 'success',
             PartyStatus::Ended => 'gray',
@@ -96,8 +97,11 @@ class BadgeColors
         return match ($state) {
             WalletTransactionType::TopUp,
             WalletTransactionType::Bonus,
-            WalletTransactionType::Reward => 'success',
-            WalletTransactionType::Purchase => 'info',
+            WalletTransactionType::Reward,
+            WalletTransactionType::Referral => 'success',
+            WalletTransactionType::Purchase,
+            WalletTransactionType::PartyEntry,
+            WalletTransactionType::Sponsor => 'info',
             WalletTransactionType::Refund => 'warning',
             WalletTransactionType::Adjustment => 'gray',
         };
