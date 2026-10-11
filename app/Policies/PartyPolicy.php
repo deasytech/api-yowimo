@@ -30,7 +30,8 @@ class PartyPolicy
             return true;
         }
 
-        return $party->status !== PartyStatus::Draft && $party->visibility === PartyVisibility::Public;
+        return ! in_array($party->status, [PartyStatus::Draft, PartyStatus::PendingSponsorship], true)
+            && $party->visibility === PartyVisibility::Public;
     }
 
     /**
@@ -141,6 +142,16 @@ class PartyPolicy
      * Determine whether the user can cancel the party. Host-only.
      */
     public function cancel(User $user, Party $party): bool
+    {
+        return $party->host_id === $user->id;
+    }
+
+    /**
+     * Determine whether the user can create a sponsorship invite link for
+     * the party. Host-only — only the host decides whether their party is
+     * sponsored and for which scope.
+     */
+    public function createSponsorshipInvite(User $user, Party $party): bool
     {
         return $party->host_id === $user->id;
     }

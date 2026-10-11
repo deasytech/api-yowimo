@@ -5,6 +5,7 @@ namespace App\Enums;
 enum PartyStatus: string
 {
     case Draft = 'draft';
+    case PendingSponsorship = 'pending_sponsorship';
     case Scheduled = 'scheduled';
     case Live = 'live';
     case Ended = 'ended';

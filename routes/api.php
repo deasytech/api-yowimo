@@ -25,6 +25,8 @@ use App\Http\Controllers\Api\V1\PaystackWebhookController;
 use App\Http\Controllers\Api\V1\PushTokenController;
 use App\Http\Controllers\Api\V1\ReactionController;
 use App\Http\Controllers\Api\V1\ReferralController;
+use App\Http\Controllers\Api\V1\SponsorController;
+use App\Http\Controllers\Api\V1\SponsorshipInviteController;
 use App\Http\Controllers\Api\V1\TokenBundleController;
 use App\Http\Controllers\Api\V1\TokenBundlePurchaseController;
 use App\Http\Controllers\Api\V1\TurnActionController;
@@ -91,6 +93,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/parties/{party}/start', [PartyMembershipController::class, 'start'])->middleware('throttle:party-actions');
         Route::post('/parties/{party}/end', [PartyMembershipController::class, 'end'])->middleware('throttle:party-actions');
         Route::post('/parties/{party}/cancel', [PartyMembershipController::class, 'cancel'])->middleware('throttle:party-actions');
+        Route::post('/parties/{party}/sponsorship-invites', [SponsorshipInviteController::class, 'store'])->middleware('throttle:party-actions');
         Route::post('/parties/{party}/video-token', [PartyVideoController::class, 'token'])->middleware('throttle:party-actions');
         Route::get('/parties/{party}/tv-pairing-code', [PartyTvPairingController::class, 'show']);
         Route::post('/parties/{party}/game/start', [GameSessionController::class, 'start'])->middleware('throttle:party-actions');
@@ -123,6 +126,12 @@ Route::prefix('v1')->group(function () {
         Route::get('/blocks', [BlockController::class, 'index']);
         Route::post('/blocks', [BlockController::class, 'store'])->middleware('throttle:friend-requests');
         Route::delete('/blocks/{user}', [BlockController::class, 'destroy'])->whereNumber('user')->middleware('throttle:friend-requests');
+
+        Route::get('/sponsors/me', [SponsorController::class, 'me']);
+        Route::get('/sponsors/me/sponsorships', [SponsorController::class, 'sponsorships']);
+
+        Route::get('/sponsorship-invites/{token}', [SponsorshipInviteController::class, 'show']);
+        Route::post('/sponsorship-invites/{token}/pay', [SponsorshipInviteController::class, 'pay'])->middleware('throttle:purchases');
     });
 
     Route::post('/webhooks/clerk', ClerkWebhookController::class)->middleware('throttle:webhooks');

@@ -81,4 +81,13 @@ return [
         'reward_amount' => env('REFERRAL_REWARD_AMOUNT', 20),
     ],
 
+    'sponsorship' => [
+        // Base for the sponsor invite link returned in SponsorshipInviteResource
+        // (https://yowimo.app/s/{token}) — until universal links are set up this
+        // won't open the app, but the token itself still resolves via
+        // GET /sponsorship-invites/{token} either way.
+        'web_url' => env('SPONSORSHIP_WEB_URL', 'https://yowimo.app/s'),
+        'invite_ttl_hours' => env('SPONSORSHIP_INVITE_TTL_HOURS', 72),
+    ],
+
 ];

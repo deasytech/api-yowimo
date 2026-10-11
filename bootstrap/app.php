@@ -8,6 +8,7 @@ use App\Exceptions\Api\DuplicateVoteException;
 use App\Exceptions\Api\GameSessionAlreadyActiveException;
 use App\Exceptions\Api\GameSessionNotActiveException;
 use App\Exceptions\Api\GameSessionPackUnavailableException;
+use App\Exceptions\Api\HostCannotSponsorOwnPartyException;
 use App\Exceptions\Api\IdempotencyKeyConflictException;
 use App\Exceptions\Api\InsufficientWalletBalanceException;
 use App\Exceptions\Api\InvalidAdMobSsvSignatureException;
@@ -26,6 +27,8 @@ use App\Exceptions\Api\PartyNotJoinableException;
 use App\Exceptions\Api\PaymentDeclinedException;
 use App\Exceptions\Api\ReferralAlreadyClaimedException;
 use App\Exceptions\Api\SelfReferralException;
+use App\Exceptions\Api\SponsorshipInviteNotPendingException;
+use App\Exceptions\Api\SponsorshipScopeMismatchException;
 use App\Exceptions\Api\TurnNotActiveException;
 use App\Exceptions\Api\UserBlockedException;
 use App\Exceptions\Api\VotingNotAllowedException;
@@ -92,6 +95,9 @@ return Application::configure(basePath: dirname(__DIR__))
             InvalidReferralCodeException::class,
             ReferralAlreadyClaimedException::class,
             SelfReferralException::class,
+            HostCannotSponsorOwnPartyException::class,
+            SponsorshipInviteNotPendingException::class,
+            SponsorshipScopeMismatchException::class,
         ]);
 
         ApiExceptionRegistrar::register($exceptions);

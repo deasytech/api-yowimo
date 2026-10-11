@@ -4,6 +4,7 @@ namespace App\Http\Requests\Api\V1;
 
 use App\Enums\PartyMode;
 use App\Enums\PartyVisibility;
+use App\Enums\SponsorshipScope;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -27,6 +28,8 @@ class StorePartyRequest extends FormRequest
             'mode' => ['required', Rule::enum(PartyMode::class)],
             'visibility' => ['required', Rule::enum(PartyVisibility::class)],
             'max_players' => ['sometimes', 'integer', 'min:2', 'max:200'],
+            'entry_fee' => ['sometimes', 'integer', 'min:0'],
+            'sponsorship_scope' => ['sometimes', 'nullable', Rule::enum(SponsorshipScope::class)],
             'starts_at' => ['sometimes', 'nullable', 'date', 'after_or_equal:now'],
             'save_as_draft' => ['sometimes', 'boolean'],
             'cover_image' => ['sometimes', 'nullable', 'image', 'mimes:jpeg,png,webp', 'max:8192'],

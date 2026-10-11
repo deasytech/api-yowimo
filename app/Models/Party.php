@@ -6,6 +6,8 @@ use App\Enums\PartyMemberStatus;
 use App\Enums\PartyMode;
 use App\Enums\PartyStatus;
 use App\Enums\PartyVisibility;
+use App\Enums\SponsorshipInviteStatus;
+use App\Enums\SponsorshipScope;
 use Database\Factories\PartyFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -27,6 +29,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'max_players',
     'players_count',
     'likes_count',
+    'entry_fee',
+    'sponsorship_scope',
     'starts_at',
     'location',
     'tags',
@@ -52,6 +56,8 @@ class Party extends Model
             'max_players' => 'integer',
             'players_count' => 'integer',
             'likes_count' => 'integer',
+            'entry_fee' => 'integer',
+            'sponsorship_scope' => SponsorshipScope::class,
             'starts_at' => 'datetime',
             'location' => 'array',
             'tags' => 'array',
@@ -117,6 +123,32 @@ class Party extends Model
     public function gameSessions(): HasMany
     {
         return $this->hasMany(GameSession::class);
+    }
+
+    /**
+     * @return HasMany<SponsorshipInvite, $this>
+     */
+    public function sponsorshipInvites(): HasMany
+    {
+        return $this->hasMany(SponsorshipInvite::class);
+    }
+
+    /**
+     * The invite that currently represents this party's sponsorship state
+     * for API responses: the paid one if there is one, otherwise the most
+     * recently created (e.g. still pending, or expired/cancelled with no
+     * successor yet). Null if sponsorship was never requested or no invite
+     * has been created yet. Works off the loaded relation when available so
+     * callers can eager-load sponsorshipInvites to avoid N+1 across a list.
+     */
+    public function currentSponsorshipInvite(): ?SponsorshipInvite
+    {
+        $invites = $this->relationLoaded('sponsorshipInvites')
+            ? $this->sponsorshipInvites
+            : $this->sponsorshipInvites()->get();
+
+        return $invites->first(fn (SponsorshipInvite $invite) => $invite->status === SponsorshipInviteStatus::Paid)
+            ?? $invites->sortByDesc('created_at')->first();
     }
 
     public function isLikedBy(?User $user): bool
