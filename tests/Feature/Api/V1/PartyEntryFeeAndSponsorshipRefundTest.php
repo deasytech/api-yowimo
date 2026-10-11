@@ -48,6 +48,14 @@ function fundWalletWith(User $user, int $balance): Wallet
     return $wallet;
 }
 
+function cancelPartyAsHost(string $hostToken, Party $party): void
+{
+    test()->withHeader('Authorization', "Bearer {$hostToken}")
+        ->postJson(entryFeeCancelEndpoint($party))
+        ->assertStatus(200)
+        ->assertJsonPath('data.status', 'cancelled');
+}
+
 it('charges the correct party on join and records a transaction', function (int $entryFee, ?string $scope, bool $hostPays, WalletTransactionType $type) {
     $host = User::factory()->create();
     $party = Party::factory()->create([
@@ -213,10 +221,7 @@ it('refunds the guest and the sponsor when the host cancels', function () {
         'expires_at' => now()->addDay(),
     ]);
 
-    $this->withHeader('Authorization', "Bearer {$hostToken}")
-        ->postJson(entryFeeCancelEndpoint($party))
-        ->assertStatus(200)
-        ->assertJsonPath('data.status', 'cancelled');
+    cancelPartyAsHost($hostToken, $party);
 
     expect($guest->wallet->fresh()->balance)->toBe(50);
     expect($sponsor->wallet->fresh()->balance)->toBe(100);
@@ -245,10 +250,7 @@ it('refunds the host for covered free-party guests on cancel, but not their own 
     app(WalletService::class)->debit($host, 10, WalletTransactionType::FreePartyGuestCost, reference: $party, idempotencyKey: "party-entry-host-{$party->id}-{$guest->id}");
     expect($host->wallet->fresh()->balance)->toBe(60);
 
-    $this->withHeader('Authorization', "Bearer {$hostToken}")
-        ->postJson(entryFeeCancelEndpoint($party))
-        ->assertStatus(200)
-        ->assertJsonPath('data.status', 'cancelled');
+    cancelPartyAsHost($hostToken, $party);
 
     // The 10-token free-party guest cost comes back; the 30-token creation fee does not.
     expect($host->wallet->fresh()->balance)->toBe(70);
@@ -274,10 +276,7 @@ it('does not refund the hosts own game-type creation fee when they cancel an uns
     expect($host->wallet->fresh()->balance)->toBe(70);
     $party = Party::findOrFail($response->json('data.id'));
 
-    $this->withHeader('Authorization', "Bearer {$hostToken}")
-        ->postJson(entryFeeCancelEndpoint($party))
-        ->assertStatus(200)
-        ->assertJsonPath('data.status', 'cancelled');
+    cancelPartyAsHost($hostToken, $party);
 
     expect($host->wallet->fresh()->balance)->toBe(70);
 });
