@@ -13,4 +13,5 @@ enum WalletTransactionType: string
     case PartyEntry = 'party_entry';
     case Referral = 'referral';
     case Sponsor = 'sponsor';
+    case FreePartyGuestCost = 'free_party_guest_cost';
 }

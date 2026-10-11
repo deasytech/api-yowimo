@@ -88,6 +88,12 @@ return [
         // GET /sponsorship-invites/{token} either way.
         'web_url' => env('SPONSORSHIP_WEB_URL', 'https://yowimo.app/s'),
         'invite_ttl_hours' => env('SPONSORSHIP_INVITE_TTL_HOURS', 72),
+
+        // Stand-in for entry_fee in the full_party formula (and what the
+        // host is charged per guest) when a party is free — a free party's
+        // entry_fee (0) can't represent the per-guest cost the way a paid
+        // party's does.
+        'per_guest_cost' => env('SPONSORSHIP_FULL_PARTY_PER_GUEST_COST', 10),
     ],
 
 ];

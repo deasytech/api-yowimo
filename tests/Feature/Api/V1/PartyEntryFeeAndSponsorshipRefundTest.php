@@ -40,6 +40,17 @@ function entryFeeEndEndpoint(Party $party): string
     return "/api/v1/parties/{$party->id}/end";
 }
 
+function createEntryFeeParty(User $host, array $overrides = []): Party
+{
+    return Party::factory()->create(array_replace([
+        'host_id' => $host->id,
+        'visibility' => PartyVisibility::Public,
+        'status' => PartyStatus::Live,
+        'entry_fee' => 0,
+        'players_count' => 1,
+    ], $overrides));
+}
+
 function fundWalletWith(User $user, int $balance): Wallet
 {
     $wallet = Wallet::factory()->create(['user_id' => $user->id, 'balance' => $balance]);
@@ -48,67 +59,79 @@ function fundWalletWith(User $user, int $balance): Wallet
     return $wallet;
 }
 
-it('charges the guest the entry fee on join and records a party_entry transaction', function () {
+function cancelPartyAsHost(string $hostToken, Party $party): void
+{
+    test()->withHeader('Authorization', "Bearer {$hostToken}")
+        ->postJson(entryFeeCancelEndpoint($party))
+        ->assertStatus(200)
+        ->assertJsonPath('data.status', 'cancelled');
+}
+
+it('charges the correct party on join and records a transaction', function (int $entryFee, ?string $scope, bool $hostPays, WalletTransactionType $type) {
     $host = User::factory()->create();
-    $party = Party::factory()->create([
-        'host_id' => $host->id,
-        'visibility' => PartyVisibility::Public,
-        'status' => PartyStatus::Live,
-        'entry_fee' => 10,
-        'players_count' => 1,
+    $party = createEntryFeeParty($host, [
+        'entry_fee' => $entryFee,
+        'sponsorship_scope' => $scope,
     ]);
 
-    $token = $this->clerkToken(['sub' => 'user_entry_fee_payer']);
-    $guest = authAs('user_entry_fee_payer');
-    fundWalletWith($guest, 50);
+    $token = $this->clerkToken(['sub' => 'user_join_charge_'.$entryFee]);
+    $guest = authAs('user_join_charge_'.$entryFee);
+
+    $payer = $hostPays ? $host : $guest;
+    fundWalletWith($payer, 50);
 
     $this->withHeader('Authorization', "Bearer {$token}")
         ->postJson(entryFeeJoinEndpoint($party))
         ->assertStatus(200);
 
-    expect($guest->wallet->fresh()->balance)->toBe(40);
+    $other = $hostPays ? $guest : $host;
 
-    $transaction = WalletTransaction::where('wallet_id', $guest->wallet->id)
-        ->where('type', WalletTransactionType::PartyEntry)
+    expect($payer->wallet->fresh()->balance)->toBe(40);
+    expect($other->wallet()->exists())->toBeFalse();
+
+    $transaction = WalletTransaction::where('wallet_id', $payer->wallet->id)
+        ->where('type', $type)
         ->firstOrFail();
     expect($transaction->amount)->toBe(-10);
     expect((int) $transaction->reference_id)->toBe($party->id);
-});
+})->with([
+    'paid party charges the guest' => [10, null, false, WalletTransactionType::PartyEntry],
+    'free party with creation_fee sponsorship charges the host' => [0, 'creation_fee', true, WalletTransactionType::FreePartyGuestCost],
+]);
 
-it('does not charge the entry fee again on rejoin after leaving', function () {
+it('does not re-charge the payer again on rejoin after leaving', function (int $entryFee, ?string $scope, bool $hostPays, WalletTransactionType $type) {
     $host = User::factory()->create();
-    $party = Party::factory()->create([
-        'host_id' => $host->id,
-        'visibility' => PartyVisibility::Public,
-        'status' => PartyStatus::Live,
-        'entry_fee' => 10,
-        'players_count' => 1,
+    $party = createEntryFeeParty($host, [
+        'entry_fee' => $entryFee,
+        'sponsorship_scope' => $scope,
     ]);
 
-    $token = $this->clerkToken(['sub' => 'user_entry_fee_rejoiner']);
-    $guest = authAs('user_entry_fee_rejoiner');
-    fundWalletWith($guest, 50);
+    $token = $this->clerkToken(['sub' => 'user_rejoin_charge_'.$entryFee]);
+    $guest = authAs('user_rejoin_charge_'.$entryFee);
+
+    $payer = $hostPays ? $host : $guest;
+    fundWalletWith($payer, 50);
 
     $this->withHeader('Authorization', "Bearer {$token}")->postJson(entryFeeJoinEndpoint($party))->assertStatus(200);
     $this->withHeader('Authorization', "Bearer {$token}")->deleteJson(entryFeeLeaveEndpoint($party))->assertStatus(200);
     $this->withHeader('Authorization', "Bearer {$token}")->postJson(entryFeeJoinEndpoint($party))->assertStatus(200);
 
-    expect($guest->wallet->fresh()->balance)->toBe(40);
-    expect(WalletTransaction::where('wallet_id', $guest->wallet->id)->where('type', WalletTransactionType::PartyEntry)->count())->toBe(1);
-});
+    expect($payer->wallet->fresh()->balance)->toBe(40);
+    expect(WalletTransaction::where('wallet_id', $payer->wallet->id)->where('type', $type)->count())->toBe(1);
+})->with([
+    'paid party, guest pays' => [10, null, false, WalletTransactionType::PartyEntry],
+    'free party with creation_fee sponsorship, host pays' => [0, 'creation_fee', true, WalletTransactionType::FreePartyGuestCost],
+]);
 
-it('returns 422 insufficient token balance when the guest cannot afford the entry fee', function () {
+it('returns 422 insufficient token balance when the payer cannot afford the join cost, and the guest is not added', function (int $entryFee, ?string $scope) {
     $host = User::factory()->create();
-    $party = Party::factory()->create([
-        'host_id' => $host->id,
-        'visibility' => PartyVisibility::Public,
-        'status' => PartyStatus::Live,
-        'entry_fee' => 10,
-        'players_count' => 1,
+    $party = createEntryFeeParty($host, [
+        'entry_fee' => $entryFee,
+        'sponsorship_scope' => $scope,
     ]);
 
-    $token = $this->clerkToken(['sub' => 'user_entry_fee_poor']);
-    authAs('user_entry_fee_poor');
+    $token = $this->clerkToken(['sub' => 'user_join_charge_poor_'.$entryFee]);
+    authAs('user_join_charge_poor_'.$entryFee);
 
     $this->withHeader('Authorization', "Bearer {$token}")
         ->postJson(entryFeeJoinEndpoint($party))
@@ -116,16 +139,16 @@ it('returns 422 insufficient token balance when the guest cannot afford the entr
         ->assertJson(['message' => 'Insufficient token balance.']);
 
     expect($party->fresh()->players_count)->toBe(1);
-});
+})->with([
+    'guest cannot afford the paid entry fee' => [10, null],
+    'host cannot afford the free-party guest cost' => [0, 'creation_fee'],
+]);
 
-it('skips the entry fee charge once a full_party sponsor has paid', function () {
+it('does not charge the host or guest for a full_party-sponsored party once its sponsor has paid', function (int $entryFee) {
     $host = User::factory()->create();
-    $party = Party::factory()->create([
-        'host_id' => $host->id,
-        'visibility' => PartyVisibility::Public,
-        'status' => PartyStatus::Live,
-        'entry_fee' => 10,
-        'players_count' => 1,
+    fundWalletWith($host, 50);
+    $party = createEntryFeeParty($host, [
+        'entry_fee' => $entryFee,
         'sponsorship_scope' => 'full_party',
     ]);
     $sponsor = User::factory()->create();
@@ -136,19 +159,23 @@ it('skips the entry fee charge once a full_party sponsor has paid', function () 
         'status' => SponsorshipInviteStatus::Paid,
         'sponsor_id' => $sponsor->id,
         'paid_at' => now(),
-        'token' => 'FULLPARTYPAID1',
+        'token' => 'FULLPARTYPAID'.$entryFee,
         'expires_at' => now()->addDay(),
     ]);
 
-    $token = $this->clerkToken(['sub' => 'user_entry_fee_covered']);
-    $guest = authAs('user_entry_fee_covered');
+    $token = $this->clerkToken(['sub' => 'user_entry_fee_covered_'.$entryFee]);
+    $guest = authAs('user_entry_fee_covered_'.$entryFee);
 
     $this->withHeader('Authorization', "Bearer {$token}")
         ->postJson(entryFeeJoinEndpoint($party))
         ->assertStatus(200);
 
+    expect($host->wallet->fresh()->balance)->toBe(50);
     expect($guest->wallet()->exists())->toBeFalse();
-});
+})->with([
+    'paid party' => [10],
+    'free party' => [0],
+]);
 
 it('refunds the guest and the sponsor when the host cancels', function () {
     // The host is the only actor that needs to authenticate a real request
@@ -159,9 +186,7 @@ it('refunds the guest and the sponsor when the host cancels', function () {
     // what cancel() does with charges that already happened.
     $hostToken = $this->clerkToken(['sub' => 'user_cancel_refund_host']);
     $host = authAs('user_cancel_refund_host');
-    $party = Party::factory()->create([
-        'host_id' => $host->id,
-        'visibility' => PartyVisibility::Public,
+    $party = createEntryFeeParty($host, [
         'status' => PartyStatus::Scheduled,
         'entry_fee' => 10,
         'players_count' => 2,
@@ -189,14 +214,36 @@ it('refunds the guest and the sponsor when the host cancels', function () {
         'expires_at' => now()->addDay(),
     ]);
 
-    $this->withHeader('Authorization', "Bearer {$hostToken}")
-        ->postJson(entryFeeCancelEndpoint($party))
-        ->assertStatus(200)
-        ->assertJsonPath('data.status', 'cancelled');
+    cancelPartyAsHost($hostToken, $party);
 
     expect($guest->wallet->fresh()->balance)->toBe(50);
     expect($sponsor->wallet->fresh()->balance)->toBe(100);
     expect($invite->fresh()->status)->toBe(SponsorshipInviteStatus::Cancelled);
+});
+
+it('refunds the host for covered free-party guests on cancel, but not their own game-type creation fee', function () {
+    $hostToken = $this->clerkToken(['sub' => 'user_cancel_free_party_host']);
+    $host = authAs('user_cancel_free_party_host');
+    $gameType = GameType::factory()->create(['cost' => 30]);
+    fundWalletWith($host, 100);
+    $party = createEntryFeeParty($host, [
+        'game_type_id' => $gameType->id,
+        'status' => PartyStatus::Scheduled,
+        'players_count' => 2,
+        'sponsorship_scope' => 'creation_fee',
+    ]);
+    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $host->id]);
+    app(WalletService::class)->debit($host, 30, WalletTransactionType::PartyEntry, reference: $party);
+
+    $guest = User::factory()->create();
+    PartyMember::factory()->create(['party_id' => $party->id, 'user_id' => $guest->id]);
+    app(WalletService::class)->debit($host, 10, WalletTransactionType::FreePartyGuestCost, reference: $party, idempotencyKey: "party-entry-host-{$party->id}-{$guest->id}");
+    expect($host->wallet->fresh()->balance)->toBe(60);
+
+    cancelPartyAsHost($hostToken, $party);
+
+    // The 10-token free-party guest cost comes back; the 30-token creation fee does not.
+    expect($host->wallet->fresh()->balance)->toBe(70);
 });
 
 it('does not refund the hosts own game-type creation fee when they cancel an unsponsored party', function () {
@@ -219,22 +266,16 @@ it('does not refund the hosts own game-type creation fee when they cancel an uns
     expect($host->wallet->fresh()->balance)->toBe(70);
     $party = Party::findOrFail($response->json('data.id'));
 
-    $this->withHeader('Authorization', "Bearer {$hostToken}")
-        ->postJson(entryFeeCancelEndpoint($party))
-        ->assertStatus(200)
-        ->assertJsonPath('data.status', 'cancelled');
+    cancelPartyAsHost($hostToken, $party);
 
     expect($host->wallet->fresh()->balance)->toBe(70);
 });
 
-it('refunds the sponsor for unfilled guest slots when a full_party-sponsored party ends', function () {
-    $hostToken = $this->clerkToken(['sub' => 'user_end_refund_host']);
-    $host = authAs('user_end_refund_host');
-    $party = Party::factory()->create([
-        'host_id' => $host->id,
-        'visibility' => PartyVisibility::Public,
-        'status' => PartyStatus::Live,
-        'entry_fee' => 10,
+it('refunds the sponsor for unfilled guest slots at the rate actually paid when a full_party-sponsored party ends', function (int $entryFee) {
+    $hostToken = $this->clerkToken(['sub' => 'user_end_refund_host_'.$entryFee]);
+    $host = authAs('user_end_refund_host_'.$entryFee);
+    $party = createEntryFeeParty($host, [
+        'entry_fee' => $entryFee,
         'max_players' => 8,
         'players_count' => 3,
         'sponsorship_scope' => 'full_party',
@@ -251,7 +292,7 @@ it('refunds the sponsor for unfilled guest slots when a full_party-sponsored par
         'status' => SponsorshipInviteStatus::Paid,
         'sponsor_id' => $sponsor->id,
         'paid_at' => now(),
-        'token' => 'ENDREFUND1',
+        'token' => 'ENDREFUND'.$entryFee,
         'expires_at' => now()->addDay(),
     ]);
 
@@ -262,4 +303,22 @@ it('refunds the sponsor for unfilled guest slots when a full_party-sponsored par
         ->assertJsonPath('data.status', 'ended');
 
     expect($sponsor->wallet->fresh()->balance)->toBe(80);
+})->with([
+    'paid party, rate is entry_fee' => [10],
+    'free party, rate is the per_guest_cost constant' => [0],
+]);
+
+it('leaves an ordinary free party with no sponsorship_scope genuinely free for the host', function () {
+    $host = User::factory()->create();
+    $party = createEntryFeeParty($host);
+
+    $token = $this->clerkToken(['sub' => 'user_plain_free_party_guest']);
+    $guest = authAs('user_plain_free_party_guest');
+
+    $this->withHeader('Authorization', "Bearer {$token}")
+        ->postJson(entryFeeJoinEndpoint($party))
+        ->assertStatus(200);
+
+    expect($host->wallet()->exists())->toBeFalse();
+    expect($guest->wallet()->exists())->toBeFalse();
 });

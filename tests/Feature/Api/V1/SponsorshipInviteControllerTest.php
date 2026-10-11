@@ -84,24 +84,27 @@ it('creates a creation_fee sponsorship invite with the game types cost as amount
         ->assertJsonPath('data.party.id', $party->id);
 });
 
-it('creates a full_party sponsorship invite covering every guest slot at the entry fee', function () {
-    [$host, $hostToken] = [authAs('user_sponsor_invite_full'), $this->clerkToken(['sub' => 'user_sponsor_invite_full'])];
+it('creates a full_party sponsorship invite covering every guest slot at the per-guest rate', function (int $entryFee, int $perGuestRate) {
+    [$host, $hostToken] = [authAs('user_sponsor_invite_full_'.$entryFee), $this->clerkToken(['sub' => 'user_sponsor_invite_full_'.$entryFee])];
     $gameType = GameType::factory()->create(['cost' => 30]);
     $party = Party::factory()->create([
         'host_id' => $host->id,
         'status' => PartyStatus::PendingSponsorship,
         'game_type_id' => $gameType->id,
-        'entry_fee' => 10,
+        'entry_fee' => $entryFee,
         'max_players' => 8,
         'sponsorship_scope' => 'full_party',
     ]);
 
-    // amount = creation_fee (30) + entry_fee (10) * (max_players - 1) (7) = 100
+    // amount = creation_fee (30) + per-guest rate * (max_players - 1) (7)
     $this->withHeader('Authorization', "Bearer {$hostToken}")
         ->postJson(sponsorshipInvitesEndpoint($party), ['scope' => 'full_party'])
         ->assertStatus(201)
-        ->assertJsonPath('data.amount', 100);
-});
+        ->assertJsonPath('data.amount', 30 + $perGuestRate * 7);
+})->with([
+    'paid party, rate is entry_fee' => [10, 10],
+    'free party, rate is the per_guest_cost constant' => [0, 10],
+]);
 
 it('returns the existing pending invite instead of creating a duplicate for the same scope', function () {
     [$host, $hostToken] = [authAs('user_sponsor_invite_dedup'), $this->clerkToken(['sub' => 'user_sponsor_invite_dedup'])];

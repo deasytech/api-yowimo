@@ -51,7 +51,8 @@ class PartyMembershipService
      *
      * @throws PartyNotJoinableException if the party's current status doesn't allow joining.
      * @throws PartyFullException if the party is already at capacity.
-     * @throws InsufficientWalletBalanceException if the entry fee applies and the guest can't afford it.
+     * @throws InsufficientWalletBalanceException if the entry fee applies and the guest can't afford it,
+     *                                            or (for a free, unsponsored party) if the host can't afford to cover this guest.
      */
     public function join(User $user, Party $party): Party
     {
@@ -106,27 +107,50 @@ class PartyMembershipService
     }
 
     /**
-     * Skipped entirely for a free party (entry_fee = 0) and for a
-     * full_party-sponsored one once its sponsor has paid — in both cases
-     * there's nothing to charge the guest for.
+     * Skipped entirely for a full_party-sponsored party once its sponsor has
+     * paid — the sponsor already covers every slot. Otherwise charges the
+     * guest the entry fee. For a free, sponsorship-opted-in party
+     * (entry_fee = 0 with a sponsorship_scope, i.e. creation_fee — a
+     * full_party one is never joinable until its sponsor has already paid,
+     * see above) there's nothing to charge the guest, so the host is
+     * charged the per-guest cost instead (same rate the full_party formula
+     * uses for a free party — see SponsorshipService::freePartyGuestCost()),
+     * since nobody else is paying for this guest's slot. An ordinary free
+     * party with no sponsorship_scope at all was never opted into this and
+     * stays free for everyone, host included.
      */
     private function chargeEntryFee(User $user, Party $party): void
     {
-        if ($party->entry_fee <= 0) {
-            return;
-        }
-
         if ($this->sponsorships->isFullyCoveredByPaidSponsor($party)) {
             return;
         }
 
+        if ($party->entry_fee > 0) {
+            $this->wallets->debit(
+                $user,
+                $party->entry_fee,
+                WalletTransactionType::PartyEntry,
+                reference: $party,
+                description: "Party entry: {$party->title}",
+                idempotencyKey: "party-entry-{$party->id}-{$user->id}",
+            );
+
+            return;
+        }
+
+        $guestCost = $party->sponsorship_scope !== null ? $this->sponsorships->freePartyGuestCost() : 0;
+
+        if ($guestCost <= 0) {
+            return;
+        }
+
         $this->wallets->debit(
-            $user,
-            $party->entry_fee,
-            WalletTransactionType::PartyEntry,
+            $party->host,
+            $guestCost,
+            WalletTransactionType::FreePartyGuestCost,
             reference: $party,
-            description: "Party entry: {$party->title}",
-            idempotencyKey: "party-entry-{$party->id}-{$user->id}",
+            description: "Free party guest cost: {$party->title}",
+            idempotencyKey: "party-entry-host-{$party->id}-{$user->id}",
         );
     }
 
