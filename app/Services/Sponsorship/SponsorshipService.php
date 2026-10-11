@@ -76,7 +76,9 @@ class SponsorshipService
     /**
      * creation_fee is just the game type's cost; full_party additionally
      * covers every other reservable slot (max_players - 1, the host's own
-     * slot excluded) at the party's entry fee, decided up front from the
+     * slot excluded) at the party's entry fee — or, for a free party
+     * (entry_fee = 0), at freePartyGuestCost() instead, since 0 can't stand
+     * in for what a guest slot actually costs — decided up front from the
      * party's fixed capacity rather than how many guests actually join.
      */
     public function computeAmount(Party $party, SponsorshipScope $scope): int
@@ -87,7 +89,23 @@ class SponsorshipService
             return $creationFee;
         }
 
-        return $creationFee + $party->entry_fee * max($party->max_players - 1, 0);
+        return $creationFee + $this->fullPartyPerGuestCost($party) * max($party->max_players - 1, 0);
+    }
+
+    /**
+     * The token cost of one guest slot for a free party (entry_fee = 0) —
+     * used as the full_party formula's per-guest rate, and charged directly
+     * to the host per joining guest when there's no full_party sponsor to
+     * cover it instead (see PartyMembershipService::chargeEntryFee()).
+     */
+    public function freePartyGuestCost(): int
+    {
+        return (int) config('services.sponsorship.per_guest_cost', 10);
+    }
+
+    private function fullPartyPerGuestCost(Party $party): int
+    {
+        return $party->entry_fee > 0 ? $party->entry_fee : $this->freePartyGuestCost();
     }
 
     public function findByToken(string $token): SponsorshipInvite
@@ -247,7 +265,7 @@ class SponsorshipService
         }
 
         $unfilledSlots = max($party->max_players - $party->players_count, 0);
-        $refundAmount = $unfilledSlots * $party->entry_fee;
+        $refundAmount = $unfilledSlots * $this->fullPartyPerGuestCost($party);
 
         if ($refundAmount <= 0) {
             return;

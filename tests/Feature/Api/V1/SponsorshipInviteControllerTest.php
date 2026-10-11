@@ -103,6 +103,25 @@ it('creates a full_party sponsorship invite covering every guest slot at the ent
         ->assertJsonPath('data.amount', 100);
 });
 
+it('creates a full_party sponsorship invite using the per-guest cost constant for a free party', function () {
+    [$host, $hostToken] = [authAs('user_sponsor_invite_free_full'), $this->clerkToken(['sub' => 'user_sponsor_invite_free_full'])];
+    $gameType = GameType::factory()->create(['cost' => 30]);
+    $party = Party::factory()->create([
+        'host_id' => $host->id,
+        'status' => PartyStatus::PendingSponsorship,
+        'game_type_id' => $gameType->id,
+        'entry_fee' => 0,
+        'max_players' => 8,
+        'sponsorship_scope' => 'full_party',
+    ]);
+
+    // amount = creation_fee (30) + per_guest_cost (10) * (max_players - 1) (7) = 100
+    $this->withHeader('Authorization', "Bearer {$hostToken}")
+        ->postJson(sponsorshipInvitesEndpoint($party), ['scope' => 'full_party'])
+        ->assertStatus(201)
+        ->assertJsonPath('data.amount', 100);
+});
+
 it('returns the existing pending invite instead of creating a duplicate for the same scope', function () {
     [$host, $hostToken] = [authAs('user_sponsor_invite_dedup'), $this->clerkToken(['sub' => 'user_sponsor_invite_dedup'])];
     $gameType = GameType::factory()->create(['cost' => 15]);
