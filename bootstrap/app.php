@@ -27,6 +27,7 @@ use App\Exceptions\Api\PartyNotJoinableException;
 use App\Exceptions\Api\PaymentDeclinedException;
 use App\Exceptions\Api\ReferralAlreadyClaimedException;
 use App\Exceptions\Api\SelfReferralException;
+use App\Exceptions\Api\SponsorshipAmountZeroException;
 use App\Exceptions\Api\SponsorshipInviteNotPendingException;
 use App\Exceptions\Api\SponsorshipScopeMismatchException;
 use App\Exceptions\Api\TurnNotActiveException;
@@ -98,6 +99,7 @@ return Application::configure(basePath: dirname(__DIR__))
             HostCannotSponsorOwnPartyException::class,
             SponsorshipInviteNotPendingException::class,
             SponsorshipScopeMismatchException::class,
+            SponsorshipAmountZeroException::class,
         ]);
 
         ApiExceptionRegistrar::register($exceptions);

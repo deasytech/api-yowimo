@@ -4,6 +4,7 @@ use App\Enums\PartyStatus;
 use App\Enums\PartyVisibility;
 use App\Enums\SponsorshipInviteStatus;
 use App\Enums\WalletTransactionType;
+use App\Models\GameType;
 use App\Models\Party;
 use App\Models\PartyMember;
 use App\Models\SponsorshipInvite;
@@ -196,6 +197,34 @@ it('refunds the guest and the sponsor when the host cancels', function () {
     expect($guest->wallet->fresh()->balance)->toBe(50);
     expect($sponsor->wallet->fresh()->balance)->toBe(100);
     expect($invite->fresh()->status)->toBe(SponsorshipInviteStatus::Cancelled);
+});
+
+it('does not refund the hosts own game-type creation fee when they cancel an unsponsored party', function () {
+    $hostToken = $this->clerkToken(['sub' => 'user_cancel_no_host_refund']);
+    $host = authAs('user_cancel_no_host_refund');
+    fundWalletWith($host, 100);
+    $gameType = GameType::factory()->create(['cost' => 30]);
+
+    $response = $this->withHeader('Authorization', "Bearer {$hostToken}")
+        ->postJson('/api/v1/parties', [
+            'title' => 'Unsponsored scheduled party',
+            'game_type_id' => $gameType->id,
+            'mode' => 'online',
+            'visibility' => 'public',
+            'starts_at' => now()->addHour()->toISOString(),
+        ])
+        ->assertStatus(201)
+        ->assertJsonPath('data.status', 'scheduled');
+
+    expect($host->wallet->fresh()->balance)->toBe(70);
+    $party = Party::findOrFail($response->json('data.id'));
+
+    $this->withHeader('Authorization', "Bearer {$hostToken}")
+        ->postJson(entryFeeCancelEndpoint($party))
+        ->assertStatus(200)
+        ->assertJsonPath('data.status', 'cancelled');
+
+    expect($host->wallet->fresh()->balance)->toBe(70);
 });
 
 it('refunds the sponsor for unfilled guest slots when a full_party-sponsored party ends', function () {

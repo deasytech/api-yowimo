@@ -105,9 +105,11 @@ it('creates a full_party sponsorship invite covering every guest slot at the ent
 
 it('returns the existing pending invite instead of creating a duplicate for the same scope', function () {
     [$host, $hostToken] = [authAs('user_sponsor_invite_dedup'), $this->clerkToken(['sub' => 'user_sponsor_invite_dedup'])];
+    $gameType = GameType::factory()->create(['cost' => 15]);
     $party = Party::factory()->create([
         'host_id' => $host->id,
         'status' => PartyStatus::PendingSponsorship,
+        'game_type_id' => $gameType->id,
         'sponsorship_scope' => 'creation_fee',
     ]);
 
@@ -277,4 +279,68 @@ it('rejects paying an invite that is already paid', function () {
         ->postJson(sponsorshipInvitePayEndpoint($invite), [])
         ->assertStatus(422)
         ->assertJson(['message' => 'This sponsorship invite is no longer available.']);
+});
+
+it('rejects creating a sponsorship invite whose computed amount is zero', function () {
+    [$host, $hostToken] = [authAs('user_sponsor_invite_zero'), $this->clerkToken(['sub' => 'user_sponsor_invite_zero'])];
+    $party = Party::factory()->create([
+        'host_id' => $host->id,
+        'status' => PartyStatus::PendingSponsorship,
+        'game_type_id' => null,
+        'sponsorship_scope' => 'creation_fee',
+    ]);
+
+    $this->withHeader('Authorization', "Bearer {$hostToken}")
+        ->postJson(sponsorshipInvitesEndpoint($party), ['scope' => 'creation_fee'])
+        ->assertStatus(422)
+        ->assertJson(['message' => 'This party has nothing to sponsor.']);
+
+    expect(SponsorshipInvite::where('party_id', $party->id)->exists())->toBeFalse();
+});
+
+it('rejects paying a stale pending invite once the party has already been activated by another one', function () {
+    $host = User::factory()->create();
+    $gameType = GameType::factory()->create(['cost' => 30]);
+    $party = Party::factory()->create([
+        'host_id' => $host->id,
+        'status' => PartyStatus::PendingSponsorship,
+        'game_type_id' => $gameType->id,
+        'sponsorship_scope' => 'creation_fee',
+    ]);
+
+    // Two pending invites for the same party/scope — the kind of duplicate
+    // createInvite()'s row lock now prevents going forward, but this
+    // simulates one that slipped through (or was created before the fix).
+    $firstInvite = SponsorshipInvite::create([
+        'party_id' => $party->id, 'scope' => 'creation_fee', 'amount' => 30,
+        'status' => SponsorshipInviteStatus::Paid, 'sponsor_id' => User::factory()->create()->id,
+        'paid_at' => now(), 'token' => 'FIRSTPAID123', 'expires_at' => now()->addDay(),
+    ]);
+    $staleInvite = SponsorshipInvite::create([
+        'party_id' => $party->id, 'scope' => 'creation_fee', 'amount' => 30,
+        'status' => SponsorshipInviteStatus::Pending, 'token' => 'STALEPENDING123', 'expires_at' => now()->addDay(),
+    ]);
+    $party->update(['status' => PartyStatus::Live]);
+
+    $sponsorToken = $this->clerkToken(['sub' => 'user_sponsor_stale_invite']);
+    $sponsor = authAs('user_sponsor_stale_invite');
+    fundWallet($sponsor, 100);
+
+    $this->withHeader('Authorization', "Bearer {$sponsorToken}")
+        ->withHeader('Idempotency-Key', 'pay-key-stale')
+        ->postJson(sponsorshipInvitePayEndpoint($staleInvite), [])
+        ->assertStatus(422)
+        ->assertJson(['message' => 'This sponsorship invite is no longer available.']);
+
+    expect($sponsor->wallet->fresh()->balance)->toBe(100);
+    expect($staleInvite->fresh()->status)->toBe(SponsorshipInviteStatus::Pending);
+    expect($firstInvite->id)->not->toBe($staleInvite->id);
+});
+
+it('resolves SponsorshipInvite::factory() correctly', function () {
+    $invite = SponsorshipInvite::factory()->paid()->create();
+
+    expect($invite)->toBeInstanceOf(SponsorshipInvite::class);
+    expect($invite->status)->toBe(SponsorshipInviteStatus::Paid);
+    expect($invite->sponsor_id)->not->toBeNull();
 });

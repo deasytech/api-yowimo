@@ -8,6 +8,7 @@ use App\Enums\SponsorshipScope;
 use App\Enums\WalletTransactionType;
 use App\Events\PartyStarted;
 use App\Exceptions\Api\HostCannotSponsorOwnPartyException;
+use App\Exceptions\Api\SponsorshipAmountZeroException;
 use App\Exceptions\Api\SponsorshipInviteNotPendingException;
 use App\Exceptions\Api\SponsorshipScopeMismatchException;
 use App\Models\Party;
@@ -26,9 +27,12 @@ class SponsorshipService
     /**
      * Creates a sponsorship invite link for the party's chosen scope, or
      * returns the existing pending (non-expired) one for that scope instead
-     * of creating a duplicate.
+     * of creating a duplicate. Locks the party row for the duration, so two
+     * concurrent calls for the same party/scope can't both miss the
+     * dedup check above and each insert their own payable invite.
      *
      * @throws SponsorshipScopeMismatchException if the party wasn't created with this scope.
+     * @throws SponsorshipAmountZeroException if the computed amount is zero.
      */
     public function createInvite(Party $party, SponsorshipScope $scope): SponsorshipInvite
     {
@@ -36,26 +40,37 @@ class SponsorshipService
             throw new SponsorshipScopeMismatchException;
         }
 
-        $existing = $party->sponsorshipInvites()
-            ->where('scope', $scope)
-            ->where('status', SponsorshipInviteStatus::Pending)
-            ->where('expires_at', '>', now())
-            ->first();
+        return DB::transaction(function () use ($party, $scope) {
+            Party::query()->whereKey($party->id)->lockForUpdate()->firstOrFail();
 
-        if ($existing) {
-            return $existing->setRelation('party', $party);
-        }
+            $existing = SponsorshipInvite::query()
+                ->where('party_id', $party->id)
+                ->where('scope', $scope)
+                ->where('status', SponsorshipInviteStatus::Pending)
+                ->where('expires_at', '>', now())
+                ->first();
 
-        $invite = SponsorshipInvite::create([
-            'party_id' => $party->id,
-            'scope' => $scope,
-            'amount' => $this->computeAmount($party, $scope),
-            'status' => SponsorshipInviteStatus::Pending,
-            'token' => (string) Str::ulid(),
-            'expires_at' => now()->addHours((int) config('services.sponsorship.invite_ttl_hours', 72)),
-        ]);
+            if ($existing) {
+                return $existing->setRelation('party', $party);
+            }
 
-        return $invite->setRelation('party', $party);
+            $amount = $this->computeAmount($party, $scope);
+
+            if ($amount <= 0) {
+                throw new SponsorshipAmountZeroException;
+            }
+
+            $invite = SponsorshipInvite::create([
+                'party_id' => $party->id,
+                'scope' => $scope,
+                'amount' => $amount,
+                'status' => SponsorshipInviteStatus::Pending,
+                'token' => (string) Str::ulid(),
+                'expires_at' => now()->addHours((int) config('services.sponsorship.invite_ttl_hours', 72)),
+            ]);
+
+            return $invite->setRelation('party', $party);
+        });
     }
 
     /**
@@ -106,6 +121,15 @@ class SponsorshipService
                 throw new SponsorshipInviteNotPendingException;
             }
 
+            // The party itself, not just this invite, must still be waiting
+            // on this exact sponsorship — e.g. a second pending invite for
+            // the same scope (created before the party activated, or before
+            // the lock in createInvite() existed) can't be paid once the
+            // party's already been activated, cancelled, or ended by then.
+            if ($party->status !== PartyStatus::PendingSponsorship) {
+                throw new SponsorshipInviteNotPendingException;
+            }
+
             $this->wallets->debit(
                 $sponsor,
                 $invite->amount,
@@ -145,7 +169,9 @@ class SponsorshipService
      * who actually paid an entry fee for it, and refunds (and closes out)
      * any sponsorship invite already paid for it — nothing happened, so
      * nothing charged against it should stick. The host's own game-type
-     * creation fee, an unrelated and pre-existing charge, is untouched.
+     * creation fee, an unrelated and pre-existing charge, is untouched —
+     * it's recorded under the same party_entry type/reference as a guest's
+     * join charge, so it has to be excluded explicitly by wallet owner.
      */
     public function refundForCancelledParty(Party $party): void
     {
@@ -153,6 +179,7 @@ class SponsorshipService
             ->where('type', WalletTransactionType::PartyEntry)
             ->where('reference_type', $party->getMorphClass())
             ->where('reference_id', $party->id)
+            ->whereHas('wallet', fn ($query) => $query->where('user_id', '!=', $party->host_id))
             ->with('wallet.user')
             ->get();
 

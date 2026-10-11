@@ -32,6 +32,7 @@ use App\Exceptions\Api\PartyNotJoinableException;
 use App\Exceptions\Api\PaymentDeclinedException;
 use App\Exceptions\Api\ReferralAlreadyClaimedException;
 use App\Exceptions\Api\SelfReferralException;
+use App\Exceptions\Api\SponsorshipAmountZeroException;
 use App\Exceptions\Api\SponsorshipInviteNotPendingException;
 use App\Exceptions\Api\SponsorshipScopeMismatchException;
 use App\Exceptions\Api\TurnNotActiveException;
@@ -386,6 +387,15 @@ class ApiExceptionRegistrar
 
     private static function registerSponsorshipExceptions(Exceptions $exceptions): void
     {
+        self::registerHandler(
+            $exceptions,
+            SponsorshipAmountZeroException::class,
+            fn (SponsorshipAmountZeroException $e) => ApiResponse::error(
+                $e->getMessage(),
+                status: 422
+            )
+        );
+
         self::registerHandler(
             $exceptions,
             HostCannotSponsorOwnPartyException::class,
